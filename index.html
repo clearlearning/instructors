@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instructor Availability | CLEAR Learning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --burgundy:#64092C; --burgundy-dk:#4A0620; --gold:#DDA838; --gold-lt:#F8EDD3;
+  --charcoal:#484848; --ink:#2B2B2B; --blue:#084D78; --blue-lt:#E2EDF4;
+  --bg:#F3F3F5; --surface:#FFFFFF; --line:#DEDCE0; --muted:#6E6B70;
+  --avail:#1F6B3F; --avail-lt:#E3F1E8; --notavail:#5A5A5A; --na:#A9A6AB; --warn:#9A5B00;
+  --radius-lg:10px; --radius-sm:6px;
+  font-family:"Open Sans","Trebuchet MS",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
+a{color:var(--blue)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* Header */
+.top{background:var(--burgundy);color:#fff}
+.top-in{max-width:1080px;margin:0 auto;padding:22px 24px 0;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.brand small{display:block;font-size:13px;opacity:.8;font-weight:600}
+.brand h1{margin:2px 0 18px;font-size:28px;font-weight:800;letter-spacing:-.01em}
+.who{text-align:right;font-size:13px;padding-bottom:18px}
+.who strong{display:block;font-size:15px}
+.who a{color:#fff;opacity:.85}
+.tabs{max-width:1080px;margin:0 auto;padding:0 24px;display:flex;gap:4px;overflow-x:auto}
+.tab{background:none;border:0;color:#fff;opacity:.75;padding:10px 16px 12px;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0;white-space:nowrap}
+.tab:hover{opacity:1}
+.tab[aria-selected="true"]{background:var(--bg);color:var(--burgundy);opacity:1}
+.tab .n{display:inline-block;min-width:22px;padding:0 6px;margin-left:6px;border-radius:11px;background:rgba(255,255,255,.18);font-size:12px;text-align:center}
+.tab .n.hot{background:var(--gold);color:var(--burgundy-dk)}
+.tab[aria-selected="true"] .n{background:var(--gold-lt);color:var(--burgundy)}
+
+main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
+.notice{background:var(--gold-lt);border-left:4px solid var(--gold);padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px}
+.err{background:#FBE9EC;border-left:4px solid var(--burgundy);padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px}
+
+/* Time zone bar */
+.tzbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;border-left:4px solid var(--gold);background:var(--gold-lt)}
+.tzbar.conv{background:var(--blue-lt);border-left-color:var(--blue)}
+.tzbar .ic{font-size:20px;line-height:1}
+.tzbar .txt{flex:1;min-width:240px}
+.tzbar .txt strong{display:block}
+.tzbar .txt span{font-size:13px;color:var(--charcoal)}
+.tzbar select{padding:6px 8px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;max-width:260px}
+.et{color:var(--muted);font-size:12px;white-space:nowrap}
+.shift{display:inline-block;font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-lt);padding:0 7px;border-radius:10px;margin-left:4px}
+
+/* Intro + filters */
+.intro{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+.intro p{margin:0;max-width:62ch;color:var(--charcoal)}
+.meter{flex:1;min-width:220px}
+.meter-label{font-size:13px;font-weight:600;color:var(--charcoal);margin-bottom:6px}
+.meter-bar{height:8px;background:#E4E2E6;border-radius:4px;overflow:hidden}
+.meter-bar span{display:block;height:100%;background:var(--avail);transition:width .3s}
+.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.filters select{padding:7px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff}
+.filters label{font-size:13px;color:var(--muted);font-weight:600}
+
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px}
+.card{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);text-decoration:none;color:inherit;overflow:hidden;transition:border-color .15s,box-shadow .15s}
+.card:hover{border-color:#C9B4BC;box-shadow:0 4px 16px rgba(100,9,44,.08)}
+.card-top{display:grid;grid-template-columns:62px 1fr;gap:14px;padding:16px 18px 12px}
+.card h2{margin:0 0 2px;font-size:17px;line-height:1.3;color:var(--burgundy)}
+.card .cohort{font-size:13px;font-weight:600;color:var(--charcoal)}
+.card .meta{font-size:13px;color:var(--muted)}
+.card .slist{list-style:none;margin:0;padding:0 18px 12px 94px;font-size:13px}
+.card .slist li{padding:2px 0;display:flex;gap:8px;flex-wrap:wrap}
+.card .slist .dt{font-weight:600;min-width:92px}
+.card .slist .more{color:var(--muted)}
+.card-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 18px;background:#FAF7F8;border-top:1px solid var(--line)}
+.due{font-size:13px;font-weight:700;color:var(--burgundy)}
+.due.soon{color:#9B1C1C}
+.due.closed{color:var(--muted);font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px;white-space:nowrap}
+.badge.done{background:var(--avail-lt);color:var(--avail)}
+.badge.part{background:var(--gold-lt);color:#7A5410}
+.badge.need{background:#fff;color:var(--burgundy);border:1px solid var(--burgundy)}
+.badge.none{background:#ECEAEE;color:var(--muted)}
+.badge small{font-weight:600;opacity:.85}
+
+/* Detail */
+.back{display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;font-weight:600;text-decoration:none}
+.program{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden}
+.p-head{padding:18px 22px 14px;display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:start;border-bottom:1px solid var(--line)}
+.p-head h2{margin:0 0 2px;font-size:21px;line-height:1.3;color:var(--burgundy)}
+.facts{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--charcoal);margin-top:4px}
+.p-actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.deadline-box{padding:10px 22px;background:var(--gold-lt);font-size:14px;border-bottom:1px solid var(--line)}
+.deadline-box.locked{background:#ECEAEE}
+.desc{padding:14px 22px 0;color:var(--charcoal);max-width:75ch;white-space:pre-wrap}
+
+.btn{border:0;border-radius:var(--radius-sm);padding:9px 16px;font-weight:700;cursor:pointer;background:var(--burgundy);color:#fff;white-space:nowrap}
+.btn:hover{background:var(--burgundy-dk)}
+.btn:disabled{background:#CFCBD0;cursor:default}
+.btn.ghost{background:#fff;color:var(--burgundy);border:1px solid var(--burgundy)}
+.btn.ghost:hover{background:#FAF4F6}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn.blue{background:var(--blue)}
+
+.whole{display:flex;align-items:center;gap:18px;padding:14px 22px;background:#FAF7F8;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.whole .lbl{font-weight:700;min-width:140px}
+.whole .hint{font-size:13px;color:var(--muted);flex:1;min-width:200px}
+.sessions{list-style:none;margin:0;padding:0}
+.session{display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid #EEECEF}
+.session:last-child{border-bottom:0}
+.s-title{font-weight:600}
+.s-time{font-size:13px;color:var(--charcoal)}
+.inherit{font-size:12px;color:var(--muted);text-align:right;margin-top:3px}
+
+/* Calendar tile */
+.tile{width:56px;border:1px solid var(--line);border-radius:6px;overflow:hidden;text-align:center;background:#fff;line-height:1.1}
+.tile .m{background:var(--burgundy);color:#fff;font-size:11px;font-weight:700;padding:3px 0;letter-spacing:.04em}
+.tile .d{font-size:22px;font-weight:800;color:var(--ink);padding:4px 0 0}
+.tile .w{font-size:11px;color:var(--muted);padding:0 0 4px}
+.tile.range .d{font-size:15px;padding:6px 0 2px}
+
+/* Answer control */
+.answer{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:#fff}
+.answer button{border:0;background:#fff;padding:7px 13px;font-size:13px;font-weight:600;cursor:pointer;color:var(--charcoal);white-space:nowrap}
+.answer button+button{border-left:1px solid var(--line)}
+.answer button:hover:not(:disabled){background:#F5F3F6}
+.answer button[aria-pressed="true"].A{background:var(--avail);color:#fff}
+.answer button[aria-pressed="true"].N{background:var(--notavail);color:#fff}
+.answer button[aria-pressed="true"].NA{background:var(--na);color:#fff}
+.answer.inherited button[aria-pressed="true"]{opacity:.55}
+.answer button:disabled{cursor:default}
+
+.comment{padding:14px 22px 18px;border-top:1px solid var(--line)}
+.comment label{display:block;font-weight:700;font-size:14px;margin-bottom:6px}
+.comment textarea{width:100%;min-height:62px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 11px;resize:vertical}
+.p-bottom{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:0 22px 18px;flex-wrap:wrap}
+.saved-at{font-size:12px;color:var(--muted)}
+
+.savebar{position:fixed;left:0;right:0;bottom:0;background:var(--ink);color:#fff;z-index:40;box-shadow:0 -6px 20px rgba(0,0,0,.18)}
+.savebar-in{max-width:1080px;margin:0 auto;padding:12px 24px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.savebar-in span{flex:1;font-weight:600}
+.savebar .btn.ghost{background:transparent;color:#fff;border-color:#fff}
+
+/* Assignments */
+.a-prog{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);margin-bottom:16px;overflow:hidden}
+.a-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--line);background:#FAF7F8}
+.a-head h2{margin:0;font-size:17px;color:var(--burgundy)}
+.assign{display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid #EEECEF}
+.assign:last-child{border-bottom:0}
+.role{font-size:12px;font-weight:700;color:var(--burgundy);background:var(--gold-lt);padding:2px 9px;border-radius:12px}
+.zoom{font-size:13px;word-break:break-all}
+
+.empty{background:#fff;border:1px dashed var(--line);border-radius:var(--radius-lg);padding:36px;text-align:center;color:var(--charcoal)}
+.empty h3{margin:0 0 6px;color:var(--burgundy)}
+.loading{padding:60px;text-align:center;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;max-width:90vw}
+.toast.show{opacity:1}
+
+@media (max-width:720px){
+  .top-in{padding:18px 16px 0}.tabs{padding:0 8px}main{padding:16px 16px 110px}
+  .brand h1{font-size:23px}.who{text-align:left}
+  .cards{grid-template-columns:1fr}
+  .card .slist{padding-left:18px}
+  .p-head{grid-template-columns:56px 1fr;padding:16px}.p-actions{grid-column:1 / -1;align-items:flex-start}
+  .session,.assign{grid-template-columns:56px 1fr;padding:12px 16px}
+  .session .ans-wrap,.assign .ans-wrap{grid-column:1 / -1}
+  .inherit{text-align:left}
+  .whole,.comment,.deadline-box{padding-left:16px;padding-right:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><small>CLEAR Learning</small><h1>Instructor availability</h1></div>
+    <div class="who" id="who"></div>
+  </div>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-tab="programs" aria-selected="true">Programs<span class="n" id="n-programs">0</span></button>
+    <button class="tab" role="tab" data-tab="calls" aria-selected="false">Opportunities<span class="n" id="n-calls">0</span></button>
+    <button class="tab" role="tab" data-tab="mine" aria-selected="false">My assignments<span class="n" id="n-mine">0</span></button>
+  </nav>
+</header>
+
+<main id="main"><div class="loading">Loading your programs…</div></main>
+<div class="savebar" id="savebar" hidden><div class="savebar-in"><span id="savebar-txt">You have unsaved answers</span><button class="btn ghost small" onclick="discard()">Discard</button><button class="btn small" style="background:var(--gold);color:var(--burgundy-dk)" onclick="save(S.view)">Save answers</button></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const S = { data:null, tab:'programs', view:null, drafts:{}, dirty:new Set(), quarter:'all', show:'need', tz:'America/New_York' };
+const LABELS = { program:{A:'Available',N:'Not available',NA:'N/A'}, call:{A:"I'll volunteer",N:'Not this time'} };
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const LONGM = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const ET = 'America/New_York';
+const asId = new URLSearchParams(location.search).get('as');
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function parseD(d){ const [y,m,dd] = String(d||'').split('-').map(Number); return y ? new Date(y, m-1, dd) : null; }
+function fmtD(d, withYear=true){ const x=parseD(d); return x ? `${MONTHS[x.getMonth()]} ${x.getDate()}${withYear?', '+x.getFullYear():''}` : ''; }
+function fmtDay(d){ const x=parseD(d); return x ? `${DAYS[x.getDay()]}, ${MONTHS[x.getMonth()]} ${x.getDate()}` : ''; }
+function fmtLong(d){ const x=parseD(d); return x ? `${LONGM[x.getMonth()]} ${x.getDate()}, ${x.getFullYear()}` : ''; }
+function fmtRange(a,b){ if(!a) return ''; if(!b||a===b) return fmtD(a); const A=parseD(a),B=parseD(b);
+  return A.getFullYear()===B.getFullYear() ? `${fmtD(a,false)} – ${fmtD(b)}` : `${fmtD(a)} – ${fmtD(b)}`; }
+function fmtStamp(iso){ if(!iso) return ''; return new Date(iso).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+function daysBetween(a,b){ return Math.round((parseD(b)-parseD(a))/86400000); }
+function tile(date, end){
+  const d=parseD(date); if(!d) return '<div class="tile"><div class="m">TBD</div><div class="d">–</div><div class="w">&nbsp;</div></div>';
+  const e=parseD(end);
+  if(e && end!==date){
+    const same=e.getMonth()===d.getMonth();
+    return `<div class="tile range" aria-hidden="true"><div class="m">${MONTHS[d.getMonth()].toUpperCase()}${same?'':'–'+MONTHS[e.getMonth()].toUpperCase()}</div><div class="d">${d.getDate()}–${e.getDate()}</div><div class="w">${d.getFullYear()}</div></div>`;
+  }
+  return `<div class="tile" aria-hidden="true"><div class="m">${MONTHS[d.getMonth()].toUpperCase()}</div><div class="d">${d.getDate()}</div><div class="w">${DAYS[d.getDay()]}</div></div>`;
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3000); }
+
+async function api(path, opts={}){
+  const r = await fetch('/api/'+path, { ...opts, headers:{'Content-Type':'application/json'}, credentials:'same-origin' });
+  let j={}; try{ j=await r.json(); }catch{ j={error:`The server returned ${r.status}. Reload the page and try again.`}; }
+  if(!r.ok) throw new Error(j.error || `Request failed (${r.status}).`);
+  return j;
+}
+
+/* ---------- Time zones ---------- */
+const SRC_TZ = { ET:ET, EST:ET, EDT:ET, CT:'America/Chicago', MT:'America/Denver', PT:'America/Los_Angeles', AT:'America/Halifax', UTC:'UTC' };
+const ZONES = [
+  [ET,'Eastern Time'],['America/Chicago','Central Time'],['America/Denver','Mountain Time'],['America/Phoenix','Mountain Time (Arizona)'],
+  ['America/Los_Angeles','Pacific Time'],['America/Anchorage','Alaska Time'],['Pacific/Honolulu','Hawaii Time'],['America/Halifax','Atlantic Time'],
+  ['America/St_Johns','Newfoundland Time'],['America/Regina','Saskatchewan'],['America/Puerto_Rico','Puerto Rico'],['Europe/London','United Kingdom'],
+  ['Europe/Dublin','Ireland'],['Australia/Sydney','Sydney'],['Pacific/Auckland','New Zealand']
+];
+const browserTz = (()=>{ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || ET; }catch{ return ET; } })();
+function zoneName(tz){ const z=ZONES.find(x=>x[0]===tz); return z ? z[1] : String(tz).split('/').pop().replace(/_/g,' '); }
+function srcZone(p){ const k=String(p.timezone||'ET').trim(); return SRC_TZ[k.toUpperCase()] || (k.includes('/')?k:null); }
+function isLocalTime(p){ return /person/i.test(p.format||'') || !srcZone(p); }
+function clockMin(t){ const s=String(t||'').trim(); let m=s.match(/^(\d{1,2}):(\d{2})\s*([AP])\.?M\.?$/i);
+  if(m) return (+m[1]%12+(/p/i.test(m[3])?12:0))*60+ +m[2]; m=s.match(/^(\d{1,2}):(\d{2})$/); return m? +m[1]*60+ +m[2] : null; }
+const fmtCache={};
+function partsIn(ms,tz){
+  const f=fmtCache[tz]||(fmtCache[tz]=new Intl.DateTimeFormat('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',minute:'2-digit',hour12:true,timeZoneName:'short'}));
+  const p=f.formatToParts(new Date(ms)); const g=t=>(p.find(x=>x.type===t)||{}).value||'';
+  return { date:`${g('year')}-${g('month')}-${g('day')}`, time:`${g('hour')}:${g('minute')} ${g('dayPeriod').toUpperCase()}`, abbr:g('timeZoneName') };
+}
+function offsetMin(ms,tz){
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(new Date(ms));
+  const g=t=>+(p.find(x=>x.type===t)||{}).value;
+  return (Date.UTC(g('year'),g('month')-1,g('day'),g('hour')%24,g('minute'),g('second'))-ms)/60000;
+}
+function instant(date, clock, tz){
+  const mins=clockMin(clock); if(mins==null||!date) return null;
+  const [y,m,d]=date.split('-').map(Number);
+  const guess=Date.UTC(y,m-1,d,Math.floor(mins/60),mins%60);
+  let t=guess-offsetMin(guess,tz)*60000; const o2=offsetMin(t,tz); t=guess-o2*60000; return t;
+}
+function converting(p){ return S.tz!==ET && !isLocalTime(p) && srcZone(p)!==S.tz; }
+// Returns HTML for a session's time, converted when the viewer chose another zone.
+function timeHtml(p, date, start, end){
+  if(!start) return '';
+  const src=`${esc(start)}${end?' – '+esc(end):''} ${esc(p.timezone||'ET')}`;
+  if(isLocalTime(p)) return `${src}${/person/i.test(p.format||'')?' <span class="et">(local time)</span>':''}`;
+  if(!converting(p)) return src;
+  const zone=srcZone(p), a=instant(date,start,zone), b=end?instant(date,end,zone):null;
+  if(a==null) return src;
+  const A=partsIn(a,S.tz), B=b!=null?partsIn(b,S.tz):null;
+  const shift=A.date!==date?`<span class="shift">${esc(fmtDay(A.date))} your time</span>`:'';
+  return `${esc(A.time)}${B?' – '+esc(B.time):''} ${esc(A.abbr)}${shift} <span class="et">(${src})</span>`;
+}
+function tzOptions(){
+  const seen=new Set(); let h='';
+  const opt=(v,l)=>{ if(seen.has(v)) return ''; seen.add(v); return `<option value="${esc(v)}" ${S.tz===v?'selected':''}>${esc(l)}</option>`; };
+  if(browserTz!==ET) h+=`<optgroup label="Your computer">${opt(browserTz,zoneName(browserTz)+' (detected)')}</optgroup>`;
+  h+=`<optgroup label="Common">${ZONES.map(z=>opt(z[0],z[1])).join('')}</optgroup>`;
+  if(Intl.supportedValuesOf){ try{ h+=`<optgroup label="All time zones">${Intl.supportedValuesOf('timeZone').map(z=>opt(z,z.replace(/_/g,' '))).join('')}</optgroup>`; }catch{} }
+  if(!seen.has(S.tz)) h+=opt(S.tz,S.tz);
+  return h;
+}
+function tzBar(){
+  if(S.tz===ET) return `<div class="tzbar"><span class="ic" aria-hidden="true">🕒</span><div class="txt"><strong>All times are shown in Eastern Time (ET).</strong><span>That's the time zone CLEAR schedules in. In-person programs show the venue's local time.</span></div>
+    <button class="btn blue small" onclick="setTz('${browserTz===ET?'':browserTz}')">${browserTz===ET?'Show times in another time zone':'Show times in my time zone ('+esc(zoneName(browserTz))+')'}</button></div>`;
+  return `<div class="tzbar conv"><span class="ic" aria-hidden="true">🕒</span><div class="txt"><strong>Times are converted to ${esc(zoneName(S.tz))}.</strong><span>The original Eastern Time is in brackets after each time. Only the display changes; your answers are the same either way.</span></div>
+    <label for="tzsel" class="et" style="font-weight:600">Time zone</label><select id="tzsel" onchange="setTz(this.value)">${tzOptions()}</select>
+    <button class="btn ghost small" onclick="setTz('${ET}')">Back to Eastern Time</button></div>`;
+}
+function setTz(tz){
+  if(!tz){ S.tz='America/Chicago'; }
+  else S.tz=tz;
+  try{ localStorage.setItem('ia_tz', S.tz); }catch{}
+  rerender();
+  if(!tz) setTimeout(()=>{ const s=document.getElementById('tzsel'); if(s) s.focus(); toast('Your computer is set to Eastern Time. Pick a time zone from the list.'); },50);
+}
+
+/* ---------- Load ---------- */
+async function load(){
+  try{
+    try{ const t=localStorage.getItem('ia_tz'); if(t){ new Intl.DateTimeFormat('en-US',{timeZone:t}); S.tz=t; } }catch{}
+    S.data = await api('portal' + (asId ? '?as='+encodeURIComponent(asId) : ''));
+    S.drafts = {};
+    for (const p of S.data.programs) resetDraft(p.id);
+    S.dirty.clear();
+    route();
+  }catch(e){
+    document.getElementById('main').innerHTML = `<div class="err"><strong>Couldn't load your page.</strong> ${esc(e.message)}</div>`;
+  }
+}
+function resetDraft(pid){ const r=S.data.responses[pid]||{}; S.drafts[pid]={ program:r.program||'', sessions:{...(r.sessions||{})}, comment:r.comment||'' }; }
+
+function eff(p, sid){ const d=S.drafts[p.id]; return (d.sessions[sid]) || d.program || ''; }
+function units(p){ return (p.kind!=='call' && p.sessions.length) ? p.sessions.map(s=>s.id) : [null]; }
+function answeredDraft(p){ const d=S.drafts[p.id]; return units(p).filter(u => u ? eff(p,u) : d.program).length; }
+function savedState(p){ // what's actually saved, for the badge
+  const r=S.data.responses[p.id]; const n=units(p).length;
+  if(!r) return {n, done:0, at:null};
+  const done=units(p).filter(u=> u ? ((r.sessions||{})[u]||r.program) : r.program).length;
+  return {n, done, at:r.updatedAt};
+}
+function badge(p){
+  const s=savedState(p);
+  if(s.done>=s.n && s.n) return `<span class="badge done">✓ Responded <small>${esc(fmtStamp(s.at).split(',')[0])}</small></span>`;
+  if(s.done>0) return `<span class="badge part">${s.done} of ${s.n} answered</span>`;
+  if(p.locked) return `<span class="badge none">No response</span>`;
+  return `<span class="badge need">Needs your response</span>`;
+}
+function dueHtml(p){
+  const today=S.data.today;
+  if(p.status!=='open') return `<span class="due closed">Responses closed</span>`;
+  if(p.pastDeadline) return `<span class="due closed">Responses closed ${fmtD(p.deadline,false)}</span>`;
+  if(!p.deadline) return `<span class="due closed">Open for responses</span>`;
+  const n=daysBetween(today,p.deadline);
+  const left=n===0?'due today':n===1?'1 day left':`${n} days left`;
+  return `<span class="due ${n<=7?'soon':''}">Respond by ${fmtD(p.deadline)} · ${left}</span>`;
+}
+function needsResponse(p){ const s=savedState(p); return !p.locked && s.done<s.n; }
+
+/* ---------- Routing ---------- */
+function route(){
+  const m=location.hash.match(/^#\/program\/([\w-]+)/);
+  const pid=m&&S.data.programs.some(p=>p.id===m[1])?m[1]:null;
+  if(pid){ S.view=pid; const p=S.data.programs.find(x=>x.id===pid); S.tab=p.kind==='call'?'calls':'programs'; }
+  else S.view=null;
+  rerender(true);
+}
+window.addEventListener('hashchange',()=>{
+  if(S.view && S.dirty.has(S.view) && !location.hash.includes(S.view)){
+    if(!confirm('You have unsaved answers for this program. Leave without saving?')){ history.replaceState(null,'','#/program/'+S.view); return; }
+    resetDraft(S.view); S.dirty.delete(S.view);
+  }
+  route();
+});
+function rerender(top){ const y=window.scrollY; render(); if(top) window.scrollTo(0,0); else window.scrollTo(0,y); }
+
+function renderWho(){
+  const d=S.data, me=d.me;
+  const name = d.instructor ? d.instructor.name : (me.staffName || me.email);
+  document.getElementById('who').innerHTML =
+    `<strong>${esc(name)}</strong>${esc(me.email)}<br>` +
+    (me.isStaff ? `<a href="/admin-dashboard">Staff dashboard</a> &nbsp; ` : '') +
+    `<a href="/cdn-cgi/access/logout">Sign out</a>`;
+}
+
+function render(){
+  renderWho();
+  const d=S.data;
+  const progs=d.programs.filter(p=>p.kind!=='call'), calls=d.programs.filter(p=>p.kind==='call');
+  const np=progs.filter(needsResponse).length, nc=calls.filter(needsResponse).length;
+  const setN=(id,n,hot,title)=>{ const el=document.getElementById(id); el.textContent=n; el.classList.toggle('hot',hot); el.title=title; };
+  setN('n-programs', np||progs.length, np>0, np?`${np} need your response`:`${progs.length} programs`);
+  setN('n-calls', nc||calls.length, nc>0, nc?`${nc} need your response`:`${calls.length} opportunities`);
+  setN('n-mine', new Set(d.assignments.map(a=>a.programId+a.sessionId)).size, false, 'Confirmed assignments');
+  document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.tab===S.tab));
+  document.getElementById('savebar').hidden = !(S.view && S.dirty.has(S.view));
+
+  const main=document.getElementById('main');
+  let html='';
+  if (d.viewingAs) html += `<div class="notice">You're previewing <strong>${esc(d.instructor ? d.instructor.name : 'an unknown instructor')}</strong>'s page as staff. Buttons are turned off here; enter answers for an instructor from the Responses tab of the dashboard.</div>`;
+  if (!d.instructor && !d.viewingAs) {
+    main.innerHTML = html + `<div class="empty"><h3>Your email isn't linked to an instructor record</h3><p>You're signed in as staff. Open the <a href="/admin-dashboard">staff dashboard</a>, or add ${esc(d.me.email)} to an instructor on the Instructors tab.</p></div>`;
+    return;
+  }
+  html += tzBar();
+  if (S.view) html += renderDetail(d.programs.find(p=>p.id===S.view));
+  else if (S.tab==='programs') html += renderList(progs, 'program');
+  else if (S.tab==='calls') html += renderList(calls, 'call');
+  else html += renderMine();
+  main.innerHTML = html;
+}
+
+/* ---------- Card list ---------- */
+function renderList(list, kind){
+  if (!list.length) return kind==='call'
+    ? `<div class="empty"><h3>No open opportunities right now</h3><p>When CLEAR Learning posts a call for volunteers, it shows up here.</p></div>`
+    : `<div class="empty"><h3>No programs are open for availability yet</h3><p>CLEAR Learning staff will email you when the next schedule is ready.</p></div>`;
+
+  const quarters=[...new Set(list.map(p=>p.quarter).filter(Boolean))];
+  let shown=list.filter(p => S.quarter==='all' || p.quarter===S.quarter);
+  if (S.show==='need') shown=shown.filter(needsResponse);
+  else if (S.show==='done') shown=shown.filter(p=>!needsResponse(p));
+  shown.sort((a,b)=> (a.locked-b.locked) || String(a.deadline||'9').localeCompare(String(b.deadline||'9')) || String(a.startDate).localeCompare(String(b.startDate)));
+
+  const openList=list.filter(p=>!p.locked);
+  const total=openList.reduce((n,p)=>n+units(p).length,0), done=openList.reduce((n,p)=>n+savedState(p).done,0);
+  const need=list.filter(needsResponse).length;
+  let h='';
+  if (kind==='program'){
+    h += `<div class="intro"><p>Open a program to mark the sessions you could teach, and the ones you can't. You can come back and change your answers any time before the response date.</p>
+      <div class="meter"><div class="meter-label">${done} of ${total} open sessions answered${need?`, ${need} program${need>1?'s':''} still need${need>1?'':'s'} a response`:''}</div><div class="meter-bar"><span style="width:${total?Math.round(done/total*100):0}%"></span></div></div></div>`;
+  } else {
+    h += `<div class="intro"><p>One-off requests where CLEAR Learning is looking for instructors to step in. Volunteering doesn't commit you; staff will confirm with you before anything is final.</p></div>`;
+  }
+  h += `<div class="filters">`;
+  if (quarters.length>1) h += `<label for="fq">Quarter</label><select id="fq" onchange="S.quarter=this.value;rerender()"><option value="all">All</option>${quarters.map(q=>`<option ${S.quarter===q?'selected':''}>${esc(q)}</option>`).join('')}</select>`;
+  h += `<label for="fs">Show</label><select id="fs" onchange="S.show=this.value;rerender()">
+    <option value="need" ${S.show==='need'?'selected':''}>Needs my response (${need})</option>
+    <option value="done" ${S.show==='done'?'selected':''}>Responded or closed (${list.length-need})</option>
+    <option value="all" ${S.show==='all'?'selected':''}>Everything (${list.length})</option></select></div>`;
+  if (!shown.length) h += S.show==='need'
+    ? `<div class="empty"><h3>You're all caught up</h3><p>You've answered everything that's open. Switch Show to Everything to review or change your answers.</p></div>`
+    : `<div class="empty"><h3>Nothing to show</h3><p>Try a different filter.</p></div>`;
+  else h += `<div class="cards">${shown.map(card).join('')}</div>`;
+  return h;
+}
+function card(p){
+  const n=p.sessions.length, MAX=7;
+  const meta=[p.format, p.location && p.location!=='Virtual' ? p.location : '', p.kind==='call'?'':(n?`${n} live session${n>1?'s':''}`:'Staffed as a whole program')].filter(Boolean).join(' · ');
+  let sl='';
+  if (n){
+    sl=`<ul class="slist">${p.sessions.slice(0,n>MAX+1?MAX:n).map(s=>`<li><span class="dt">${esc(fmtDay(s.date))}</span><span>${timeHtml(p,s.date,s.start,s.end)||'<span class="et">Time to be set</span>'}</span></li>`).join('')}${n>MAX+1?`<li class="more">+ ${n-MAX} more sessions</li>`:''}</ul>`;
+  }
+  return `<a class="card" href="#/program/${p.id}">
+    <div class="card-top">${tile(p.startDate,p.endDate)}<div><h2>${esc(p.title)}</h2>${p.cohort?`<div class="cohort">${esc(p.cohort)}</div>`:''}<div class="meta">${esc(fmtRange(p.startDate,p.endDate))}${meta?' · '+esc(meta):''}</div></div></div>
+    ${sl}
+    <div class="card-foot">${dueHtml(p)}${badge(p)}</div></a>`;
+}
+
+/* ---------- Detail ---------- */
+function answerCtl(p, sid, value, inherited){
+  const labels = LABELS[p.kind==='call'?'call':'program'];
+  const locked = p.locked || S.data.viewingAs;
+  const which = sid===null ? 'whole program' : 'this session';
+  return `<div class="answer ${inherited?'inherited':''}" role="group" aria-label="Your answer for ${which}">` +
+    Object.entries(labels).map(([v,l]) =>
+      `<button type="button" class="${v}" aria-pressed="${value===v}" ${locked?'disabled':''} onclick="setVal('${p.id}',${sid===null?'null':`'${sid}'`},'${v}')">${l}</button>`).join('') +
+    `</div>`;
+}
+function renderDetail(p){
+  const d=S.drafts[p.id], r=S.data.responses[p.id], isCall=p.kind==='call', dirty=S.dirty.has(p.id);
+  const facts=[fmtRange(p.startDate,p.endDate), p.format, p.location && p.location!=='Virtual' ? p.location : ''].filter(Boolean);
+  const editable=!p.locked && !S.data.viewingAs;
+  let h=`<a class="back" href="#/">← All ${isCall?'opportunities':'programs'}</a>
+  <section class="program" id="prog-${p.id}">
+    <div class="p-head">${tile(p.startDate,p.endDate)}<div>
+      <h2>${esc(p.title)}</h2>${p.cohort?`<div style="font-weight:600;color:var(--charcoal)">${esc(p.cohort)}</div>`:''}
+      <div class="facts">${facts.map(f=>`<span>${esc(f)}</span>`).join('')}</div>
+    </div>
+    <div class="p-actions">${badge(p)}${dirty?'<span class="badge part">Unsaved changes</span>':''}</div></div>`;
+  if (p.locked) h+=`<div class="deadline-box locked">${p.pastDeadline?`The response date (${fmtLong(p.deadline)}) has passed, so answers are locked.`:'Responses for this program are closed.'} To change something, email <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</div>`;
+  else if (p.deadline) h+=`<div class="deadline-box"><strong>Respond by ${fmtLong(p.deadline)}</strong> (11:59 PM Eastern). ${r?'You can change your answers until then.':'You can save now and change your answers any time until then.'}</div>`;
+  if (p.description) h+=`<div class="desc">${esc(p.description)}</div>`;
+
+  if (isCall){
+    h+=`<div class="whole" style="margin-top:${p.description?'14px':'0'};border-top:${p.description?'1px solid var(--line)':'0'}"><span class="lbl">Your answer</span>${answerCtl(p,null,d.program,false)}</div>`;
+  } else if (!p.sessions.length){
+    h+=`<div class="whole"><span class="lbl">Entire program</span>${answerCtl(p,null,d.program,false)}<span class="hint">This program is staffed as a whole. Note any days you can't cover in the comments.</span></div>`;
+  } else {
+    h+=`<div class="whole"><span class="lbl">Whole program</span>${answerCtl(p,null,d.program,false)}<span class="hint">Sets every session below in one click. Change any single session to override it.</span></div><ol class="sessions">`;
+    for (const s of p.sessions){
+      const own=d.sessions[s.id]||'', v=own||d.program||'', inh=!own && !!d.program;
+      const t=timeHtml(p,s.date,s.start,s.end);
+      h+=`<li class="session">${tile(s.date)}<div><div class="s-title">${esc(s.title)}</div><div class="s-time">${esc(fmtDay(s.date))}${t?', '+t:''}</div></div>
+        <div class="ans-wrap">${answerCtl(p,s.id,v,inh)}${inh?'<div class="inherit">From whole program</div>':''}</div></li>`;
+    }
+    h+=`</ol>`;
+  }
+  h+=`<div class="comment"><label for="c-${p.id}">Comments for staff</label>
+    <textarea id="c-${p.id}" ${editable?'':'disabled'} placeholder="${isCall?'Anything staff should know, like relevant experience':'Conditions or notes, like “first half only” or a session you’d especially like to lead'}" oninput="setComment('${p.id}',this.value)">${esc(d.comment)}</textarea></div>
+    <div class="p-bottom"><span class="saved-at">${r && r.updatedAt ? 'Last saved '+fmtStamp(r.updatedAt) : 'Not answered yet'}</span>
+    ${editable?`<button class="btn" ${dirty?'':'disabled'} onclick="save('${p.id}')">${r?'Save changes':'Save answers'}</button>`:''}</div></section>`;
+  return h;
+}
+
+/* ---------- Assignments ---------- */
+function renderMine(){
+  const a=S.data.assignments;
+  if(!a.length) return `<div class="empty"><h3>No confirmed assignments yet</h3><p>Once staff confirm you to teach a session or program, it shows up here with a calendar file.</p></div>`;
+  const groups=[]; for(const x of a){ let g=groups.find(g=>g.pid===x.programId); if(!g){ g={pid:x.programId,items:[]}; groups.push(g); } g.items.push(x); }
+  return groups.map(g=>{
+    const f=g.items[0], p=S.data.programs.find(x=>x.id===g.pid)||{format:f.format,timezone:f.timezone,location:f.location};
+    return `<div class="a-prog"><div class="a-head"><div><h2>${esc(f.programTitle)}</h2>${f.cohort?`<div style="font-size:13px;font-weight:600;color:var(--charcoal)">${esc(f.cohort)}</div>`:''}</div>
+      <button class="btn ghost small" onclick="getIcs('${g.pid}')">Add to calendar (.ics)</button></div>` +
+      g.items.map(x=>{
+        const whole=x.sessionId==='__program';
+        const t=whole?esc(fmtRange(x.date,x.endDate)):`${esc(fmtDay(x.date))}${x.start?', '+timeHtml(p,x.date,x.start,x.end):''}`;
+        return `<div class="assign">${tile(x.date, whole?x.endDate:null)}
+          <div><div class="s-title">${esc(x.sessionTitle)}</div><div class="s-time">${t}${x.location&&x.location!=='Virtual'?', '+esc(x.location):''}</div>
+          ${x.zoomLink?`<div class="zoom">Zoom: <a href="${esc(x.zoomLink)}" target="_blank" rel="noopener">${esc(x.zoomLink)}</a></div>`:''}</div>
+          <div class="ans-wrap"><span class="role">${esc(x.role)}</span></div></div>`;
+      }).join('') + `</div>`;
+  }).join('');
+}
+async function getIcs(pid){
+  try{
+    const r=await fetch('/api/my-ics/'+encodeURIComponent(pid)+(asId?'?as='+encodeURIComponent(asId):''),{credentials:'same-origin'});
+    if(!r.ok){ let j={}; try{ j=await r.json(); }catch{} throw new Error(j.error||`Couldn't get the calendar file (${r.status}).`); }
+    const blob=await r.blob(); const cd=r.headers.get('Content-Disposition')||''; const m=cd.match(/filename="([^"]+)"/);
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=m?m[1]:'CLEAR-assignment.ics'; a.click();
+    toast('Calendar file downloaded. Open it to add the sessions to your calendar.');
+  }catch(e){ toast(e.message); }
+}
+
+/* ---------- Edits ---------- */
+function setVal(pid, sid, v){
+  const d=S.drafts[pid];
+  if (sid===null){
+    d.program = d.program===v ? '' : v;
+  } else {
+    const own = d.sessions[sid] || '';
+    if ((own || d.program) === v) {
+      if (own) delete d.sessions[sid];        // clicking your own answer again clears it
+      else return;                            // inherited answer: change it on the whole-program row
+    } else if (v === d.program) delete d.sessions[sid];
+    else d.sessions[sid] = v;
+  }
+  S.dirty.add(pid);
+  rerender();
+}
+function setComment(pid, v){
+  S.drafts[pid].comment=v;
+  if(!S.dirty.has(pid)){ S.dirty.add(pid); rerender();
+    const t=document.getElementById('c-'+pid); t.focus(); t.setSelectionRange(v.length,v.length); }
+}
+function discard(){ if(!S.view) return; resetDraft(S.view); S.dirty.delete(S.view); rerender(); toast('Changes discarded'); }
+async function save(pid){
+  if(!pid) return;
+  const d=S.drafts[pid], p=S.data.programs.find(x=>x.id===pid);
+  const had=!!S.data.responses[pid];
+  try{
+    const res=await api('response/'+encodeURIComponent(pid),{method:'PUT',body:JSON.stringify(d)});
+    S.data.responses[pid]=res.response;
+    S.dirty.delete(pid);
+    rerender();
+    const left=units(p).length-answeredDraft(p);
+    toast((had?'Changes saved':'Answers saved')+(left?`. ${left} session${left>1?'s are':' is'} still unanswered.`:p.deadline?`. You can change them until ${fmtD(p.deadline)}.`:'.'));
+  }catch(e){ toast(e.message); }
+}
+window.addEventListener('beforeunload', e => { if (S.dirty.size){ e.preventDefault(); e.returnValue=''; } });
+
+document.getElementById('tabs').addEventListener('click', e => {
+  const t=e.target.closest('.tab'); if(!t) return;
+  if(S.view && S.dirty.has(S.view) && !confirm('You have unsaved answers for this program. Leave without saving?')) return;
+  if(S.view){ resetDraft(S.view); S.dirty.delete(S.view); }
+  S.tab=t.dataset.tab; S.view=null;
+  if(location.hash.startsWith('#/program/')) history.replaceState(null,'','#/');
+  rerender(true);
+});
+load();
+</script>
+</body>
+</html>
