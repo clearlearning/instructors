@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Program Agenda Generator | CLEAR Learning</title>
+<link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Trebuchet+MS&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --burgundy:#64092c; --burgundy-light:#8a1e4a; --gold:#dda838; --gold-light:#f0c96a; --gold-pale:#fdf4e0;
+    --blue:#084d78; --blue-light:#0a6ba8; --gray:#484848; --gray-light:#f4f4f5; --gray-mid:#e0e0e0; --white:#ffffff;
+    --pass-green:#2e7d32; --pass-bg:#e8f5e9; --fail-red:#c62828; --fail-bg:#ffebee; --warn-amber:#f57f17; --warn-bg:#fff8e1;
+    --radius:6px; --shadow:0 2px 8px rgba(0,0,0,0.08); --shadow-lg:0 4px 16px rgba(0,0,0,0.12);
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family:'Open Sans',sans-serif; color:var(--gray); background:var(--gray-light); min-height:100vh; font-size:14px; line-height:1.5; }
+  h1,h2,h3,h4 { font-family:'Trebuchet MS','Open Sans',sans-serif; }
+  .header { background:linear-gradient(135deg,var(--burgundy) 0%,var(--burgundy-light) 100%); color:var(--white); padding:24px 32px; display:flex; align-items:center; gap:16px; box-shadow:var(--shadow-lg); }
+  .header-icon { width:48px;height:48px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0; }
+  .header h1 { font-size:22px;font-weight:700; } .header p { font-size:13px;opacity:0.85;margin-top:2px; }
+  .main { max-width:1600px; margin:0 auto; padding:24px 32px 48px; }
+  .panel { background:var(--white);border-radius:var(--radius);padding:28px 32px;box-shadow:var(--shadow);margin-bottom:24px; }
+  .panel h2 { font-size:17px;color:var(--burgundy);margin-bottom:20px;display:flex;align-items:center;gap:8px; }
+  .panel-section { border:1px solid var(--gray-mid);border-radius:var(--radius);padding:20px;margin-bottom:16px; }
+  .panel-section:last-child { margin-bottom:0; }
+  .panel-section h3 { font-size:14px;color:var(--burgundy);margin-bottom:12px; }
+  .form-row { display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end; }
+  .form-row:last-child { margin-bottom:0; }
+  .form-group { display:flex;flex-direction:column;gap:5px;flex:1;min-width:200px; }
+  .form-group label { font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px; }
+  .form-group input,.form-group select,.form-group textarea { padding:10px 14px;border:1.5px solid var(--gray-mid);border-radius:var(--radius);font-size:14px;font-family:'Open Sans',sans-serif;transition:border-color 0.2s; }
+  .form-group textarea { resize:vertical;min-height:100px;line-height:1.6; }
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus { outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(8,77,120,0.1); }
+  .form-group input:disabled,.form-group select:disabled { background:#f0f0f0;color:#aaa; }
+  .inline-note { font-size:12px;color:#888;margin-top:2px;line-height:1.4; }
+
+  /* ── TABS ── */
+  .tab-bar { display:flex;gap:0;border-bottom:2px solid var(--gray-mid);margin-bottom:20px; }
+  .tab-btn { padding:10px 22px;font-size:13px;font-weight:600;font-family:'Open Sans',sans-serif;border:none;background:none;cursor:pointer;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color 0.2s,border-color 0.2s; }
+  .tab-btn.active { color:var(--burgundy);border-bottom-color:var(--burgundy); }
+  .tab-btn:hover:not(.active) { color:var(--gray); }
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; }
+
+  /* ── TIME PICKER ── */
+  .time-picker-wrap { display:flex;align-items:center;gap:6px; }
+  .time-picker-wrap select { padding:9px 10px;border:1.5px solid var(--gray-mid);border-radius:var(--radius);font-size:14px;font-family:'Open Sans',sans-serif;background:var(--white);cursor:pointer;appearance:auto; }
+  .time-picker-wrap select:focus { outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(8,77,120,0.1); }
+  .time-picker-sep { font-weight:700;color:var(--gray);font-size:16px;line-height:1; }
+
+  /* ── SEARCH SELECT ── */
+  .search-select { position:relative; }
+  .search-select input { width:100%;padding:10px 14px;border:1.5px solid var(--gray-mid);border-radius:var(--radius);font-size:14px;font-family:'Open Sans',sans-serif;background:var(--white); }
+  .search-select input:focus { outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(8,77,120,0.1); }
+  .search-select .dropdown { position:absolute;top:100%;left:0;right:0;z-index:100;background:var(--white);border:1.5px solid var(--blue);border-top:none;border-radius:0 0 var(--radius) var(--radius);max-height:300px;overflow-y:auto;box-shadow:var(--shadow-lg);display:none; }
+  .search-select .dropdown.open { display:block; }
+  .search-select .dropdown .opt { padding:9px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--gray-light); }
+  .search-select .dropdown .opt:hover { background:#e3f2fd; }
+  .search-select .dropdown .opt .tag { display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;margin-left:8px;vertical-align:middle; }
+  .search-select .dropdown .opt .tag-virtual { background:#e3f2fd;color:#1565c0; }
+  .search-select .dropdown .opt .tag-inperson { background:#e8f5e9;color:#2e7d32; }
+  .search-select .dropdown .no-match { padding:9px 14px;font-size:13px;color:#999;font-style:italic; }
+
+  /* ── CONNECTION STATUS ── */
+  .connection-status { display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius);font-size:13px; }
+  .connection-status.connected { background:var(--pass-bg);color:var(--pass-green); }
+  .connection-status.disconnected { background:var(--fail-bg);color:var(--fail-red); }
+  .connection-status.loading { background:var(--warn-bg);color:var(--warn-amber); }
+  .connection-status.idle { background:var(--gray-light);color:#888; }
+  .dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+  .dot.green { background:var(--pass-green); } .dot.red { background:var(--fail-red); }
+  .dot.amber { background:var(--warn-amber);animation:pulse 1s infinite; } .dot.gray { background:#bbb; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+  /* ── BUTTONS ── */
+  .btn { padding:11px 28px;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;font-family:'Open Sans',sans-serif;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:8px;white-space:nowrap; }
+  .btn:disabled { opacity:0.4;cursor:not-allowed; }
+  .btn-primary { background:var(--blue);color:var(--white); } .btn-primary:hover:not(:disabled) { background:var(--blue-light);box-shadow:var(--shadow); }
+  .btn-secondary { background:var(--white);color:var(--blue);border:1.5px solid var(--blue); } .btn-secondary:hover:not(:disabled) { background:rgba(8,77,120,0.05); }
+  .btn-gold { background:var(--gold);color:var(--burgundy);font-weight:700; } .btn-gold:hover:not(:disabled) { background:var(--gold-light); }
+  .btn-ghost { background:transparent;color:var(--gray);border:1.5px solid var(--gray-mid); } .btn-ghost:hover:not(:disabled) { background:var(--gray-light); }
+  .btn-danger { background:var(--white);color:var(--fail-red);border:1.5px solid var(--fail-red); } .btn-danger:hover:not(:disabled) { background:var(--fail-bg); }
+  .btn-burgundy { background:var(--burgundy);color:var(--white);font-weight:700; } .btn-burgundy:hover:not(:disabled) { background:var(--burgundy-light); }
+  .btn-outlook { background:#0078d4;color:var(--white);font-weight:700; } .btn-outlook:hover:not(:disabled) { background:#006cbf; }
+  .btn-sm { padding:7px 16px;font-size:12px; }
+  .btn-row { display:flex;gap:10px;flex-wrap:wrap;align-items:center; }
+
+  /* ── STATUS BAR ── */
+  .status-bar { padding:12px 16px;border-radius:var(--radius);font-size:13px;margin-top:14px;display:none; }
+  .status-bar.info { background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;display:block; }
+  .status-bar.success { background:var(--pass-bg);color:var(--pass-green);border:1px solid #a5d6a7;display:block; }
+  .status-bar.error { background:var(--fail-bg);color:var(--fail-red);border:1px solid #ef9a9a;display:block; }
+  .status-bar.warn { background:var(--warn-bg);color:var(--warn-amber);border:1px solid #ffe082;display:block; }
+
+  /* ── TABLE ── */
+  .schedule-wrap { overflow-x:auto;border:1px solid var(--gray-mid);border-radius:var(--radius); }
+  .schedule-table { width:100%;border-collapse:collapse;font-size:13px; }
+  .schedule-table thead th { background:var(--burgundy);color:var(--white);padding:10px 12px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.3px;position:sticky;top:0;z-index:2;white-space:nowrap; }
+  .schedule-table tbody tr { transition:background 0.15s; }
+  .schedule-table tbody tr.row-ilt { background:var(--white); }
+  .schedule-table tbody tr.row-portal { background:var(--white); }
+  .schedule-table tbody tr.row-ilt:hover,.schedule-table tbody tr.row-portal:hover { background:var(--gray-light); }
+  .schedule-table tbody tr.row-selected { outline:2px solid var(--burgundy);outline-offset:-2px; }
+  .schedule-table tbody tr.row-day-header td { background:var(--burgundy);color:var(--white);font-weight:700;font-size:13px;padding:10px 12px; }
+  .schedule-table td { padding:8px 10px;border-bottom:1px solid var(--gray-mid);vertical-align:middle; }
+  .schedule-table tbody tr:last-child td { border-bottom:none; }
+  .col-check { width:36px;padding:8px 6px 8px 12px !important; }
+  .col-check input[type="checkbox"] { width:15px;height:15px;cursor:pointer;accent-color:var(--burgundy); }
+  .tbl-input { padding:6px 10px;border:1.5px solid var(--gray-mid);border-radius:var(--radius);font-family:'Open Sans',sans-serif;font-size:13px;color:var(--gray);background:var(--white);transition:border-color 0.2s,box-shadow 0.2s; }
+  .tbl-input:focus { outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(8,77,120,0.1); }
+  .tbl-input[type="date"] { min-width:136px; }
+  .tbl-input.time-native { min-width:118px;width:118px; }
+  .tbl-input[type="text"] { width:100%;background:transparent;border-color:transparent; }
+  .tbl-input[type="text"]:hover { border-color:var(--gray-mid);background:var(--white); }
+  .tbl-input[type="text"]:focus { border-color:var(--blue);background:var(--white); }
+  .tbl-select { padding:6px 28px 6px 10px;border:1.5px solid var(--gray-mid);border-radius:var(--radius);font-family:'Open Sans',sans-serif;font-size:13px;color:var(--gray);background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239e8d83' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;cursor:pointer;min-width:130px; }
+  .tbl-select:focus { outline:none;border-color:var(--blue); }
+  .tz-tag { font-size:11px;color:#888;font-weight:600;white-space:nowrap; }
+  .cell-muted { color:#bbb;font-size:12px; }
+  .batch-bar { display:none;align-items:center;gap:12px;padding:10px 16px;background:rgba(100,9,44,.06);border:1px solid rgba(100,9,44,.15);border-radius:var(--radius);margin-bottom:12px;font-size:13px;font-weight:600;color:var(--burgundy); }
+  .batch-bar.visible { display:flex; }
+  .empty-state { text-align:center;padding:52px 24px;color:#999; }
+  .empty-icon { font-size:36px;margin-bottom:12px;opacity:.5; }
+  .empty-state p { font-size:13px;max-width:340px;margin:0 auto; }
+
+  /* ── DURATION BADGE ── */
+  .dur-badge { display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:#e3f2fd;color:#1565c0;white-space:nowrap;margin-left:6px; }
+  .dur-edited { background:#fff3e0;color:#e65100; }
+
+  /* ── PDF UPLOAD ── */
+  .upload-zone { border:2px dashed var(--gray-mid);border-radius:var(--radius);padding:36px 24px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;background:var(--white); }
+  .upload-zone:hover,.upload-zone.dragover { border-color:var(--blue);background:#f0f7ff; }
+  .upload-zone input[type="file"] { display:none; }
+  .upload-zone .uz-icon { font-size:36px;opacity:0.5;margin-bottom:10px; }
+  .upload-zone .uz-title { font-size:15px;font-weight:700;color:var(--gray);margin-bottom:6px; }
+  .upload-zone .uz-sub { font-size:12px;color:#999; }
+  .upload-progress { display:none;margin-top:16px; }
+  .upload-progress .progress-bar { height:6px;background:var(--gray-mid);border-radius:3px;overflow:hidden;margin-top:8px; }
+  .upload-progress .progress-fill { height:100%;background:var(--blue);border-radius:3px;width:0%;transition:width 0.3s; }
+
+  /* ── PREVIEW ── */
+  .preview-doc { background:var(--white);border:1px solid var(--gray-mid);border-radius:var(--radius);padding:40px 44px;font-family:'Open Sans',sans-serif;font-size:12.5px;line-height:1.55;box-shadow:var(--shadow); }
+  .preview-doc .doc-title { font-size:17px;font-weight:700;text-align:center;color:var(--burgundy);margin-bottom:6px; }
+  .preview-doc .doc-cohort { text-align:center;font-size:13px;color:var(--gray);margin-bottom:18px; }
+  .preview-doc .doc-tz { font-size:12px;font-weight:700;color:var(--gray);margin-bottom:14px; }
+  .preview-doc .doc-intro { margin-bottom:20px;color:#333;font-size:12px;line-height:1.6; }
+  .preview-doc .doc-intro p { margin-bottom:10px; }
+  .preview-doc .doc-intro h3 { font-size:13px;color:var(--burgundy);margin:14px 0 6px; }
+  .preview-doc .doc-intro strong { color:var(--burgundy); }
+  .preview-doc .doc-tw { margin-top:16px;padding:10px 14px;border-left:3px solid var(--gold);background:var(--gold-pale);font-size:12px;line-height:1.55;color:#333; }
+  .preview-doc .doc-tw strong { color:var(--burgundy); }
+  .prev-table { width:100%;border-collapse:collapse;font-size:12px; }
+  .prev-table th { background:var(--burgundy);color:var(--white);padding:8px 10px;text-align:left;font-weight:700; }
+  .prev-table td { padding:6px 10px;border:1px solid #d4c8c0;vertical-align:top;background:var(--white); }
+  .prev-table tr.day-header-row td { background:var(--burgundy);color:var(--white);font-weight:700;font-size:13px;padding:10px; }
+  .prev-table .session-title { font-weight:700;color:var(--burgundy);margin-bottom:4px; }
+  .prev-table .session-topics { margin:4px 0 0 16px;padding:0;font-size:11.5px;color:var(--gray); }
+  .prev-table .session-topics li { margin-bottom:2px; }
+  .ip-fields { background:var(--pass-bg);border:1px solid #a5d6a7;border-radius:var(--radius);padding:16px 20px;margin-top:12px; }
+  .ip-fields h4 { font-size:12px;color:var(--pass-green);margin-bottom:10px;font-weight:700; }
+  .hidden { display:none !important; }
+  .text-muted { color:#888;font-size:12px; }
+
+  /* ── DEFAULT TIME PANEL ── */
+  .default-time-panel { background:var(--gold-pale);border:1px solid #e8c96a;border-radius:var(--radius);padding:16px 20px;margin-top:12px; }
+  .default-time-panel h4 { font-size:12px;color:#7a5c00;margin-bottom:10px;font-weight:700; }
+
+  /* ── TESTING WINDOW PANEL ── */
+  .tw-panel { background:#eef4f9;border:1px solid #b6cfe2;border-radius:var(--radius);padding:16px 20px;margin-top:12px; }
+  .tw-panel h4 { font-size:12px;color:var(--blue);margin-bottom:10px;font-weight:700; }
+  .tw-toggle { display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer; }
+  .tw-toggle input { width:15px;height:15px;accent-color:var(--blue);cursor:pointer; }
+  .tw-panel .inline-note.warn { color:var(--fail-red); }
+
+  /* ── ICS TIP ── */
+  .ics-tip { font-size:12px;color:#888;margin-top:10px;padding:10px 14px;background:#e8f0fb;border-left:3px solid #0078d4;border-radius:0 var(--radius) var(--radius) 0;line-height:1.5; }
+  .ics-tip strong { color:#0078d4; }
+
+  /* ── MODE BAR / QUARTER BATCH ── */
+  .mode-bar { display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap; }
+  .mode-btn { padding:12px 22px;border:1.5px solid var(--gray-mid);background:var(--white);border-radius:var(--radius);font-family:'Open Sans',sans-serif;font-size:14px;font-weight:700;color:var(--gray);cursor:pointer; }
+  .mode-btn:hover { border-color:var(--burgundy); }
+  .mode-btn.active { background:var(--burgundy);border-color:var(--burgundy);color:var(--white); }
+  .mode-btn small { display:block;font-weight:400;font-size:11px;opacity:.85; }
+  .batch-edit { display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--gold-pale);border:1px solid #e8c96a;border-left:4px solid var(--gold);border-radius:var(--radius);padding:12px 16px;margin-bottom:20px;font-size:13px; }
+  .batch-edit span { flex:1;min-width:260px; }
+  .batch-filters { display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px; }
+  .batch-filters label { display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888;margin-bottom:4px; }
+  .batch-wrap { overflow:auto;border:1px solid var(--gray-mid);border-radius:var(--radius);max-height:70vh; }
+  .batch-table td { vertical-align:top; }
+  .batch-table tr.skip td { opacity:.5; }
+  .batch-table tr.bad td { background:#fff8e1; }
+  .batch-table .ck { width:18px;height:18px;accent-color:var(--burgundy); }
+  .batch-table .key { font-weight:700;color:var(--burgundy);white-space:nowrap; }
+  .batch-table .sub { font-size:11px;color:#888; }
+  .batch-table select, .batch-table input[type=text] { font-size:12px; }
+  .bt-ok { color:var(--pass-green);font-weight:700;font-size:12px;white-space:nowrap; }
+  .bt-warn { color:var(--warn-amber);font-weight:700;font-size:12px; }
+  .bt-warn ul { margin:4px 0 0 16px;font-weight:400;color:var(--gray); }
+  .bt-edited { display:inline-block;font-size:10px;font-weight:700;background:#e3f2fd;color:#1565c0;padding:1px 7px;border-radius:3px;margin-left:4px; }
+  .bt-actions { display:flex;gap:4px;flex-wrap:wrap; }
+  .bt-actions .btn { padding:5px 10px;font-size:11px; }
+
+  @media(max-width:768px){.header{padding:16px;}.main{padding:16px;}.panel{padding:16px;}.form-row{flex-direction:column;}}
+  @media print{.header{background:var(--burgundy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}.panel{display:none;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-icon">&#128197;</div>
+  <div style="flex:1"><h1>Program Agenda Generator</h1><p>Build one program at a time, or a whole quarter from the TeamGantt export, then send it to the instructor availability portal</p></div>
+  <a href="/admin-dashboard" style="color:#fff;font-weight:700;font-size:13px;white-space:nowrap">Staff dashboard &rarr;</a>
+</div>
+<div class="main">
+  <div class="mode-bar" role="tablist">
+    <button class="mode-btn active" id="modeBtnSingle" onclick="setMode('single')">&#128196; Single program<small>One agenda, PDF and calendar file</small></button>
+    <button class="mode-btn" id="modeBtnBatch" onclick="setMode('batch')">&#128467; Quarter batch<small>Every cohort from TeamGantt at once</small></button>
+  </div>
+
+  <!-- ══ QUARTER BATCH ══ -->
+  <div id="batchMode" class="hidden">
+    <div class="panel">
+      <h2>&#128467; Quarter batch from TeamGantt</h2>
+      <div class="panel-section">
+        <h3>1. Load the TeamGantt export</h3>
+        <div class="upload-zone" id="batchZone" onclick="document.getElementById('batchFile').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');if(event.dataTransfer.files[0])loadBatchFile(event.dataTransfer.files[0])">
+          <input type="file" id="batchFile" accept=".csv,text/csv" onchange="if(this.files[0])loadBatchFile(this.files[0]);this.value=''">
+          <div class="uz-icon">&#128202;</div>
+          <div class="uz-title">Drop the TeamGantt CSV export here, or click to browse</div>
+          <div class="uz-sub">In TeamGantt, open the CL Programs project and export to CSV. Every cohort (the dated groups like &ldquo;2027.01.07 NCIT B CAN V Open&rdquo;) is matched to its program template, and each task date lands on the matching live session.</div>
+        </div>
+        <div id="batchStatus" class="status-bar"></div>
+      </div>
+      <div class="panel-section hidden" id="batchCohortsSec">
+        <h3>2. Check cohorts and set start times</h3>
+        <div class="batch-filters">
+          <div><label for="batchQuarter">Show</label><select id="batchQuarter" class="tbl-select" onchange="onBatchQuarter(this.value)"></select></div>
+          <div><label for="batchRound">Quarter label in the portal</label><input type="text" id="batchRound" class="tbl-input" style="border-color:var(--gray-mid);background:#fff;width:120px" onchange="BATCH.round=this.value.trim();saveBatch()" placeholder="Q1 2027"></div>
+          <div><label for="batchAllTime">Start time for every virtual cohort</label><div style="display:flex;gap:6px"><select id="batchAllTime" class="tbl-select"></select><button class="btn btn-ghost btn-sm" onclick="applyBatchTimeAll()">Apply to all</button></div></div>
+          <div style="flex:1"></div>
+          <div class="text-muted" id="batchCount"></div>
+        </div>
+        <div class="batch-wrap"><table class="schedule-table batch-table"><thead><tr><th></th><th>TeamGantt cohort</th><th>Program template</th><th>Dates</th><th>Start time (ET)</th><th>Cohort label</th><th>Check</th><th></th></tr></thead><tbody id="batchBody"></tbody></table></div>
+        <p class="text-muted" style="margin-top:10px">Edit opens a cohort in the single-program editor so you can add instructors, Zoom links, or fix a session; Save to batch keeps those changes for everything below. Times are Eastern for virtual cohorts and local for in-person ones.</p>
+      </div>
+      <div class="panel-section hidden" id="batchExportSec">
+        <h3>3. Generate</h3>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="batchPrintAgendas()">&#11015; Print all program agendas</button>
+          <button class="btn btn-outlook" onclick="batchZipIcs()">&#128197; Download all calendar files (.zip)</button>
+          <button class="btn btn-burgundy" onclick="batchSend()">&#11014; Send to availability portal</button>
+          <button class="btn btn-ghost btn-sm" onclick="batchPackage()" title="Backup copy of what would be sent">Download package (.json)</button>
+        </div>
+        <div class="ics-tip"><strong>Agendas:</strong> all ticked cohorts open in one print window, one agenda per page. Choose Save as PDF for a combined file, or use the Agenda button on a row for a single cohort.<br><strong>Send to availability portal:</strong> new cohorts arrive in the <a href="/admin-dashboard" target="_blank">staff dashboard</a> as drafts, with the response date set 30 days before the first live session. Sending again later (say, after adding Zoom links) updates the same programs without losing anyone's answers.</div>
+        <div id="batchGenStatus" class="status-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SINGLE PROGRAM ══ -->
+  <div id="singleMode">
+  <div class="batch-edit hidden" id="batchEditBar"><span id="batchEditTxt"></span><button class="btn btn-burgundy btn-sm" onclick="saveEditToBatch()">&#10003; Save changes to batch</button><button class="btn btn-ghost btn-sm" onclick="leaveBatchEdit(false)">Back to batch without saving</button></div>
+
+  <!-- ══ SETUP PANEL ══ -->
+  <div class="panel">
+    <h2>&#9881;&#65039; Setup</h2>
+
+    <!-- API -->
+    <div class="panel-section" id="apiSection">
+      <h3>API Connection <span style="font-weight:400;font-size:12px;color:#888;">(optional)</span></h3>
+      <div class="form-row">
+        <div class="form-group" style="flex:2;"><label>Worker URL</label><input type="text" id="workerUrl" value="https://clear-lms-proxy.avance.workers.dev"><span class="inline-note">Pre-configured. Only needed if verifying live course data.</span></div>
+        <div class="form-group" style="flex:1;"><label>Auth Token</label><input type="password" id="authToken" placeholder="Enter access token (first time only)"></div>
+        <div class="form-group" style="flex:0 0 auto;"><label>&nbsp;</label><button class="btn btn-sm btn-secondary" onclick="doConnect()">Test Connection</button></div>
+      </div>
+      <div class="connection-status idle" id="connectionStatus"><span class="dot gray"></span> API connection is optional. Course data is built into this tool.</div>
+    </div>
+
+    <!-- STEP 1 with tabs -->
+    <div class="panel-section">
+      <h3>1. Select Program</h3>
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tabBtnNew" onclick="switchTab('new')">&#128196; New Program</button>
+        <button class="tab-btn" id="tabBtnImport" onclick="switchTab('import')">&#11014; Import Existing Agenda PDF</button>
+      </div>
+
+      <!-- Tab: New Program -->
+      <div class="tab-pane active" id="tabNew">
+        <div class="form-row">
+          <div class="form-group"><label>Program Course</label><div class="search-select"><input type="text" id="courseInput" placeholder="Type to search programs..." autocomplete="off"><div class="dropdown" id="courseDropdown"></div></div><input type="hidden" id="courseValue"><span class="text-muted" id="courseCount"></span></div>
+        </div>
+        <div id="courseStatus" class="status-bar"></div>
+      </div>
+
+      <!-- Tab: Import PDF -->
+      <div class="tab-pane" id="tabImport">
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('pdfFileInput').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <input type="file" id="pdfFileInput" accept=".pdf" onchange="onFileSelected(event)">
+          <div class="uz-icon">&#128196;</div>
+          <div class="uz-title">Drop a Program Agenda PDF here, or click to browse</div>
+          <div class="uz-sub">Upload a PDF previously generated by this tool. All fields will be populated automatically — then just add instructor names.</div>
+        </div>
+        <div class="upload-progress" id="uploadProgress">
+          <div style="font-size:13px;color:var(--blue);font-weight:600;" id="uploadStatusText">Reading PDF…</div>
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+        <div id="importStatus" class="status-bar"></div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Program Details -->
+    <div class="panel-section">
+      <h3>2. Program Details</h3>
+      <div class="form-row">
+        <div class="form-group" style="flex:2;"><label>Program Title (appears on PDF)</label><input type="text" id="programTitle" placeholder="Auto-filled when you select a program"></div>
+        <div class="form-group" style="flex:1;"><label>Cohort / Session</label><input type="text" id="cohortName" placeholder="e.g. Spring 2026"></div>
+        <div class="form-group" style="flex:0 0 180px;"><label>All Times In</label><select id="timezone" onchange="onTzChange()"><option value="ET">Eastern Time (ET)</option><option value="CT">Central Time (CT)</option><option value="MT">Mountain Time (MT)</option><option value="PT">Pacific Time (PT)</option><option value="UTC">UTC</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Introductory Text <span style="font-weight:400;text-transform:none;letter-spacing:0;">(HTML formatting preserved in preview &amp; PDF)</span></label><textarea id="introText" rows="6" placeholder="Auto-filled when you select a program"></textarea></div>
+      </div>
+
+      <!-- Default start time for virtual programs -->
+      <div class="default-time-panel" id="defaultTimePanelVirtual">
+        <h4>&#9200; Default Session Start Time</h4>
+        <div class="form-row" style="margin-bottom:0;">
+          <div class="form-group" style="flex:0 0 auto;">
+            <label>Start Time (applied to all live sessions)</label>
+            <div class="time-picker-wrap">
+              <select id="defHour" onchange="applyDefaultTime()">
+                <option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                <option value="9">9</option><option value="10">10</option><option value="11">11</option>
+                <option value="12">12</option><option value="1">1</option><option value="2">2</option>
+                <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+              </select>
+              <span class="time-picker-sep">:</span>
+              <select id="defMin" onchange="applyDefaultTime()">
+                <option value="00">00</option><option value="15">15</option>
+                <option value="30">30</option><option value="45">45</option>
+              </select>
+              <select id="defAmPm" onchange="applyDefaultTime()">
+                <option value="AM">AM</option><option value="PM" selected>PM</option>
+              </select>
+            </div>
+            <span class="inline-note">End times auto-calculated from session durations. Edit individual rows to override.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Testing window (NCIT Basic / Canadian Basic / Specialized virtual only) -->
+      <div class="tw-panel hidden" id="twPanel">
+        <h4>&#128221; Final Exam Testing Window</h4>
+        <label class="tw-toggle"><input type="checkbox" id="twEnabled" checked onchange="refreshTestingWindow()"> Include the testing window on the program agenda and in the calendar invites</label>
+        <div class="form-row" style="margin:12px 0 6px;">
+          <div class="form-group" style="flex:0 0 260px;"><label>Window Opens</label><input type="text" id="twOpens" disabled placeholder="Set the review session date"></div>
+          <div class="form-group" style="flex:0 0 260px;"><label>Window Closes (midnight ET)</label>
+            <div style="display:flex;gap:6px;align-items:center;"><input type="date" id="twClose" onchange="onTwCloseChange()" style="flex:1;min-width:0;"><button class="btn btn-ghost btn-sm" onclick="resetTwClose()" title="Recalculate from the review session date">&#8635;</button></div>
+          </div>
+        </div>
+        <span class="inline-note" id="twNote"></span>
+      </div>
+
+      <!-- In-person settings -->
+      <div id="ipFields" class="ip-fields hidden">
+        <h4>&#128205; In-Person Program Settings</h4>
+        <div class="form-row">
+          <div class="form-group" style="flex:0 0 200px;"><label>Start Date (Day 1)</label><input type="date" id="ipStartDate" onchange="onIpSettingChange()"></div>
+          <div class="form-group" style="flex:0 0 160px;"><label>Daily Start Time</label><select id="ipStartTime" onchange="onIpSettingChange()"><option value="07:00">7:00 AM</option><option value="07:30">7:30 AM</option><option value="08:00" selected>8:00 AM</option><option value="08:30">8:30 AM</option><option value="09:00">9:00 AM</option><option value="09:30">9:30 AM</option><option value="10:00">10:00 AM</option></select></div>
+          <div class="form-group" style="flex:1;"><label>Location</label><input type="text" id="ipLocation" placeholder="e.g. Austin, TX"></div>
+        </div>
+        <span class="inline-note">Set Day 1 date and daily start time. All session times auto-adjust based on the start time offset from the default. Assign instructors per session in the table below. You can also edit any session's Start or End time directly for a custom schedule — a "custom" tag and reset button will appear on rows you've adjusted.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCHEDULE PANEL ══ -->
+  <div class="panel" id="schedulePanel">
+    <h2>&#128197; Schedule Sessions <span class="text-muted" id="iltCount" style="margin-left:8px;"></span></h2>
+    <div class="panel-section hidden" id="programOrderPanel" style="margin-bottom:16px;">
+      <h3>Program Order</h3>
+      <span class="inline-note" style="display:block;margin-bottom:10px;">Set the order these four programs run in &mdash; the sessions below will follow this order (Welcome always comes first).</span>
+      <div id="programOrderList"></div>
+    </div>
+    <div class="batch-bar" id="batchBar"><span id="batchCount">0 rows selected</span><button class="btn btn-sm btn-danger" onclick="removeSelected()">&#128465; Remove Selected</button><button class="btn btn-sm btn-ghost" onclick="clearSelection()">&#10005; Deselect All</button></div>
+    <div class="empty-state" id="scheduleEmpty"><div class="empty-icon">&#128197;</div><p>Select a program above to load the schedule template with the correct sessions.</p></div>
+    <div id="scheduleTableWrap" class="hidden">
+      <p class="text-muted" id="scheduleHint" style="margin-bottom:10px;"></p>
+      <div class="schedule-wrap">
+        <table class="schedule-table" id="agendaTable">
+          <thead id="agendaThead"></thead>
+          <tbody id="agendaBody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="addManualRow()" id="btnAddRow">+ Add Row</button>
+    </div>
+  </div>
+
+  <!-- ══ PREVIEW & EXPORT ══ -->
+  <div class="panel">
+    <h2>&#128196; Preview &amp; Export</h2>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="generatePreview()">&#128065; Preview Agenda</button>
+      <button class="btn btn-gold" onclick="exportPDF()">&#11015; Program Agenda PDF</button>
+      <button class="btn btn-burgundy" onclick="exportInstructorPDF()">&#128101; Instructor Agenda PDF</button>
+      <button class="btn btn-outlook" onclick="exportOutlookICS()">&#128197; Export Instructor Calendar Invites (.ics)</button>
+      <button class="btn btn-secondary" onclick="sendSingle()" title="Adds this program to the instructor availability portal as a draft, or updates it if it was sent before">&#11014; Send to availability portal</button>
+    </div>
+    <div class="ics-tip">
+      <strong>How to use the .ics file:</strong> Download, then attach it to your instructor materials email. Instructors double-click the attachment in Outlook — one click to add all their sessions to their calendar. Each invite is set to start 15 minutes before the agenda time for setup and tech check. For virtual sessions, paste the Zoom link in the table above and it will appear in the invite's Location field. For NCIT Basic and Specialized programs, the testing window is added as an all-day event marked Free.
+    </div>
+    <div id="previewSection" class="hidden" style="margin-top:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--gray-light);border-radius:var(--radius) var(--radius) 0 0;border:1px solid var(--gray-mid);border-bottom:none;">
+        <h3 style="font-size:14px;color:var(--burgundy);">Document Preview</h3>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('previewSection').classList.add('hidden')">&#10005; Close</button>
+      </div>
+      <div id="previewContent" class="preview-doc" style="border-top:none;border-radius:0 0 var(--radius) var(--radius);"></div>
+    </div>
+  </div>
+  </div><!-- /singleMode -->
+</div>
+
+<!-- PDF.js for import -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+'use strict';
+if(typeof pdfjsLib!=='undefined') pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ═══════════════════════════════════════════════════════
+// INSTRUCTOR LIST
+// ═══════════════════════════════════════════════════════
+const INSTRUCTORS=[
+'Anderegg, Karen','Barton, Andrew','Betteridge, Lise','Chambers, Sara',
+'Cooley, Mandi','Crumley, John','Curley, Stephen','deFoy, Carmen',
+'Deforest, Denise','DeLuca, Ryan','DeSousa, Lisa','Eichrodt, Sean',
+'Erikson, Marcus','Jenkins, Robin','Kay, David','Keirstead, Graeme',
+'Pfiefer, Judy','Robinson, Jan','Salvatori, Michael','Stansfield, Katherine',
+'Thibert, Lena','Thompson, David (Eric)','Thompson-May, Brett',
+'Verge, Vicki','Wade, Amigo','Wilkie, Kathy','Williams, Deanna'
+];
+
+// ═══════════════════════════════════════════════════════
+// SESSION DURATIONS (minutes) keyed by displayName
+// ═══════════════════════════════════════════════════════
+const SESSION_DURATIONS={
+  'Welcome & Introduction Session':60,
+  'Welcome and Introduction':60,
+  'Investigative Process - Instructor-Led Session':120,
+  'Investigative Process - Instructor Led Session':120,
+  'Interviewing Techniques - Instructor-Led Session':180,
+  'Week One Q & A - Instructor-Led Session':60,
+  'Week One Q & A Session with Instructor':60,
+  'Report Writing - Instructor-Led Session':180,
+  'Testifying in Administrative and Criminal Proceedings - Instructor-Led Session':180,
+  'Program Review & Exam Information - Instructor-Led Session':120,
+  'Program Review & Final Exam Information - Live Session':120,
+  'Live Session - Cognitive Memory Recall Technique (CMRT)':120,
+  'Live Session - Behavioral Analysis & Questioning':150,
+  'Live Session - Observation Skills':120,
+  'Live Session - Program Review & Test Prep':90,
+  'Workshop One':120,
+  'Workshop Two':120,
+  'Session One':120,
+  'Session Two':120,
+  'Developing a Professional Attitude: Ethics for the Regulatory Investigator':180,
+  'Communications and the Art of Persuasion':180,
+  'Module 1: Instructor-Led Session':180,
+  'Module 2: Instructor-Led Session':120,
+  'Module 3: Instructor-Led Session':90,
+  'Module 4: Instructor-Led Session':180,
+  'Roles of a Board Chair':60,
+  'Running Effective Board Meetings':60,
+  'Challenges':60,
+  'Staff Interactions':60,
+  'Module 1 Live Session Link':180,
+  'Module 2 Live Session Link':180,
+  'Module 3 Live Session Link':180,
+};
+
+const COURSE_DURATION_OVERRIDES={
+  138:{
+    'Module 1: Instructor-Led Session':150,
+    'Module 2: Instructor-Led Session':120,
+    'Module 3: Instructor-Led Session':150,
+    'Module 4: Instructor-Led Session':180,
+  },
+  142:{
+    'Module 1: Instructor-Led Session':180,
+    'Module 2: Instructor-Led Session':120,
+    'Module 3: Instructor-Led Session':90,
+  },
+  129:{
+    'Live Session - Module Review':150,
+  }
+};
+
+function getDuration(courseId,displayName,rowIndexAmongILT){
+  const override=COURSE_DURATION_OVERRIDES[courseId];
+  if(override&&override[displayName]!==undefined)return override[displayName];
+  if(courseId===129&&displayName==='Live Session - Module Review'&&rowIndexAmongILT>0)return 90;
+  return SESSION_DURATIONS[displayName]||null;
+}
+
+// ═══════════════════════════════════════════════════════
+// COURSE DATABASE
+// testingWindow: {reviewLabel} — enables the final exam testing window
+// (agenda note + all-day .ics event). reviewLabel is the session name used in the note.
+// ═══════════════════════════════════════════════════════
+const COURSES=[
+{id:142,name:'Advanced Concepts in Regulatory Governance - Online Program',pdfTitle:'Advanced Concepts in Regulatory Governance \u2014 Schedule',isInPerson:false,hasTopics:true,lastColHeader:'Session Details',
+introHtml:'<p>This schedule contains live video conference sessions with required attendance at the date and time specified below, self-paced content must be completed prior to the completion of the program. It is suggested that self-study content be completed prior to the associated live session.</p><p>With the exception of the Welcome &amp; Introduction, the invitations to all live instructor-led sessions, and self-paced content will be found on the <strong>CLEAR Learning Education Platform</strong>.</p><p>Attendees will need an individual account to access this platform. Sharing login information is strictly prohibited. All live and self-paced modules, and knowledge assessments must be completed to receive certification of completion.</p>',
+rows:[
+{platform:'Zoom',displayName:'Welcome & Introduction Session',isILT:true,title:null,topicsHtml:null},
+{platform:'Zoom',displayName:'Module 1: Instructor-Led Session',isILT:true,title:'Module 1: Striving for Governance Excellence: Leadership and the Public Trust',topicsHtml:'<ul><li>Concepts of Public Interest</li><li>Avoiding Hazards</li><li>Board Members as Leaders</li></ul>'},
+{platform:'Zoom',displayName:'Module 2: Instructor-Led Session',isILT:true,title:'Module 2: Evaluation',topicsHtml:'<ul><li>Define Evaluation</li><li>Evaluation Methods</li><li>Results vs Process Tools</li><li>Considering Impact</li></ul>'},
+{platform:'Zoom',displayName:'Module 3: Instructor-Led Session',isILT:true,title:'Module 3: Public Reporting',topicsHtml:'<ul><li>Overall Purpose</li><li>Important Attributes</li><li>Common Challenges</li><li>Ways of Reporting</li><li>Program Review</li></ul>'}]},
+{id:128,name:'Canadian NCIT - Basic Online Program',pdfTitle:'Canadian NCIT - Basic Online Program \u2014 Schedule',isInPerson:false,hasTopics:false,lastColHeader:'Session Name',
+testingWindow:{reviewLabel:'Program Review & Test Prep',code:'NCIT B CAN'},
+introHtml:'<p>This schedule contains live video conference sessions with required attendance at the date and time specified below, self-paced content must be completed prior to the completion of the program. It is suggested that self-study content be completed prior to the associated live session.</p><p>With the exception of the Welcome &amp; Introduction, the links to all live instructor-led sessions, and all self-paced content will be found on the <strong>CLEAR Learning Education Platform</strong>.</p><p>Attendees will need an individual account to access this platform. Sharing login information is strictly prohibited. All live and self-paced modules, and knowledge assessments must be completed to be eligible to take the final exam and be eligible for CLEAR certification.</p>',
+rows:[{platform:'Zoom',displayName:'Welcome & Introduction Session',isILT:true},{platform:'Learning Portal',displayName:'Professional Conduct - Self-Study',isILT:false},{platform:'Learning Portal',displayName:'Principles of Administrative Law - Self-Study',isILT:false},{platform:'Zoom',displayName:'Investigative Process - Instructor Led Session',isILT:true},{platform:'Learning Portal',displayName:'Principles of Evidence - Self-Study',isILT:false},{platform:'Learning Portal',displayName:'Evidence Collection, Tagging, and Storage - Self-Study',isILT:false},{platform:'Zoom',displayName:'Interviewing Techniques - Instructor-Led Session',isILT:true},{platform:'Zoom',displayName:'Week One Q & A Session with Instructor',isILT:true},{platform:'Learning Portal',displayName:'Investigator Safety - Self-Study',isILT:false},{platform:'Learning Portal',displayName:'Overview of Inspections and Inspection Procedures - Self-Study',isILT:false},{platform:'Zoom',displayName:'Report Writing - Instructor-Led Session',isILT:true},{platform:'Zoom',displayName:'Testifying in Administrative and Criminal Proceedings - Instructor-Led Session',isILT:true},{platform:'Zoom',displayName:'Program Review & Final Exam Information - Live Session',isILT:true}]},
+{id:146,name:'Communications and the Art of Persuasion - Online Program',pdfTitle:'Communications and the Art of Persuasion \u2014 Schedule',isInPerson:false,hasTopics:false,lastColHeader:'Session Name',
+introHtml:'<p>This program will be delivered virtually. Program information will be emailed to each participant one week before the session. An eBook version of the program manual will be provided, which participants can either print or save to their desktop for easy access and review.</p><p><strong>Completion Requirement:</strong> Participants must attend the live virtual session to receive completion. This session is not recorded, nor will a recording be provided.</p><h3>Event Details:</h3><p>The ability to communicate effectively is a key component of being a successful investigator.</p><p>Effective communication involves conveying your thoughts and positions to others as clearly, concisely, and unambiguously as possible and in turn receiving information that others are providing to you with as little distortion and misunderstanding as possible. Good communication skills can serve to improve operational efficiency and productivity in the workplace and increase the confidence level of employees. On the other hand, poor communication skills may cause message interpretation or misunderstanding and lead to roadblocks in getting desired information.</p><p>This session will introduce participants to key components for effective communication including preparation and delivery techniques, the use of language and physicality to get your point across, listening skills, and the use of presentation aids.</p>',
+rows:[{platform:'Zoom',displayName:'Communications and the Art of Persuasion',isILT:true}]},
+{id:157,name:'Developing a Professional Attitude: Ethics for the Regulatory Investigator - Online Program',pdfTitle:'Developing a Professional Attitude: Ethics for the Regulatory Investigator \u2014 Schedule',isInPerson:false,hasTopics:false,lastColHeader:'Session Name',
+introHtml:'<p>This program will be delivered virtually. Program information will be emailed to each participant one week before the session. An eBook version of the program manual will be provided, which participants can either print or save to their desktop for easy access and review.</p><p><strong>Completion Requirement:</strong> Participants must attend the live virtual session to receive completion. This session is not recorded, nor will a recording be provided.</p><h3>Event Details:</h3><p>Investigators are called upon to apply professional judgment to ever-changing factual situations as they perform their duties. These discretionary decisions coupled with the authority possessed by an investigator during the investigatory stage can have very real consequences for all parties involved including the Regulant, the department or agency the investigator represents, and the investigator. There is a need to ensure that the investigator understands the importance of maintaining high ethical standards in carrying out his or her duties including the exercise of professional judgment. This course is designed to provide students with an advanced understanding of guidelines for ethical behavior as a regulatory investigator.</p><p>The course will (i) review models for professional conduct and behavior by examining ethical standards established by statute or governmental policy and professional ethical standards, (ii) explore the concepts of conflict of interests and scope of liability as they relate to public employment in general and the work of the investigator in specific, and (iii) consider practical applications of ethical dilemmas through case studies and scenarios.</p>',
+rows:[{platform:'Zoom',displayName:'Developing a Professional Attitude: Ethics for the Regulatory Investigator',isILT:true}]},
+{id:169,name:'Drug Diversion Investigations',pdfTitle:'Drug Diversion Investigations \u2014 Schedule',isInPerson:false,hasTopics:true,lastColHeader:'Session Details',
+introHtml:'<p>This schedule contains live video conference sessions with required attendance at the date and time specified below.</p><p>With the exception of the Welcome &amp; Introduction, the links to all live instructor-led sessions will be found on the <strong>CLEAR Learning Education Platform</strong>.</p><p>Attendees will need an individual account to access this platform. Sharing login information is strictly prohibited. All coursework must be completed by the end of the program to receive the certificate of completion.</p>',
+rows:[{platform:'Zoom',displayName:'Welcome & Introduction Session',isILT:true},{platform:'Zoom',displayName:'Session One',isILT:true,title:'Session One',topicsHtml:'<ul><li>Defining drug diversion investigations</li><li>Accountability systems</li><li>Detection and Prevention</li></ul>'},{platform:'Zoom',displayName:'Session Two',isILT:true,title:'Session Two',topicsHtml:'<ul><li>Facility investigations</li><li>Investigative tools</li><li>Completing an investigation</li></ul>'}]},
+{id:138,name:'Executive Leadership Program for Regulators (Online Training)',pdfTitle:'Executive Leadership Program for Regulators \u2014 Schedule',isInPerson:false,hasTopics:true,lastColHeader:'Session Details',
+introHtml:'<p>This schedule contains live video conference sessions with required attendance at the date and time specified below, self-paced content must be completed prior to the completion of the program. Each module consists of self-paced content and an instructor-led live session. It is suggested that self-paced content be completed prior to the associated live session.</p><p>This program begins with a pre-work component to be completed on the <strong>CLEAR Learning Education Platform</strong>.</p><p>With the exception of the Welcome &amp; Introduction, the links to all live instructor-led sessions, and self-paced content will be found on the <strong>CLEAR Learning Education Platform</strong>.</p><p>Attendees will need an individual account to access this platform. Sharing login information is strictly prohibited. All live and self-paced modules, and knowledge assessments must be completed to receive certification of completion.</p>',
+rows:[{platform:'Zoom',displayName:'Welcome & Introduction Session',isILT:true},{platform:'Zoom',displayName:'Module 1: Instructor-Led Session',isILT:true,title:'Module 1: Regulatory Leadership',topicsHtml:'<ul><li>Leadership and Emotional Intelligence</li><li>Situational Leadership</li><li>Leading with Authority</li><li>Problematic Leadership Practices</li><li>Characteristics of Regulatory Leadership</li></ul>'},{platform:'Zoom',displayName:'Module 2: Instructor-Led Session',isILT:true,title:'Module 2: Organizational Culture and Change',topicsHtml:'<ul><li>Organizational Structure</li><li>Organizational Culture</li><li>Leading Organizational Change</li><li>Organizational Effectiveness</li></ul>'},{platform:'Zoom',displayName:'Module 3: Instructor-Led Session',isILT:true,title:'Module 3: Creating a Positive Regulatory Reputation through Public Outreach and Relations',topicsHtml:'<ul><li>Overarching Considerations</li><li>Transparency and its Link to Trust</li><li>Strategies for Meaningful Management</li><li>Media Relations</li><li>Effective Crisis Communication</li></ul>'},{platform:'Zoom',displayName:'Module 4: Instructor-Led Session',isILT:true,title:'Module 4: Creating an Appropriate Relationship with Stakeholders and the Art of Negotiation',topicsHtml:'<ul><li>Create an Appropriate Relationship with Stakeholders</li><li>Appropriate Roles and Relationships between Staff and Board Members</li><li>The Art of Negotiation</li></ul>'}]},
+{id:165,name:'Getting the Most From Your Board',pdfTitle:'Getting the Most From Your Board \u2014 Schedule',isInPerson:false,hasTopics:false,lastColHeader:'Session Name',
+introHtml:'<p>This program will be delivered virtually. Program information will be emailed to each participant one week before the session. An eBook version of the program manual will be provided, which participants can either print or save to their desktop for easy access and review.</p><p><strong>Completion Requirement:</strong> Participants must attend the live virtual sessions to receive completion. Sessions will be recorded and made available to attendees who are unable to attend a live session; however, we ask that all attendees make every effort to attend the live sessions so that they receive the most value from the program.</p><p><strong>Note:</strong> Recordings are only made available to those registered for this specific event and are deleted once the event is complete.</p>',
+rows:[{platform:'Zoom',displayName:'Welcome & Introduction Session',isILT:true},{platform:'Zoom',displayName:'Roles of a Board Chair',isILT:true},{platform:'Zoom',displayName:'Running Effective Board Meetings',isILT:true},{platform:'Zoom',displayName:'Challenges',isILT:true},{platform:'Zoom',displayName:'Staff Interactions',isILT:true}]},
+{id:143,name:'Investigating Reports of Sexual Misconduct - Online Program',pdfTitle:'Investigating Reports of Sexual Misconduct \u2014 Schedule',isInPerson:false,hasTopics:true,lastColHeader:'Session Details',
+introHtml:'<p>This schedule contains live video conference sessions with required attendance at the date and time specified below, self-paced content must be completed prior to the completion of the program. It is suggested that self-paced content be completed prior to the first live workshop.</p><p>With the exception of the Welcome &amp; Introduction, the links to all live instructor-led sessions, and self-paced content will be found on the <strong>CLEAR Learning Education Platform</strong>.</p><p>Attendees will need an individual account to access this platform. Sharing login information is strictly prohibited. All live and self-paced modules must be completed to receive certification of completion.</p>',
+rows:[{platform:'Zoom',displayName:'Welcome & Introduction Session',isILT:true},{platform:'Zoom',displayName:'Workshop One',isILT:true,title:'Workshop Session One',topicsHtml:'<ul><li>Defining sexual misconduct</li><li>Types, trends and statistics regarding sexual misconduct</li><li>Interviewing persons of interest</li></ul>'},{platform:'Zoom',displayName:'Workshop Two',isILT:true,title:'Workshop Session Two',topicsHtml:'<ul><li>Types of evidence</li><li>Vicarious trauma and investigator self-care</li><li>Interviewing complainants and witnesses</li></ul>'}]},
+{id:'ncit-workshop-series',name:'NCIT Workshop Series',pdfTitle:'NCIT Workshop Series \u2014 Schedule',isInPerson:false,hasTopics:true,lastColHeader:'Session Details',
+introHtml:'<p>This schedule contains live video conference sessions with required attendance at the date and time specified below. The NCIT Workshop Series combines four regulatory training programs \u2014 Drug Diversion Investigations, Investigating Reports of Sexual Misconduct, Communications and the Art of Persuasion, and Developing a Professional Attitude: Ethics for the Regulatory Investigator \u2014 into a single cohort schedule.</p><p>With the exception of the Welcome &amp; Introduction, the links to all live sessions will be found on the <strong>CLEAR Learning Education Platform</strong>.</p><p>Attendees will need an individual account to access this platform. Sharing login information is strictly prohibited. All live sessions must be completed to receive certification of completion.</p>',
+programBlocks:[
+  {key:'drug-diversion',label:'Drug Diversion Investigations'},
+  {key:'sexual-misconduct',label:'Investigating Reports of Sexual Misconduct'},
+  {key:'communications',label:'Communications and the Art of Persuasion'},
+  {key:'ethics',label:'Developing a Professional Attitude: Ethics for the Regulatory Investigator'}
+],
+rows:[
+  {platform:'Zoom',displayName:'Welcome & Introduction Session',isILT:true,title:null,topicsHtml:null,blockKey:'welcome'},
+  {platform:'Zoom',displayName:'Session One',isILT:true,title:'Drug Diversion Investigations \u2014 Session One',topicsHtml:'<ul><li>Defining drug diversion investigations</li><li>Accountability systems</li><li>Detection and Prevention</li></ul>',blockKey:'drug-diversion'},
+  {platform:'Zoom',displayName:'Session Two',isILT:true,title:'Drug Diversion Investigations \u2014 Session Two',topicsHtml:'<ul><li>Facility investigations</li><li>Investigative tools</li><li>Completing an investigation</li></ul>',blockKey:'drug-diversion'},
+  {platform:'Zoom',displayName:'Workshop One',isILT:true,title:'Investigating Reports of Sexual Misconduct \u2014 Workshop Session One',topicsHtml:'<ul><li>Defining sexual misconduct</li><li>Types, trends and statistics regarding sexual misconduct</li><li>Interviewing persons of interest</li></ul>',blockKey:'sexual-misconduct'},
+  {platform:'Zoom',displayName:'Workshop Two',isILT:true,title:'Investigating Reports of Sexual Misconduct \u2014 Workshop Session Two',topicsHtml:'<ul><li>Types of evidence</li><li>Vicarious trauma and investigator self-care</li><li>Interviewing complainants and witnesses</li></ul>',blockKey:'sexual-misconduct'},
+  {platform:'Zoom',displayName:'Communications and the Art of Persuasion',isILT:true,title:'Communications and the Art of Persuasion',topicsHtml:null,blockKey:'communications'},
+  {platform:'Zoom',displayName:'Developing a Professional Attitude: Ethics for the Regulatory Investigator',isILT:true,title:'Developing a Professional Attitude: Ethics for the Regulatory Investigator',topicsHtml:null,blockKey:'ethics'}
+]},
+{id:126,name:'NCIT - Basic Online Program',pdfTitle:'NCIT - Basic Online Program \u2014 Schedule',isInPerson:false,hasTopics:false,lastColHeader:'Session Name',
+testingWindow:{reviewLabel:'Program Review & Test Prep',code:'NCIT B US'},
+introHtml:'<p>This schedule contains live video conference sessions with required attendance at the date and time specified below, self-paced content must be completed prior to the completion of the program. It is suggested that self-study content be completed prior to the associated live session.</p><p>With the exception of the Welcome &amp; Introduction, the links to all live instructor-led sessions, and all self-paced content will be found on the <strong>CLEAR Learning Education Platform</strong>.</p><p>Attendees will need an individual account to access this platform. Sharing login information is strictly prohibited. All live and self-paced modules, and knowledge assessments must be completed to be eligible to take the final exam and be eligible for <strong>CLEAR certification</strong>.</p>',
+rows:[{platform:'Zoom',displayName:'Welcome & Introduction Session',isILT:true},{platform:'Learning Portal',displayName:'Professional Conduct - Self-Study',isILT:false},{platform:'Learning Portal',displayName:'Principles of Administrative Law - Self-Study',isILT:false},{platform:'Zoom',displayName:'Investigative Process - Instructor-Led Session',isILT:true},{platform:'Learning Portal',displayName:'Principles of Evidence - Self-Study',isILT:false},{platform:'Learning Portal',displayName:'Evidence Collection, Tagging, and Storage - Self-Study',isILT:false},{platform:'Zoom',displayName:'Interviewing Techniques - Instructor-Led Session',isILT:true},{platform:'Zoom',displayName:'Week One Q & A - Instructor-Led Session',isILT:true},{platform:'Learning Portal',displayName:'Investigator Safety - Self-Study',isILT:false},{platform:'Learning Portal',displayName:'Overview of Inspections and Inspection Procedures - Self-Study',isILT:false},{platform:'Zoom',displayName:'Report Writing - Instructor-Led Session',isILT:true},{platform:'Zoom',displayName:'Testifying in Administrative and Criminal Proceedings - Instructor-Led Session',isILT:true},{platform:'Zoom',displayName:'Program Review & Exam Information - Instructor-Led Session',isILT:true}]},
+{id:129,name:'NCIT - Specialized Online Program',pdfTitle:'NCIT - Specialized Online Program \u2014 Schedule',isInPerson:false,hasTopics:false,lastColHeader:'Session Name',
+testingWindow:{reviewLabel:'Program Review & Test Prep',code:'NCIT S'},
+introHtml:'<p>This schedule contains live video conference sessions with required attendance at the date and time specified below, self-paced content must be completed prior to the completion of the program. It is suggested that self-study content be completed prior to the associated live session.</p><p>With the exception of the Welcome &amp; Introduction, the links to all live instructor-led sessions, and all self-paced content will be found on the <strong>CLEAR Learning Education Platform</strong>.</p><p>Attendees will need an individual account to access this platform. Sharing login information is strictly prohibited. All live and self-paced modules, and knowledge assessments must be completed to be eligible to take the final exam.</p>',
+rows:[{platform:'Zoom',displayName:'Welcome & Introduction Session',isILT:true},{platform:'Learning Portal',displayName:'Advanced Interviewing Skills - Self-Study',isILT:false},{platform:'Zoom',displayName:'Live Session - Cognitive Memory Recall Technique (CMRT)',isILT:true},{platform:'Zoom',displayName:'Live Session - Behavioral Analysis & Questioning',isILT:true},{platform:'Learning Portal',displayName:'Advanced Investigative Analysis - Self-Study',isILT:false},{platform:'Zoom',displayName:'Live Session - Module Review',isILT:true},{platform:'Learning Portal',displayName:'Investigative Report Development - Self-Study',isILT:false},{platform:'Zoom',displayName:'Live Session - Observation Skills',isILT:true},{platform:'Zoom',displayName:'Live Session - Module Review',isILT:true},{platform:'Zoom',displayName:'Live Session - Program Review & Test Prep',isILT:true}]},
+{id:147,name:'Skills for the Regulatory Administrator: Staffing a Board',pdfTitle:'Skills for the Regulatory Administrator: Staffing a Board \u2014 Schedule',isInPerson:false,hasTopics:true,lastColHeader:'Session Details',
+introHtml:'<p>This schedule contains live instructor-led sessions with required attendance at the date and time specified below. With the exception of the Welcome &amp; Introduction, links to all live sessions will be provided on the <strong>CLEAR Learning Education Platform</strong>.</p><p>Attendees will need an individual account to access this platform. Sharing login information is strictly prohibited. All live sessions, or the make-up recording must be completed to be eligible to receive certification of completion.</p>',
+rows:[{platform:'Zoom',displayName:'Welcome & Introduction Session',isILT:true},{platform:'Zoom',displayName:'Module 1 Live Session Link',isILT:true,title:'Module 1: Characteristics of Regulatory Governance',topicsHtml:'<ul><li>Overview of Professional Regulation</li><li>Operations vs Policy</li><li>Understanding the Culture of Your Board</li><li>Importance of Transparency</li><li>Highlights of Global Trends in Regulation</li></ul>'},{platform:'Zoom',displayName:'Module 2 Live Session Link',isILT:true,title:'Module 2: Organizational Culture and Change',topicsHtml:'<ul><li>Adopting a Strategic Mindset</li><li>Building and Maintaining Relationships</li><li>Leading Collaboratively</li><li>Understanding Transparency</li><li>Establishing and Assessing Performance and Policy Outcomes</li></ul>'},{platform:'Zoom',displayName:'Module 3 Live Session Link',isILT:true,title:'Module 3: Creating a Positive Regulatory Reputation through Public Outreach and Relations',topicsHtml:'<ul><li>Preparing Board Materials</li><li>Presentation Skills</li><li>Using Data Effectively to Support Decision Making</li><li>When Staff or Board Members Step Outside Their Roles</li></ul>'}]},
+
+// ── IN-PERSON PROGRAMS ──
+{id:'ip-ncit-b-us',name:'NCIT Basic Program - In-Person (US)',pdfTitle:'National Certified Investigator & Inspector Training \u2014 Basic Program',
+isInPerson:true,numDays:3,defaultStart:'08:00',hasExam:true,dayStartNote:'Programming begins at 8:00 AM each day',lastColHeader:'Topic',
+introHtml:'<p><strong>CLEAR POLICY STATES THAT NO ATTENDEE MAY TAKE THE FINAL EXAM BEFORE THE TRAINING IS COMPLETE. PLEASE KEEP THIS IN MIND WHEN MAKING YOUR TRAVEL PLANS.</strong></p><p>Schedule is subject to change.</p>',
+days:[
+{day:1,label:'Day One',sessions:[{start:'07:30',end:'08:00',topic:'Registration',isBreak:false},{start:'08:00',end:'08:30',topic:'Introduction',isBreak:false},{start:'08:30',end:'10:00',topic:'Module 1: Professional Conduct',isBreak:false},{start:'10:00',end:'10:15',topic:'Break',isBreak:true},{start:'10:15',end:'12:15',topic:'Module 2: Principles of Administrative Law',isBreak:false},{start:'12:15',end:'13:30',topic:'Lunch',isBreak:true},{start:'13:30',end:'15:15',topic:'Module 3: Investigative Process',isBreak:false},{start:'15:15',end:'15:30',topic:'Break',isBreak:true},{start:'15:30',end:'17:30',topic:'Module 3: Investigative Process (continued)',isBreak:false}]},
+{day:2,label:'Day Two',sessions:[{start:'08:00',end:'10:00',topic:'Module 4: Principles of Evidence',isBreak:false},{start:'10:00',end:'10:15',topic:'Break',isBreak:true},{start:'10:15',end:'12:15',topic:'Module 5: Evidence Collection, Tagging, and Storage',isBreak:false},{start:'12:15',end:'13:15',topic:'Lunch',isBreak:true},{start:'13:15',end:'15:15',topic:'Module 6: Interviewing Techniques',isBreak:false},{start:'15:15',end:'15:30',topic:'Break',isBreak:true},{start:'15:30',end:'16:30',topic:'Module 6: Interviewing Techniques (continued)',isBreak:false},{start:'16:30',end:'17:15',topic:'Module 7: Investigator Safety',isBreak:false}]},
+{day:3,label:'Day Three',sessions:[{start:'08:00',end:'09:00',topic:'Module 8: Overview of Inspections and Inspection Procedures',isBreak:false},{start:'09:00',end:'10:00',topic:'Module 9: Report Writing',isBreak:false},{start:'10:00',end:'10:15',topic:'Break',isBreak:true},{start:'10:15',end:'12:15',topic:'Module 9: Report Writing (continued)',isBreak:false},{start:'12:15',end:'13:15',topic:'Lunch',isBreak:true},{start:'13:15',end:'15:15',topic:'Module 10: Testifying in Administrative and Criminal Proceedings',isBreak:false},{start:'15:15',end:'15:30',topic:'Break',isBreak:true},{start:'15:30',end:'16:30',topic:'Question & Answer Session/Review',isBreak:false},{start:'16:30',end:'17:30',topic:'Final Examination',isBreak:false}]}]},
+{id:'ip-ncit-b-can',name:'Canadian NCIT Basic Program - In-Person',pdfTitle:'National Certified Investigator & Inspector Training \u2014 Canadian Basic Program',
+isInPerson:true,numDays:3,defaultStart:'08:00',hasExam:true,dayStartNote:'Programming begins at 8:00 AM each day',lastColHeader:'Topic',
+introHtml:'<p><strong>CLEAR POLICY STATES THAT NO ATTENDEE MAY TAKE THE FINAL EXAM BEFORE THE TRAINING IS COMPLETE. PLEASE KEEP THIS IN MIND WHEN MAKING YOUR TRAVEL PLANS.</strong></p><p>Schedule is subject to change.</p>',
+days:[
+{day:1,label:'Day One',sessions:[{start:'07:30',end:'08:00',topic:'Registration',isBreak:false},{start:'08:00',end:'08:30',topic:'Introduction',isBreak:false},{start:'08:30',end:'10:00',topic:'Module 1: Professional Conduct',isBreak:false},{start:'10:00',end:'10:15',topic:'Break',isBreak:true},{start:'10:15',end:'12:15',topic:'Module 2: Principles of Administrative Law',isBreak:false},{start:'12:15',end:'13:30',topic:'Lunch',isBreak:true},{start:'13:30',end:'15:15',topic:'Module 3: Investigative Process',isBreak:false},{start:'15:15',end:'15:30',topic:'Break',isBreak:true},{start:'15:30',end:'17:30',topic:'Module 3: Investigative Process (continued)',isBreak:false}]},
+{day:2,label:'Day Two',sessions:[{start:'08:00',end:'10:00',topic:'Module 4: Principles of Evidence',isBreak:false},{start:'10:00',end:'10:15',topic:'Break',isBreak:true},{start:'10:15',end:'12:15',topic:'Module 5: Evidence Collection, Tagging, and Storage',isBreak:false},{start:'12:15',end:'13:15',topic:'Lunch',isBreak:true},{start:'13:15',end:'15:15',topic:'Module 6: Interviewing Techniques',isBreak:false},{start:'15:15',end:'15:30',topic:'Break',isBreak:true},{start:'15:30',end:'16:30',topic:'Module 6: Interviewing Techniques (continued)',isBreak:false},{start:'16:30',end:'17:15',topic:'Module 7: Investigator Safety',isBreak:false}]},
+{day:3,label:'Day Three',sessions:[{start:'08:00',end:'09:00',topic:'Module 8: Overview of Inspections and Inspection Procedures',isBreak:false},{start:'09:00',end:'10:00',topic:'Module 9: Report Writing',isBreak:false},{start:'10:00',end:'10:15',topic:'Break',isBreak:true},{start:'10:15',end:'12:15',topic:'Module 9: Report Writing (continued)',isBreak:false},{start:'12:15',end:'13:15',topic:'Lunch',isBreak:true},{start:'13:15',end:'15:15',topic:'Module 10: Testifying in Administrative and Criminal Proceedings',isBreak:false},{start:'15:15',end:'15:30',topic:'Break',isBreak:true},{start:'15:30',end:'16:30',topic:'Question & Answer Session/Review',isBreak:false},{start:'16:30',end:'17:30',topic:'Final Examination',isBreak:false}]}]},
+{id:'ip-ncit-s',name:'NCIT Specialized Program - In-Person',pdfTitle:'National Certified Investigator & Inspector Training \u2014 Specialized Program',
+isInPerson:true,numDays:3,defaultStart:'09:00',hasExam:true,dayStartNote:'Programming begins at 9:00 AM each day',lastColHeader:'Topic',
+introHtml:'<p>Schedule is subject to change.</p>',
+days:[
+{day:1,label:'Day One',sessions:[{start:'08:30',end:'09:00',topic:'Registration',isBreak:false},{start:'09:00',end:'09:10',topic:'Program Introduction',isBreak:false},{start:'09:10',end:'10:30',topic:'Module 1: Advanced Interviewing Techniques',isBreak:false},{start:'10:30',end:'10:45',topic:'Break',isBreak:true},{start:'10:45',end:'13:00',topic:'Module 1: Advanced Interviewing Techniques (continued)',isBreak:false},{start:'13:00',end:'14:00',topic:'Lunch',isBreak:true},{start:'14:00',end:'16:00',topic:'Module 1: Advanced Interviewing Techniques (continued)',isBreak:false},{start:'16:00',end:'16:15',topic:'Break',isBreak:true},{start:'16:15',end:'17:00',topic:'Module 1: Advanced Interviewing Techniques (continued)',isBreak:false}]},
+{day:2,label:'Day Two',sessions:[{start:'09:00',end:'10:15',topic:'Module 1: Advanced Interviewing Techniques (continued)',isBreak:false},{start:'10:15',end:'10:30',topic:'Break',isBreak:true},{start:'10:30',end:'12:30',topic:'Module 2: Advanced Investigative Analysis',isBreak:false},{start:'12:30',end:'13:30',topic:'Lunch',isBreak:true},{start:'13:30',end:'15:15',topic:'Module 2: Advanced Investigative Analysis (continued)',isBreak:false},{start:'15:15',end:'15:30',topic:'Break',isBreak:true},{start:'15:30',end:'17:00',topic:'Module 3: Investigative Report Development',isBreak:false}]},
+{day:3,label:'Day Three',sessions:[{start:'09:00',end:'10:45',topic:'Module 3: Investigative Report Development (continued)',isBreak:false},{start:'10:45',end:'11:00',topic:'Break',isBreak:true},{start:'11:00',end:'12:00',topic:'Module 3: Investigative Report Development (continued)',isBreak:false},{start:'12:00',end:'13:00',topic:'Lunch',isBreak:true},{start:'13:00',end:'15:15',topic:'Program Review / Final Exam',isBreak:false}]}]},
+{id:'ip-ncit-ait',name:'NCIT Applied Investigative Techniques - In-Person',pdfTitle:'NCIT Applied Investigative Techniques \u2014 Program Agenda',
+isInPerson:true,numDays:2,defaultStart:'08:30',hasExam:false,dayStartNote:'',lastColHeader:'Topic',
+introHtml:'',
+days:[
+{day:1,label:'Day One',sessions:[{start:'08:30',end:'09:00',topic:'Welcome & Introductions',isBreak:false},{start:'09:00',end:'09:15',topic:'Program Overview',isBreak:false},{start:'09:15',end:'10:15',topic:'Complaint Intake & Analysis',isBreak:false},{start:'10:15',end:'10:30',topic:'Break',isBreak:true},{start:'10:30',end:'10:55',topic:'Complaint Intake & Analysis (continued)',isBreak:false},{start:'10:55',end:'12:30',topic:'Investigative Planning',isBreak:false},{start:'12:30',end:'13:30',topic:'Lunch',isBreak:true},{start:'13:30',end:'15:00',topic:'Gathering Evidence',isBreak:false},{start:'15:00',end:'15:15',topic:'Break',isBreak:true},{start:'15:15',end:'16:30',topic:'Interviewing',isBreak:false}]},
+{day:2,label:'Day Two',sessions:[{start:'08:30',end:'08:40',topic:'Welcome Back & Warm Up Activity',isBreak:false},{start:'08:40',end:'10:00',topic:'Interviewing (continued)',isBreak:false},{start:'10:00',end:'10:15',topic:'Break',isBreak:true},{start:'10:15',end:'11:30',topic:'Interviewing (continued)',isBreak:false},{start:'11:30',end:'12:30',topic:'Lunch',isBreak:true},{start:'12:30',end:'14:00',topic:'Investigative Reports',isBreak:false},{start:'14:00',end:'14:15',topic:'Break',isBreak:true},{start:'14:15',end:'14:45',topic:'Testifying',isBreak:false},{start:'14:45',end:'14:50',topic:'Break',isBreak:true},{start:'14:50',end:'16:15',topic:'Testifying (continued)',isBreak:false},{start:'16:15',end:'16:30',topic:'Program Review',isBreak:false}]}]}
+];
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let selectedCourse=null, rows=[], _rowId=0, programBlockOrder=[], twCloseEdited=false;
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+(function(){
+  const items=COURSES.map(c=>{
+    const tag=c.isInPerson?'<span class="tag tag-inperson">In-Person</span>':'<span class="tag tag-virtual">Virtual</span>';
+    return {value:String(c.id),label:c.name,html:esc(c.name)+' '+tag};
+  });
+  setupSearchSelect('courseInput','courseDropdown','courseValue',items,onCourseSelect);
+  document.getElementById('courseCount').textContent=COURSES.length+' programs available';
+  const u=localStorage.getItem('clear_worker_url'),t=localStorage.getItem('clear_auth_token');
+  if(u)document.getElementById('workerUrl').value=u;
+  if(t)document.getElementById('authToken').value=t;
+  document.getElementById('defHour').value='12';
+  document.getElementById('defMin').value='00';
+  document.getElementById('defAmPm').value='PM';
+})();
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+function switchTab(name){
+  document.getElementById('tabBtnNew').classList.toggle('active',name==='new');
+  document.getElementById('tabBtnImport').classList.toggle('active',name==='import');
+  document.getElementById('tabNew').classList.toggle('active',name==='new');
+  document.getElementById('tabImport').classList.toggle('active',name==='import');
+}
+
+// ═══════════════════════════════════════════════════════
+// DEFAULT TIME HELPERS
+// ═══════════════════════════════════════════════════════
+function getDefaultTime24(){
+  let h=parseInt(document.getElementById('defHour').value);
+  const m=document.getElementById('defMin').value;
+  const ap=document.getElementById('defAmPm').value;
+  if(ap==='PM'&&h!==12)h+=12;
+  if(ap==='AM'&&h===12)h=0;
+  return String(h).padStart(2,'0')+':'+m;
+}
+
+function calcEndTime(startTime24,durationMin){
+  if(!startTime24||!durationMin)return'';
+  const[h,m]=startTime24.split(':').map(Number);
+  const total=h*60+m+durationMin;
+  return minToTime(total);
+}
+
+function applyDefaultTime(){
+  if(!selectedCourse||selectedCourse.isInPerson)return;
+  const defTime=getDefaultTime24();
+  let iltIndex=0;
+  rows.forEach(row=>{
+    if(!row.isILT||row.isDayHeader)return;
+    if(!row.startTimeEdited){
+      row.startTime=defTime;
+      const dur=getDuration(selectedCourse.id,row.displayName,iltIndex);
+      if(!row.endTimeEdited)row.endTime=calcEndTime(defTime,dur)||row.endTime;
+    }
+    iltIndex++;
+  });
+  renderTable();
+}
+
+// ═══════════════════════════════════════════════════════
+// TESTING WINDOW (NCIT Basic / Canadian Basic / Specialized virtual)
+// Opens after the program review session; closes midnight ET on the
+// first Thursday that is at least 14 days after the review session date.
+// ═══════════════════════════════════════════════════════
+function isoAddDays(iso,n){
+  const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtDateLong(iso){
+  if(!iso)return'';
+  return new Date(iso+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+}
+function calcTwClose(reviewIso){
+  const d=new Date(reviewIso+'T12:00:00');
+  d.setDate(d.getDate()+14);
+  while(d.getDay()!==4)d.setDate(d.getDate()+1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function getReviewRow(){
+  if(!selectedCourse||!selectedCourse.testingWindow)return null;
+  let found=null;
+  rows.forEach(r=>{if(!r.isDayHeader&&r.isILT&&/program review/i.test(r.displayName||''))found=r;});
+  return found;
+}
+function getTestingWindow(){
+  if(!selectedCourse||!selectedCourse.testingWindow)return null;
+  if(!document.getElementById('twEnabled').checked)return null;
+  const rr=getReviewRow();
+  const close=document.getElementById('twClose').value;
+  if(!rr||!rr.date||!close)return null;
+  return {openDate:rr.date,openTime:rr.endTime||'',closeDate:close,reviewLabel:selectedCourse.testingWindow.reviewLabel};
+}
+function refreshTestingWindow(){
+  const panel=document.getElementById('twPanel');
+  if(!selectedCourse||!selectedCourse.testingWindow){panel.classList.add('hidden');return;}
+  panel.classList.remove('hidden');
+  const tz=document.getElementById('timezone').value;
+  const opensEl=document.getElementById('twOpens'),closeEl=document.getElementById('twClose'),note=document.getElementById('twNote');
+  note.classList.remove('warn');
+  const rr=getReviewRow();
+  const label=selectedCourse.testingWindow.reviewLabel;
+  if(!rr){opensEl.value='';note.textContent='No program review session found in the schedule \u2014 the testing window needs it to calculate.';note.classList.add('warn');return;}
+  if(!rr.date){opensEl.value='';if(!twCloseEdited)closeEl.value='';note.textContent='Set a date for the '+label+' session to calculate the window.';return;}
+  opensEl.value=fmtDate(rr.date)+(rr.endTime?' at '+fmtTime(rr.endTime)+' '+tz:'');
+  const auto=calcTwClose(rr.date);
+  if(!twCloseEdited)closeEl.value=auto;
+  if(closeEl.value&&closeEl.value<rr.date){note.textContent='Close date is before the review session.';note.classList.add('warn');return;}
+  if(twCloseEdited&&closeEl.value!==auto)note.textContent='Close date set manually. Click \u21bb to recalculate ('+fmtDateLong(auto)+').';
+  else note.textContent='Closes at midnight ET at the end of '+fmtDateLong(closeEl.value)+' \u2014 the Thursday two weeks after the review session.';
+}
+function onTwCloseChange(){twCloseEdited=!!document.getElementById('twClose').value;refreshTestingWindow();}
+function resetTwClose(){twCloseEdited=false;refreshTestingWindow();}
+function testingWindowNoteHtml(tw){
+
+  return '<strong>Final Exam Testing Window</strong><br>Access to the final exam will be granted <strong>after</strong> the '+esc(tw.reviewLabel)+' session to all attendees who have completed <strong>ALL</strong> required program components. Your cohort can take the exam <strong>anytime</strong> between then and 11:59 PM Eastern Time on '+esc(fmtDateLong(tw.closeDate))+'.';
+}
+// ═══════════════════════════════════════════════════════
+// OPTIONAL API
+// ═══════════════════════════════════════════════════════
+async function doConnect(){
+  const url=document.getElementById('workerUrl').value.trim().replace(/\/+$/,''),token=document.getElementById('authToken').value.trim();
+  if(!url||!token){setConn('disconnected','Enter Auth Token and click Test Connection');return;}
+  setConn('loading','Connecting...');
+  try{const r=await fetch(url+'/v1/siteinfo',{headers:{'X-Auth-Token':token}});if(!r.ok)throw new Error('HTTP '+r.status);const info=await r.json();setConn('connected','Connected to '+(info.site_name||info.domain||'TalentLMS'));localStorage.setItem('clear_worker_url',url);localStorage.setItem('clear_auth_token',token);}
+  catch(e){setConn('disconnected','Connection failed: '+e.message);}
+}
+function setConn(s,t){const el=document.getElementById('connectionStatus');el.className='connection-status '+s;const d=s==='connected'?'green':s==='loading'?'amber':s==='idle'?'gray':'red';el.innerHTML='<span class="dot '+d+'"></span> '+esc(t);}
+
+// ═══════════════════════════════════════════════════════
+// SEARCHABLE DROPDOWN
+// ═══════════════════════════════════════════════════════
+function setupSearchSelect(iId,dId,hId,items,onSel){
+  const inp=document.getElementById(iId),dd=document.getElementById(dId),hid=document.getElementById(hId);
+  function render(f){
+    const fl=f?items.filter(x=>x.label.toLowerCase().includes(f.toLowerCase())):items;
+    if(!fl.length){dd.innerHTML='<div class="no-match">No matches</div>';}
+    else{dd.innerHTML=fl.map(x=>'<div class="opt" data-val="'+x.value+'">'+x.html+'</div>').join('');
+    dd.querySelectorAll('.opt').forEach(o=>{o.addEventListener('mousedown',e=>{e.preventDefault();inp.value=items.find(i=>i.value===o.dataset.val).label;hid.value=o.dataset.val;dd.classList.remove('open');if(onSel)onSel(o.dataset.val);});});}
+  }
+  inp.addEventListener('focus',()=>{render('');dd.classList.add('open');});
+  inp.addEventListener('input',()=>{hid.value='';render(inp.value);dd.classList.add('open');});
+  inp.addEventListener('blur',()=>{setTimeout(()=>dd.classList.remove('open'),150);});
+  render('');
+}
+
+// ═══════════════════════════════════════════════════════
+// INSTRUCTOR DROPDOWN
+// ═══════════════════════════════════════════════════════
+function instOptions(selected){
+  let h='<option value="">\u2014 Select \u2014</option><option value="CLEAR Staff"'+(selected==='CLEAR Staff'?' selected':'')+'>CLEAR Staff</option>';
+  INSTRUCTORS.forEach(n=>{h+='<option value="'+esc(n)+'"'+(selected===n?' selected':'')+'>'+esc(n)+'</option>';});
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════
+// TIME OFFSET (in-person)
+// ═══════════════════════════════════════════════════════
+function timeToMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
+function minToTime(m){const h=Math.floor(m/60),mm=m%60;return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0');}
+function offsetTime(origTime,defaultStart,newStart){
+  const offset=timeToMin(newStart)-timeToMin(defaultStart);
+  return minToTime(timeToMin(origTime)+offset);
+}
+function parseTimeInput(str){
+  if(!str)return null;
+  str=str.trim();
+  if(!str)return null;
+  let m=str.match(/^(\d{1,2})(?:[:.]([0-5]\d))?\s*([AaPp])\.?[Mm]?\.?$/);
+  if(m){
+    let h=parseInt(m[1],10),mm=m[2]?parseInt(m[2],10):0,ap=m[3].toLowerCase();
+    if(h<1||h>12)return null;
+    if(ap==='p'&&h!==12)h+=12;
+    if(ap==='a'&&h===12)h=0;
+    return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+  }
+  m=str.match(/^(\d{1,2})([0-5]\d)\s*([AaPp])\.?[Mm]?\.?$/);
+  if(m){
+    let h=parseInt(m[1],10),mm=parseInt(m[2],10),ap=m[3].toLowerCase();
+    if(h<1||h>12)return null;
+    if(ap==='p'&&h!==12)h+=12;
+    if(ap==='a'&&h===12)h=0;
+    return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+  }
+  m=str.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if(m)return String(parseInt(m[1],10)).padStart(2,'0')+':'+m[2];
+  m=str.match(/^([01]?\d|2[0-3])([0-5]\d)$/);
+  if(m&&str.length>=3)return String(parseInt(m[1],10)).padStart(2,'0')+':'+m[2];
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
+// COURSE SELECTION
+// ═══════════════════════════════════════════════════════
+function onCourseSelect(cId){
+  selectedCourse=COURSES.find(c=>String(c.id)===cId);if(!selectedCourse)return;
+  document.getElementById('programTitle').value=selectedCourse.pdfTitle;
+  document.getElementById('introText').value=selectedCourse.introHtml;
+  const ipF=document.getElementById('ipFields');
+  const vtF=document.getElementById('defaultTimePanelVirtual');
+  programBlockOrder=[];
+  twCloseEdited=false;
+  document.getElementById('twEnabled').checked=true;
+  document.getElementById('twClose').value='';
+  document.getElementById('programOrderPanel').classList.add('hidden');
+  if(selectedCourse.isInPerson){
+    ipF.classList.remove('hidden');
+    vtF.classList.add('hidden');
+    document.getElementById('ipStartTime').value=selectedCourse.defaultStart;
+    document.getElementById('scheduleHint').innerHTML='In-person program \u2014 set Day 1 date and start time above, then assign instructors per session below.';
+    document.getElementById('btnAddRow').style.display='none';
+    buildInPersonRows();
+  } else {
+    ipF.classList.add('hidden');
+    vtF.classList.remove('hidden');
+    document.getElementById('scheduleHint').innerHTML='<strong style="color:var(--gray);">Zoom sessions</strong> require date, start/end times, and an instructor assignment. Paste Zoom links to include them in calendar invites. Self-paced rows have no date/time/instructor.';
+    document.getElementById('btnAddRow').style.display='';
+    const defTime=getDefaultTime24();
+    let iltIdx=0;
+    rows=selectedCourse.rows.map(r=>{
+      const isILT=r.isILT;
+      let st='',et='';
+      if(isILT){
+        st=defTime;
+        const dur=getDuration(selectedCourse.id,r.displayName,iltIdx);
+        et=calcEndTime(defTime,dur)||'';
+        iltIdx++;
+      }
+      return {id:++_rowId,displayName:r.displayName,isILT,platform:r.platform||'Zoom',title:r.title||null,topicsHtml:r.topicsHtml||null,date:'',startTime:st,endTime:et,instructor:'',zoomLink:'',selected:false,isDayHeader:false,startTimeEdited:false,endTimeEdited:false,blockKey:r.blockKey||null};
+    });
+    if(selectedCourse.programBlocks){
+      programBlockOrder=selectedCourse.programBlocks.map(b=>b.key);
+      renderProgramOrderPanel();
+    }
+  }
+  renderTable();
+  document.getElementById('scheduleEmpty').style.display='none';
+  document.getElementById('scheduleTableWrap').classList.remove('hidden');
+  updateIltCount();
+  const cs=document.getElementById('courseStatus');
+  cs.className='status-bar success';
+  cs.textContent=selectedCourse.isInPerson?'\u2713 Loaded in-person program ('+selectedCourse.numDays+'-day schedule)':'\u2713 Loaded '+rows.length+' sessions ('+rows.filter(r=>r.isILT).length+' Zoom, '+rows.filter(r=>!r.isILT).length+' self-paced)';
+  cs.style.display='block';
+}
+
+// ═══════════════════════════════════════════════════════
+// IN-PERSON ROW BUILD
+// ═══════════════════════════════════════════════════════
+function buildInPersonRows(){
+  const prevInst={};
+  const prevTimes={};
+  rows.forEach(r=>{
+    if(r.isDayHeader)return;
+    if(r.displayName&&r.instructor)prevInst[r.displayName]=r.instructor;
+    if(r._posKey&&(r.startTimeEdited||r.endTimeEdited)){
+      prevTimes[r._posKey]={start:r.startTime,end:r.endTime,startEdited:r.startTimeEdited,endEdited:r.endTimeEdited};
+    }
+  });
+  rows=[];
+  const startDate=document.getElementById('ipStartDate').value;
+  const newStart=document.getElementById('ipStartTime').value;
+  const defStart=selectedCourse.defaultStart;
+  selectedCourse.days.forEach((day,di)=>{
+    let dateStr='';
+    if(startDate){const d=new Date(startDate+'T12:00:00');d.setDate(d.getDate()+di);dateStr=d.toISOString().split('T')[0];}
+    const dateLabel=dateStr?fmtDate(dateStr):'[Set start date]';
+    rows.push({id:++_rowId,isDayHeader:true,dayLabel:day.label,dateLabel:dateLabel,dateStr:dateStr});
+    day.sessions.forEach((s,si)=>{
+      const posKey=di+'-'+si;
+      const adjStart=offsetTime(s.start,defStart,newStart);
+      const adjEnd=offsetTime(s.end,defStart,newStart);
+      const prev=prevTimes[posKey];
+      const startTime=(prev&&prev.startEdited)?prev.start:adjStart;
+      const endTime=(prev&&prev.endEdited)?prev.end:adjEnd;
+      rows.push({id:++_rowId,isDayHeader:false,isILT:true,platform:'In-Person',displayName:s.topic,
+        startTime:startTime,endTime:endTime,date:dateStr,isBreak:s.isBreak||false,
+        title:null,topicsHtml:null,instructor:prevInst[s.topic]||'',zoomLink:'',selected:false,
+        _posKey:posKey,startTimeEdited:!!(prev&&prev.startEdited),endTimeEdited:!!(prev&&prev.endEdited)});
+    });
+  });
+}
+function onIpSettingChange(){if(!selectedCourse||!selectedCourse.isInPerson)return;buildInPersonRows();renderTable();}
+
+// ═══════════════════════════════════════════════════════
+// TABLE RENDERING
+// ═══════════════════════════════════════════════════════
+function renderTable(){
+  const tz=document.getElementById('timezone').value,tb=document.getElementById('agendaBody');tb.innerHTML='';
+  const isIP=selectedCourse&&selectedCourse.isInPerson;
+  const thead=document.getElementById('agendaThead');
+  if(isIP){
+    thead.innerHTML='<tr><th>Start</th><th></th><th>End</th><th style="min-width:160px;">Instructor</th><th>'+esc(selectedCourse.lastColHeader)+'</th></tr>';
+  } else {
+    thead.innerHTML='<tr><th class="col-check"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" title="Select all"></th><th style="min-width:148px;">Date</th><th style="min-width:130px;">Start</th><th style="min-width:130px;">End</th><th style="min-width:140px;">Platform</th><th style="min-width:160px;">Instructor</th><th style="min-width:210px;">Zoom Link</th><th>'+(selectedCourse?esc(selectedCourse.lastColHeader):'Session Name')+'</th><th style="width:32px;"></th></tr>';
+  }
+
+  let iltIdx=0;
+
+  rows.forEach((row,i)=>{
+    const tr=document.createElement('tr');
+    if(row.isDayHeader){
+      tr.className='row-day-header';
+      const cs=isIP?5:9;
+      tr.innerHTML='<td colspan="'+cs+'" style="background:var(--burgundy);color:var(--white);font-weight:700;font-size:13px;padding:10px 12px;">'+esc(row.dayLabel)+' \u2014 '+esc(row.dateLabel)+'</td>';
+      tb.appendChild(tr);return;
+    }
+    if(isIP){
+      tr.className='row-ilt';
+      const isCustom=row.startTimeEdited||row.endTimeEdited;
+      const customBadge=isCustom?'<span class="dur-badge dur-edited" title="Manually adjusted from the default schedule">custom</span>':'';
+      const resetBtn=isCustom?'<button onclick="resetIpRowTime('+i+')" title="Reset to default schedule" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;line-height:1;padding:2px 4px;margin-left:2px;" onmouseenter="this.style.color=\'var(--fail-red)\'" onmouseleave="this.style.color=\'#bbb\'">\u21bb</button>':'';
+      const startCell='<td><input type="text" class="tbl-input time-native" placeholder="8:00 AM" value="'+esc(fmtTime(row.startTime))+'" onchange="updIpStart('+i+',this.value)"></td>';
+      const endCell='<td><div style="display:flex;align-items:center;gap:4px;"><input type="text" class="tbl-input time-native" placeholder="8:00 AM" value="'+esc(fmtTime(row.endTime))+'" onchange="updIpEnd('+i+',this.value)">'+customBadge+resetBtn+'</div></td>';
+      const instCell=row.isBreak?'<td></td>':'<td><select class="tbl-select" style="min-width:160px;" onchange="upd('+i+',\'instructor\',this.value)">'+instOptions(row.instructor)+'</select></td>';
+      tr.innerHTML=startCell+'<td style="text-align:center;color:#bbb;">\u2013</td>'+endCell+instCell+'<td>'+esc(row.displayName)+'</td>';
+    } else {
+      tr.className=(row.isILT?'row-ilt':'row-portal')+(row.selected?' row-selected':'');
+      const ck='<td class="col-check"><input type="checkbox" '+(row.selected?'checked':'')+' onchange="toggleRow('+i+',this.checked)"></td>';
+      const dl='<td style="padding:4px 8px;"><button onclick="removeRow('+i+')" title="Remove" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:18px;line-height:1;padding:2px 4px;" onmouseenter="this.style.color=\'var(--fail-red)\'" onmouseleave="this.style.color=\'#bbb\'">\u00d7</button></td>';
+      const nm='<td><input type="text" class="tbl-input" value="'+esc(row.displayName)+'" onchange="upd('+i+',\'displayName\',this.value)"></td>';
+      const pl='<td><select class="tbl-select" onchange="updPlatform('+i+',this.value)"><option value="Zoom"'+(row.platform==='Zoom'?' selected':'')+'>Zoom</option><option value="Learning Portal"'+(row.platform==='Learning Portal'?' selected':'')+'>Learning Portal</option><option value="Teams"'+(row.platform==='Teams'?' selected':'')+'>Teams</option><option value="Other"'+(row.platform==='Other'?' selected':'')+'>Other</option></select></td>';
+      const inst=row.isILT?'<td><select class="tbl-select" style="min-width:160px;" onchange="upd('+i+',\'instructor\',this.value)">'+instOptions(row.instructor)+'</select></td>':'<td><span class="cell-muted">\u2014</span></td>';
+
+      if(row.isILT){
+        const dur=getDuration(selectedCourse?selectedCourse.id:null,row.displayName,iltIdx);
+        const durLabel=dur?(dur>=60?Math.floor(dur/60)+(dur%60?'h '+(dur%60)+'m':'h'):(dur+'m')):'';
+        const badgeCls=row.endTimeEdited?'dur-badge dur-edited':'dur-badge';
+        const durBadge=durLabel?'<span class="'+badgeCls+'" title="'+(row.endTimeEdited?'End time manually edited':'Auto-calculated from duration')+'">\u23F1 '+durLabel+'</span>':'';
+        const startCell='<td><div style="display:flex;align-items:center;gap:5px;"><input type="text" class="tbl-input time-native" placeholder="8:00 AM" value="'+esc(fmtTime(row.startTime))+'" onchange="updStart('+i+',this.value)"><span class="tz-tag">'+tz+'</span></div></td>';
+        const endCell='<td><div style="display:flex;align-items:center;gap:5px;"><input type="text" class="tbl-input time-native" placeholder="8:00 AM" value="'+esc(fmtTime(row.endTime))+'" onchange="updEnd('+i+',this.value)"><span class="tz-tag">'+tz+'</span>'+durBadge+'</div></td>';
+        const zoomCell='<td><input type="text" class="tbl-input" placeholder="https://zoom.us/j/\u2026" style="min-width:200px;" value="'+esc(row.zoomLink||'')+'" onchange="upd('+i+',\'zoomLink\',this.value)"></td>';
+        tr.innerHTML=ck+'<td><input type="date" class="tbl-input" value="'+row.date+'" onchange="upd('+i+',\'date\',this.value)"></td>'+startCell+endCell+pl+inst+zoomCell+nm+dl;
+        iltIdx++;
+      } else {
+        tr.innerHTML=ck+'<td><span class="cell-muted">\u2014</span></td><td><span class="cell-muted">\u2014</span></td><td><span class="cell-muted">\u2014</span></td>'+pl+inst+'<td><span class="cell-muted">\u2014</span></td>'+nm+dl;
+      }
+    }
+    tb.appendChild(tr);
+  });
+  refreshTestingWindow();
+}
+
+// ═══════════════════════════════════════════════════════
+// ROW OPS
+// ═══════════════════════════════════════════════════════
+function upd(i,f,v){rows[i][f]=v;if(f==='date'||f==='displayName')refreshTestingWindow();}
+function updStart(i,v){
+  const parsed=parseTimeInput(v);
+  if(!parsed){renderTable();return;}
+  rows[i].startTime=parsed;
+  rows[i].startTimeEdited=true;
+  if(!rows[i].endTimeEdited&&selectedCourse){
+    let iltIdx=0;
+    for(let j=0;j<i;j++){if(rows[j].isILT&&!rows[j].isDayHeader)iltIdx++;}
+    const dur=getDuration(selectedCourse.id,rows[i].displayName,iltIdx);
+    if(dur)rows[i].endTime=calcEndTime(parsed,dur);
+  }
+  renderTable();
+}
+function updEnd(i,v){
+  const parsed=parseTimeInput(v);
+  if(!parsed){renderTable();return;}
+  rows[i].endTime=parsed;rows[i].endTimeEdited=true;renderTable();
+}
+function updIpStart(i,v){
+  const parsed=parseTimeInput(v);
+  if(!parsed){renderTable();return;}
+  rows[i].startTime=parsed;rows[i].startTimeEdited=true;renderTable();
+}
+function updIpEnd(i,v){
+  const parsed=parseTimeInput(v);
+  if(!parsed){renderTable();return;}
+  rows[i].endTime=parsed;rows[i].endTimeEdited=true;renderTable();
+}
+function resetIpRowTime(i){rows[i].startTimeEdited=false;rows[i].endTimeEdited=false;buildInPersonRows();renderTable();}
+function updPlatform(i,v){rows[i].platform=v;rows[i].isILT=(v==='Zoom'||v==='Teams');if(!rows[i].isILT)rows[i].instructor='';renderTable();updateIltCount();}
+function removeRow(i){rows.splice(i,1);renderTable();updateIltCount();}
+// ═══════════════════════════════════════════════════════
+// PROGRAM ORDER (composite courses, e.g. NCIT Workshop Series)
+// ═══════════════════════════════════════════════════════
+function renderProgramOrderPanel(){
+  const panel=document.getElementById('programOrderPanel');
+  if(!selectedCourse||!selectedCourse.programBlocks||!programBlockOrder.length){panel.classList.add('hidden');return;}
+  panel.classList.remove('hidden');
+  const labelMap={};
+  selectedCourse.programBlocks.forEach(b=>labelMap[b.key]=b.label);
+  let h='';
+  programBlockOrder.forEach((key,idx)=>{
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--gray-mid);border-radius:var(--radius);margin-bottom:6px;background:var(--white);">'
+      +'<span style="font-weight:700;color:var(--burgundy);width:20px;">'+(idx+1)+'.</span>'
+      +'<span style="flex:1;">'+esc(labelMap[key]||key)+'</span>'
+      +'<button class="btn btn-ghost btn-sm" onclick="moveProgramBlock(\''+key+'\',-1)"'+(idx===0?' disabled':'')+' title="Move up">\u25b2</button>'
+      +'<button class="btn btn-ghost btn-sm" onclick="moveProgramBlock(\''+key+'\',1)"'+(idx===programBlockOrder.length-1?' disabled':'')+' title="Move down">\u25bc</button>'
+      +'</div>';
+  });
+  document.getElementById('programOrderList').innerHTML=h;
+}
+
+function moveProgramBlock(key,dir){
+  const i=programBlockOrder.indexOf(key);
+  const j=i+dir;
+  if(i<0||j<0||j>=programBlockOrder.length)return;
+  [programBlockOrder[i],programBlockOrder[j]]=[programBlockOrder[j],programBlockOrder[i]];
+  applyProgramBlockOrder();
+  renderProgramOrderPanel();
+}
+
+function applyProgramBlockOrder(){
+  let newRows=rows.filter(r=>r.blockKey==='welcome');
+  programBlockOrder.forEach(key=>{newRows=newRows.concat(rows.filter(r=>r.blockKey===key));});
+  const knownKeys=['welcome'].concat(programBlockOrder);
+  const extra=rows.filter(r=>!knownKeys.includes(r.blockKey));
+  rows=newRows.concat(extra);
+  renderTable();
+  updateIltCount();
+}
+
+function addManualRow(){rows.push({id:++_rowId,displayName:'New Session',isILT:true,platform:'Zoom',title:null,topicsHtml:null,date:'',startTime:getDefaultTime24(),endTime:'',instructor:'',zoomLink:'',selected:false,isDayHeader:false,startTimeEdited:false,endTimeEdited:false});renderTable();updateIltCount();}
+function toggleRow(i,c){rows[i].selected=c;refreshBatch();renderTable();}
+function toggleSelectAll(cb){rows.forEach(r=>{if(!r.isDayHeader)r.selected=cb.checked;});refreshBatch();renderTable();}
+function clearSelection(){rows.forEach(r=>r.selected=false);const sa=document.getElementById('selectAll');if(sa)sa.checked=false;refreshBatch();renderTable();}
+function removeSelected(){rows=rows.filter(r=>!r.selected);const sa=document.getElementById('selectAll');if(sa)sa.checked=false;refreshBatch();renderTable();updateIltCount();}
+function refreshBatch(){const n=rows.filter(r=>r.selected).length,b=document.getElementById('batchBar');if(n>0){b.classList.add('visible');document.getElementById('batchCount').textContent=n+' row'+(n!==1?'s':'')+' selected';}else b.classList.remove('visible');}
+function updateIltCount(){const n=rows.filter(r=>r.isILT&&!r.isDayHeader).length;document.getElementById('iltCount').textContent=n>0?n+' session'+(n!==1?'s':''):'';}
+function onTzChange(){if(rows.length>0)renderTable();}
+
+// ═══════════════════════════════════════════════════════
+// PDF IMPORT
+// ═══════════════════════════════════════════════════════
+function onDragOver(e){e.preventDefault();document.getElementById('uploadZone').classList.add('dragover');}
+function onDragLeave(e){document.getElementById('uploadZone').classList.remove('dragover');}
+function onDrop(e){e.preventDefault();document.getElementById('uploadZone').classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)processPdfFile(f);}
+function onFileSelected(e){const f=e.target.files[0];if(f)processPdfFile(f);}
+
+async function processPdfFile(file){
+  if(!file.name.toLowerCase().endsWith('.pdf')){showImportStatus('error','Please upload a PDF file.');return;}
+  if(typeof pdfjsLib==='undefined'){showImportStatus('error','PDF.js failed to load. Check your internet connection.');return;}
+  showUploadProgress(true);setProgress(10);
+  try{
+    const ab=await file.arrayBuffer();
+    setProgress(30);
+    const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+    setProgress(50);
+    let fullText='';
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      let lastY=null;
+      tc.items.forEach(item=>{
+        if(lastY!==null&&Math.abs(item.transform[5]-lastY)>5)fullText+='\n';
+        fullText+=item.str;
+        lastY=item.transform[5];
+      });
+      fullText+='\n';
+    }
+    setProgress(75);
+    const result=parseAgendaPDF(fullText);
+    setProgress(100);
+    showUploadProgress(false);
+    if(result.error){showImportStatus('error',result.error);return;}
+    applyImportedData(result);
+    const instCount=result.rows.filter(r=>r.instructor).length;
+    const instMsg=instCount?' ('+instCount+' instructor'+(instCount===1?'':'s')+' matched).':'. Add instructor names in the Schedule panel.';
+    showImportStatus('success','\u2713 Agenda imported successfully \u2014 '+result.rows.length+' sessions loaded'+instMsg);
+    switchTab('new');
+  }catch(err){
+    showUploadProgress(false);
+    showImportStatus('error','Could not read PDF: '+err.message);
+  }
+}
+
+function findInstructorInLine(line){
+  for(const name of INSTRUCTORS){
+    const pattern=name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/,\s*/g,',\\s*');
+    const re=new RegExp(pattern,'i');
+    const m=re.exec(line);
+    if(m)return{name,matched:m[0],index:m.index};
+  }
+  return null;
+}
+
+function parseAgendaPDF(text){
+  const lines=text.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  let title='',cohort='',tz='ET';
+  for(let i=0;i<Math.min(10,lines.length);i++){
+    const l=lines[i];
+    if(l.toLowerCase().includes('clear learning'))continue;
+    if(l.toLowerCase().includes('generated'))continue;
+    if(l.toLowerCase().includes('instructor agenda')){title=l.replace(/instructor agenda/i,'').replace(/\u2014/g,'').trim();break;}
+    if(l.toLowerCase().includes('schedule')||l.toLowerCase().includes('program')||l.toLowerCase().includes('ncit')||l.toLowerCase().includes('training')){title=l;break;}
+  }
+  for(let i=0;i<lines.length;i++){
+    if(lines[i]===title||lines[i].toLowerCase().includes('clear learning'))continue;
+    if(lines[i].match(/\b(spring|fall|winter|summer|cohort)\b/i)){cohort=lines[i];break;}
+    if(lines[i].match(/\b20\d\d\b/)&&!lines[i].match(/^\w+ \d{1,2},/)){cohort=lines[i];break;}
+  }
+  const tzMatch=text.match(/All times are in (ET|CT|MT|PT|UTC)/i);
+  if(tzMatch)tz=tzMatch[1].toUpperCase();
+
+  // Testing window close date (from the agenda note, if present)
+  let twClose='';
+  const twM=text.match(/Eastern\s+Time\s+on\s+\w+,\s+([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/);
+  if(twM){
+    const months=['january','february','march','april','may','june','july','august','september','october','november','december'];
+    const mo=months.indexOf(twM[1].toLowerCase())+1;
+    if(mo>0)twClose=twM[3]+'-'+String(mo).padStart(2,'0')+'-'+String(parseInt(twM[2],10)).padStart(2,'0');
+  }
+
+  let matchedCourse=null;
+  for(const c of COURSES){
+    if(c.isInPerson)continue;
+    const pdfTitleClean=c.pdfTitle.replace(/\u2014.*/,'').trim().toLowerCase();
+    const titleClean=title.toLowerCase();
+    if(titleClean.includes(pdfTitleClean.slice(0,20))||pdfTitleClean.includes(titleClean.slice(0,20))){matchedCourse=c;break;}
+  }
+  if(!matchedCourse){
+    for(const c of COURSES){
+      if(c.isInPerson)continue;
+      if(title.toLowerCase().includes(c.name.split(' ').slice(0,3).join(' ').toLowerCase())){matchedCourse=c;break;}
+    }
+  }
+
+  const dateRe=/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s*\d{4}/;
+  const timeRe=/\b(\d{1,2}):(\d{2})\s*(AM|PM)/i;
+  const parsedRows=[];
+  let currentDate='';
+
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i];
+    const dateM=line.match(dateRe);
+    if(dateM&&!timeRe.test(line)){currentDate=isoFromDisplay(dateM[0]);continue;}
+    if(dateM&&timeRe.test(line))currentDate=isoFromDisplay(dateM[0]);
+    const times=[];
+    let tMatch;
+    const tRe=/\b(\d{1,2}):(\d{2})\s*(AM|PM)/gi;
+    while((tMatch=tRe.exec(line))!==null)times.push(tMatch[0]);
+    if(times.length>=2){
+      const startT=to24(times[0]),endT=to24(times[1]);
+      let platform='Zoom';
+      if(/learning portal/i.test(line))platform='Learning Portal';
+      else if(/teams/i.test(line))platform='Teams';
+      let workLine=line,instructorFound='';
+      const instMatch=findInstructorInLine(workLine);
+      if(instMatch){instructorFound=instMatch.name;workLine=workLine.slice(0,instMatch.index)+' '+workLine.slice(instMatch.index+instMatch.matched.length);}
+      let sName=workLine.replace(dateRe,'').replace(/\b\d{1,2}:\d{2}\s*(AM|PM)/gi,'').replace(/zoom|teams/gi,'').replace(/learning portal/gi,'').replace(/ET|CT|MT|PT|UTC/g,'').replace(/\u2013|\u2014|-/g,' ').replace(/\s{2,}/g,' ').trim();
+      if(sName.length>2)parsedRows.push({displayName:sName,isILT:platform!=='Learning Portal',platform,date:currentDate,startTime:startT,endTime:endT,instructor:instructorFound,zoomLink:'',selected:false,isDayHeader:false,startTimeEdited:true,endTimeEdited:true,id:++_rowId,title:null,topicsHtml:null});
+    } else if(!times.length&&(/self.study/i.test(line)||/learning portal/i.test(line))){
+      let sName=line.replace(/learning portal/gi,'').replace(/\u2013|\u2014/g,' ').replace(/\s{2,}/g,' ').trim();
+      if(sName.length>3)parsedRows.push({displayName:sName,isILT:false,platform:'Learning Portal',date:'',startTime:'',endTime:'',instructor:'',zoomLink:'',selected:false,isDayHeader:false,startTimeEdited:false,endTimeEdited:false,id:++_rowId,title:null,topicsHtml:null});
+    }
+  }
+
+  if(parsedRows.length===0&&!matchedCourse)return{error:'Could not extract session data from this PDF. Make sure it was generated by this tool.'};
+
+  let finalRows=[];
+  if(matchedCourse){
+    let iltIdx=0;
+    const defTime=getDefaultTime24();
+    finalRows=matchedCourse.rows.map(r=>{
+      const isILT=r.isILT;
+      const extracted=parsedRows.find(p=>{
+        const norm=s=>s.toLowerCase().replace(/[-\u2013\u2014]+/g,' ').replace(/\s+/g,' ').trim();
+        const pn=norm(p.displayName),rn=norm(r.displayName);
+        return pn.includes(rn.slice(0,Math.min(rn.length,20)))||rn.includes(pn.slice(0,Math.min(pn.length,20)));
+      });
+      let st=isILT?(extracted?extracted.startTime:defTime):'';
+      let et=isILT?(extracted?extracted.endTime:''):'';
+      const dt=extracted?extracted.date:'';
+      if(!et&&isILT){const dur=getDuration(matchedCourse.id,r.displayName,iltIdx);et=calcEndTime(st,dur)||'';}
+      if(isILT)iltIdx++;
+      const inst=extracted?extracted.instructor:'';
+      return {id:++_rowId,displayName:r.displayName,isILT,platform:r.platform||'Zoom',title:r.title||null,topicsHtml:r.topicsHtml||null,date:dt,startTime:st,endTime:et,instructor:inst,zoomLink:'',selected:false,isDayHeader:false,startTimeEdited:false,endTimeEdited:false,blockKey:r.blockKey||null};
+    });
+  } else {
+    finalRows=parsedRows;
+  }
+
+  return{title:title.replace(/\u2014\s*Schedule$/i,'').trim(),cohort,tz,course:matchedCourse,rows:finalRows,twClose};
+}
+
+function applyImportedData(result){
+  if(result.title)document.getElementById('programTitle').value=result.title;
+  if(result.cohort)document.getElementById('cohortName').value=result.cohort;
+  if(result.tz){const tzSel=document.getElementById('timezone');for(let i=0;i<tzSel.options.length;i++){if(tzSel.options[i].value===result.tz){tzSel.selectedIndex=i;break;}}}
+  twCloseEdited=false;
+  document.getElementById('twEnabled').checked=true;
+  document.getElementById('twClose').value='';
+  if(result.course){
+    selectedCourse=result.course;
+    document.getElementById('introText').value=result.course.introHtml;
+    document.getElementById('courseInput').value=result.course.name;
+    document.getElementById('courseValue').value=String(result.course.id);
+    document.getElementById('defaultTimePanelVirtual').classList.remove('hidden');
+    document.getElementById('ipFields').classList.add('hidden');
+    document.getElementById('scheduleHint').innerHTML='Imported from PDF \u2014 add instructor names and Zoom links below, then export.';
+    document.getElementById('btnAddRow').style.display='';
+    programBlockOrder=[];
+    document.getElementById('programOrderPanel').classList.add('hidden');
+    if(result.course.programBlocks){
+      programBlockOrder=result.course.programBlocks.map(b=>b.key);
+      renderProgramOrderPanel();
+    }
+    const cs=document.getElementById('courseStatus');
+    cs.className='status-bar success';
+    cs.textContent='\u2713 Program matched: '+result.course.name;
+    cs.style.display='block';
+  }
+  rows=result.rows;
+  _rowId=Math.max(...rows.map(r=>r.id||0),_rowId);
+  renderTable();
+  // Restore a manually set testing window close date from the imported agenda
+  if(result.twClose&&selectedCourse&&selectedCourse.testingWindow){
+    const rr=getReviewRow();
+    const auto=rr&&rr.date?calcTwClose(rr.date):'';
+    if(result.twClose!==auto){
+      document.getElementById('twClose').value=result.twClose;
+      twCloseEdited=true;
+      refreshTestingWindow();
+    }
+  }
+  document.getElementById('scheduleEmpty').style.display='none';
+  document.getElementById('scheduleTableWrap').classList.remove('hidden');
+  updateIltCount();
+  document.getElementById('schedulePanel').scrollIntoView({behavior:'smooth'});
+}
+
+function isoFromDisplay(s){
+  const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  const m=s.match(/(\w{3})\s+(\d{1,2}),?\s*(\d{4})/);
+  if(!m)return'';
+  const mo=months[m[1].toLowerCase()];
+  return m[3]+'-'+String(mo).padStart(2,'0')+'-'+String(parseInt(m[2])).padStart(2,'0');
+}
+function to24(t){
+  const m=t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if(!m)return'';
+  let h=parseInt(m[1]),mn=m[2],ap=m[3].toUpperCase();
+  if(ap==='PM'&&h!==12)h+=12;
+  if(ap==='AM'&&h===12)h=0;
+  return String(h).padStart(2,'0')+':'+mn;
+}
+
+function showUploadProgress(show){document.getElementById('uploadProgress').style.display=show?'block':'none';if(show)document.getElementById('progressFill').style.width='0%';}
+function setProgress(pct){document.getElementById('progressFill').style.width=pct+'%';}
+function showImportStatus(type,msg){const el=document.getElementById('importStatus');el.className='status-bar '+type;el.textContent=msg;el.style.display='block';}
+
+// ═══════════════════════════════════════════════════════
+// SESSION CELL (preview + PDF)
+// ═══════════════════════════════════════════════════════
+function sessionCell(row,forPdf){
+  if(!row.title&&!row.topicsHtml)return esc(row.displayName);
+  let h='';
+  if(row.title){h+=forPdf?'<div style="font-weight:700;color:#64092c;margin-bottom:3px;">'+esc(row.title)+'</div>':'<div class="session-title">'+esc(row.title)+'</div>';}
+  if(row.topicsHtml){h+=forPdf?'<ul style="margin:3px 0 0 16px;padding:0;font-size:9pt;color:#484848;">'+row.topicsHtml.replace(/<\/?ul>/g,'')+'</ul>':'<ul class="session-topics">'+row.topicsHtml.replace(/<\/?ul>/g,'')+'</ul>';}
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════
+// PREVIEW
+// ═══════════════════════════════════════════════════════
+function generatePreview(){
+  const title=document.getElementById('programTitle').value||'Program Schedule';
+  const cohort=document.getElementById('cohortName').value;
+  const intro=document.getElementById('introText').value;
+  const tz=document.getElementById('timezone').value;
+  const lastCol=selectedCourse?selectedCourse.lastColHeader:'Session Name';
+  const isIP=selectedCourse&&selectedCourse.isInPerson;
+  const location=document.getElementById('ipLocation').value;
+  let body='';
+  if(isIP){
+    let currentDay=null;
+    rows.forEach(row=>{
+      if(row.isDayHeader){
+        if(currentDay!==null)body+='</tbody></table>';
+        body+='<div style="background:#64092c;color:#fff;font-weight:700;padding:10px 12px;margin-top:16px;font-size:13px;">'+esc(row.dayLabel)+' - '+esc(row.dateLabel)+'</div>';
+        body+='<table class="prev-table"><thead><tr><th style="width:90px;">Start</th><th style="width:10px;"></th><th style="width:90px;">End</th><th>'+esc(lastCol)+'</th></tr></thead><tbody>';
+        currentDay=row;
+      } else {
+        body+='<tr><td style="white-space:nowrap;">'+esc(fmtTime(row.startTime))+'</td><td style="text-align:center;color:#bbb;">\u2013</td><td style="white-space:nowrap;">'+esc(fmtTime(row.endTime))+'</td><td>'+esc(row.displayName)+'</td></tr>';
+      }
+    });
+    if(currentDay!==null)body+='</tbody></table>';
+  } else {
+    body+='<div class="doc-tz">All times are in '+esc(tz)+'</div>';
+    body+='<table class="prev-table"><thead><tr><th>Date</th><th>Start</th><th>End</th><th>Platform</th><th>'+esc(lastCol)+'</th></tr></thead><tbody>';
+    rows.forEach(row=>{if(row.isDayHeader)return;const z=row.platform==='Zoom'||row.platform==='Teams';body+='<tr><td>'+esc(z&&row.date?fmtDate(row.date):'')+'</td><td>'+esc(z&&row.startTime?fmtTime(row.startTime)+' '+tz:'')+'</td><td>'+esc(z&&row.endTime?fmtTime(row.endTime)+' '+tz:'')+'</td><td><strong>'+esc(row.platform)+'</strong></td><td>'+sessionCell(row,false)+'</td></tr>';});
+    body+='</tbody></table>';
+    const tw=getTestingWindow();
+    if(tw)body+='<div class="doc-tw">'+testingWindowNoteHtml(tw)+'</div>';
+  }
+  let h='<div class="doc-title">'+esc(title)+'</div>';
+  if(cohort)h+='<div class="doc-cohort">'+esc(cohort)+'</div>';
+  if(location&&isIP)h+='<div class="doc-cohort">'+esc(location)+'</div>';
+  if(intro)h+='<div class="doc-intro">'+intro+'</div>';
+  h+=body;
+  document.getElementById('previewContent').innerHTML=h;
+  document.getElementById('previewSection').classList.remove('hidden');
+  document.getElementById('previewSection').scrollIntoView({behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════════════════════
+// PDF: PROGRAM AGENDA
+// ═══════════════════════════════════════════════════════
+function buildProgramAgendaHtml(){
+  const title=document.getElementById('programTitle').value||'Program Schedule',cohort=document.getElementById('cohortName').value,intro=document.getElementById('introText').value,tz=document.getElementById('timezone').value;
+  const fullTitle=cohort?title+' \u2014 '+cohort:title;
+  const lastCol=selectedCourse?selectedCourse.lastColHeader:'Session Name';
+  const isIP=selectedCourse&&selectedCourse.isInPerson;
+  const location=document.getElementById('ipLocation').value;
+  if(isIP){
+    const dayNote=selectedCourse.dayStartNote||'';const hasExam=selectedCourse.hasExam;
+    let body='';
+    if(hasExam)body+='<div class="ip-intro"><p><strong>CLEAR POLICY STATES THAT NO ATTENDEE MAY TAKE THE FINAL EXAM BEFORE THE TRAINING IS COMPLETE. PLEASE KEEP THIS IN MIND WHEN MAKING YOUR TRAVEL PLANS.</strong></p></div>';
+    if(dayNote)body+='<div class="ip-intro"><p>'+esc(dayNote)+'. Schedule is subject to change.</p></div>';
+    else body+='<div class="ip-intro"><p>Schedule is subject to change.</p></div>';
+    let dayOpen=false;
+    rows.forEach(row=>{
+      if(row.isDayHeader){if(dayOpen)body+='</table>';body+='<div class="day-bar">'+esc(row.dayLabel)+' \u2014 '+esc(row.dateLabel)+'</div><table>';dayOpen=true;}
+      else{const cls=row.isBreak?' class="brk"':'';body+='<tr'+cls+'><td class="tc">'+esc(fmtTime(row.startTime))+'</td><td class="td">\u2013</td><td class="tc">'+esc(fmtTime(row.endTime))+'</td><td>'+esc(row.displayName)+'</td></tr>';}
+    });
+    if(dayOpen)body+='</table>';
+    const safe=fullTitle.replace(/[^a-z0-9\s\-]/gi,'').replace(/\s+/g,'_').slice(0,60);
+    const html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>'+esc(fullTitle)+'</title><style>@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap");@page{size:portrait;margin:0.5in 0.6in;}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:"Open Sans","Trebuchet MS",Arial,sans-serif;font-size:9pt;color:#484848;background:#fff;}.doc-header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:3px solid #64092c;padding-bottom:8px;margin-bottom:10px;}.doc-title{font-size:14pt;font-weight:800;color:#64092c;line-height:1.2;}.doc-cohort{font-size:9.5pt;color:#484848;margin-top:2px;}.doc-meta{font-size:8pt;color:#7a6b62;text-align:right;line-height:1.5;}.ip-intro{font-size:8pt;color:#484848;line-height:1.45;margin-bottom:4px;}.ip-intro p{margin-bottom:4px;}.ip-intro strong{color:#64092c;}.day-bar{background:#64092c;color:#fff;font-weight:700;padding:5pt 8pt;font-size:9pt;margin-top:8pt;}table{width:100%;border-collapse:collapse;font-size:8.5pt;}td{padding:3pt 6pt;border-bottom:0.5pt solid #d4c8c0;vertical-align:top;line-height:1.35;}.tc{white-space:nowrap;width:62px;color:#666;}.td{width:10px;text-align:center;color:#bbb;}tr.brk td{color:#999;font-style:italic;}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><div class="doc-header"><div><div class="doc-title">'+esc(title)+'</div>'+(cohort?'<div class="doc-cohort">'+esc(cohort)+'</div>':'')+(location?'<div class="doc-cohort">'+esc(location)+'</div>':'')+'</div><div class="doc-meta">CLEAR Learning<br>Program Agenda</div></div>'+body+'<script>window.onload=function(){document.title='+JSON.stringify(safe)+';window.print();};<\/script></body></html>';
+    return html;
+  } else {
+    const trs=rows.map(row=>{if(row.isDayHeader)return'';const z=row.platform==='Zoom'||row.platform==='Teams';const pd=z?'<strong>'+esc(row.platform)+'</strong>':'<span style="color:#64092c;">'+esc(row.platform)+'</span>';return '<tr><td>'+esc(z&&row.date?fmtDate(row.date):'')+'</td><td>'+esc(z&&row.startTime?fmtTime(row.startTime)+' '+tz:'')+'</td><td>'+esc(z&&row.endTime?fmtTime(row.endTime)+' '+tz:'')+'</td><td>'+pd+'</td><td class="col-name-cell">'+sessionCell(row,true)+'</td></tr>';}).join('');
+    const safe=fullTitle.replace(/[^a-z0-9\s\-]/gi,'').replace(/\s+/g,'_').slice(0,60);
+    const tw=getTestingWindow();
+    // Programs with a testing window get tighter margins/padding so the added note keeps the agenda to one page
+    const compact=!!(selectedCourse&&selectedCourse.testingWindow);
+    const pageMargin=compact?'0.4in 0.5in':'0.6in 0.65in';
+    const compactCss=compact?'.doc-header{padding-bottom:8px;margin-bottom:12px;}.doc-intro{font-size:9pt;line-height:1.45;margin-bottom:10px;}.doc-intro p{margin-bottom:6px;}.doc-tz{margin-bottom:8px;}th{padding:5pt 7pt;}td{padding:4pt 7pt;line-height:1.35;}':'';
+    let bodyHtml='<div class="doc-header"><div><div class="doc-title">'+esc(title)+'</div>'+(cohort?'<div class="doc-cohort">'+esc(cohort)+'</div>':'')+'</div><div class="doc-meta">CLEAR Learning<br>Generated '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div></div>';
+    if(intro)bodyHtml+='<div class="doc-intro">'+intro+'</div>';
+    bodyHtml+='<div class="doc-tz">All times are in '+esc(tz)+'</div><table><colgroup><col class="col-date"><col class="col-start"><col class="col-end"><col class="col-plat"><col class="col-name"></colgroup><thead><tr><th>Date</th><th>Start</th><th>End</th><th>Platform</th><th>'+esc(lastCol)+'</th></tr></thead><tbody>'+trs+'</tbody></table>';
+    if(tw)bodyHtml+='<div class="doc-tw">'+testingWindowNoteHtml(tw)+'</div>';
+    const html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>'+esc(fullTitle)+'</title><style>@page{size:portrait;margin:'+pageMargin+';}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:"Open Sans","Trebuchet MS",Arial,sans-serif;font-size:11pt;color:#484848;background:#fff;}.doc-header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:3px solid #64092c;padding-bottom:10px;margin-bottom:16px;}.doc-title{font-size:16pt;font-weight:800;color:#64092c;line-height:1.2;}.doc-cohort{font-size:11pt;color:#484848;margin-top:3px;}.doc-meta{font-size:9pt;color:#7a6b62;text-align:right;line-height:1.6;}.doc-intro{font-size:9.5pt;color:#484848;line-height:1.55;margin-bottom:16px;}.doc-intro p{margin-bottom:8px;break-inside:avoid;}.doc-intro h3{font-size:10pt;color:#64092c;margin:12px 0 4px;}.doc-intro strong{color:#64092c;}.doc-tz{font-size:9pt;font-weight:700;color:#484848;margin-bottom:10px;}table{width:100%;border-collapse:collapse;font-size:9.5pt;page-break-inside:auto;}thead{display:table-header-group;}th{background:#64092c;color:#fff;padding:7pt 8pt;text-align:left;font-weight:700;font-size:8.5pt;letter-spacing:0.3pt;text-transform:uppercase;border:1px solid #4a0620;}td{padding:6pt 8pt;border:1px solid #d4c8c0;vertical-align:top;line-height:1.4;background:#fff;}col.col-date{width:90px;}col.col-start{width:78px;}col.col-end{width:78px;}col.col-plat{width:90px;}col.col-name{width:auto;}td,th{word-break:normal;white-space:nowrap;}td.col-name-cell{white-space:normal;word-break:break-word;}.doc-tw{margin-top:12pt;padding:8pt 10pt;border-left:3pt solid #dda838;background:#fdf4e0;font-size:9.5pt;line-height:1.5;color:#484848;break-inside:avoid;page-break-inside:avoid;}.doc-tw strong{color:#64092c;}'+compactCss+'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body>'+bodyHtml+'<script>window.onload=function(){document.title='+JSON.stringify(safe)+';window.print();};<\/script></body></html>';
+    return html;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PDF: INSTRUCTOR AGENDA
+// ═══════════════════════════════════════════════════════
+function openPrintWindow(html){const win=window.open('','_blank');if(!win){alert('Pop-up blocked. Allow pop-ups for this page and try again.');return false;}win.document.write(html);win.document.close();return true;}
+function exportPDF(){const html=buildProgramAgendaHtml();if(html)openPrintWindow(html);}
+
+function exportInstructorPDF(){
+  const title=document.getElementById('programTitle').value||'Program Schedule',cohort=document.getElementById('cohortName').value,intro=document.getElementById('introText').value,tz=document.getElementById('timezone').value;
+  const instTitle=title.replace(/Schedule$/,'Instructor Agenda').replace(/\u2014 Schedule$/,'\u2014 Instructor Agenda');
+  const fullTitle=cohort?instTitle+' \u2014 '+cohort:instTitle;
+  const lastCol=selectedCourse?selectedCourse.lastColHeader:'Session Name';
+  const isIP=selectedCourse&&selectedCourse.isInPerson;
+  const location=document.getElementById('ipLocation').value;
+  if(isIP){
+    const dayNote=selectedCourse.dayStartNote||'';const hasExam=selectedCourse.hasExam;
+    let body='<div class="ip-note">This document is for internal use only. Do not distribute to program attendees.</div>';
+    if(hasExam)body+='<div class="ip-intro"><p><strong>CLEAR POLICY STATES THAT NO ATTENDEE MAY TAKE THE FINAL EXAM BEFORE THE TRAINING IS COMPLETE. PLEASE KEEP THIS IN MIND WHEN MAKING YOUR TRAVEL PLANS.</strong></p></div>';
+    if(dayNote)body+='<div class="ip-intro"><p>'+esc(dayNote)+'. Schedule is subject to change.</p></div>';
+    else body+='<div class="ip-intro"><p>Schedule is subject to change.</p></div>';
+    let dayOpen=false;
+    rows.forEach(row=>{
+      if(row.isDayHeader){if(dayOpen)body+='</table>';body+='<div class="day-bar">'+esc(row.dayLabel)+' \u2014 '+esc(row.dateLabel)+'</div><table>';dayOpen=true;}
+      else{const cls=row.isBreak?' class="brk"':'';const instName=row.instructor?esc(row.instructor):(row.isBreak?'':'');body+='<tr'+cls+'><td class="tc">'+esc(fmtTime(row.startTime))+'</td><td class="td">\u2013</td><td class="tc">'+esc(fmtTime(row.endTime))+'</td><td>'+esc(row.displayName)+'</td><td class="ti">'+instName+'</td></tr>';}
+    });
+    if(dayOpen)body+='</table>';
+    const safe=('Instructor_Agenda_'+(cohort||title)).replace(/[^a-z0-9\s\-]/gi,'').replace(/\s+/g,'_').slice(0,60);
+    const html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>'+esc(fullTitle)+'</title><style>@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap");@page{size:portrait;margin:0.5in 0.6in;}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:"Open Sans","Trebuchet MS",Arial,sans-serif;font-size:9pt;color:#484848;background:#fff;}.doc-header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:3px solid #64092c;padding-bottom:8px;margin-bottom:10px;}.doc-title{font-size:14pt;font-weight:800;color:#64092c;line-height:1.2;}.doc-cohort{font-size:9.5pt;color:#484848;margin-top:2px;}.doc-meta{font-size:8pt;color:#7a6b62;text-align:right;line-height:1.5;}.ip-note{font-size:7.5pt;color:#888;margin-bottom:6px;font-style:italic;}.ip-intro{font-size:8pt;color:#484848;line-height:1.45;margin-bottom:4px;}.ip-intro p{margin-bottom:4px;}.ip-intro strong{color:#64092c;}.day-bar{background:#64092c;color:#fff;font-weight:700;padding:5pt 8pt;font-size:9pt;margin-top:8pt;}table{width:100%;border-collapse:collapse;font-size:8.5pt;}td{padding:3pt 6pt;border-bottom:0.5pt solid #d4c8c0;vertical-align:top;line-height:1.35;}.tc{white-space:nowrap;width:62px;color:#666;}.td{width:10px;text-align:center;color:#bbb;}.ti{width:120px;font-weight:600;color:#084d78;white-space:nowrap;}tr.brk td{color:#999;font-style:italic;}tr.brk .ti{color:#999;}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><div class="doc-header"><div><div class="doc-title">'+esc(title)+'</div>'+(cohort?'<div class="doc-cohort">'+esc(cohort)+'</div>':'')+(location?'<div class="doc-cohort">'+esc(location)+'</div>':'')+'</div><div class="doc-meta">CLEAR Learning<br>Instructor Agenda</div></div>'+body+'<script>window.onload=function(){document.title='+JSON.stringify(safe)+';window.print();};<\/script></body></html>';
+    const win=window.open('','_blank');if(!win){alert('Pop-up blocked.');return;}win.document.write(html);win.document.close();
+  } else {
+    const trs=rows.map(row=>{if(row.isDayHeader)return'';const z=row.platform==='Zoom'||row.platform==='Teams';const pd=z?'<strong>'+esc(row.platform)+'</strong>':'<span style="color:#64092c;">'+esc(row.platform)+'</span>';const instName=z&&row.instructor?esc(row.instructor):'<span style="color:#bbb;">\u2014</span>';return '<tr><td>'+esc(z&&row.date?fmtDate(row.date):'')+'</td><td>'+esc(z&&row.startTime?fmtTime(row.startTime)+' '+tz:'')+'</td><td>'+esc(z&&row.endTime?fmtTime(row.endTime)+' '+tz:'')+'</td><td>'+pd+'</td><td style="font-weight:600;color:#084d78;white-space:nowrap;">'+instName+'</td><td class="col-name-cell">'+sessionCell(row,true)+'</td></tr>';}).join('');
+    const safe=('Instructor_Agenda_'+(cohort||title)).replace(/[^a-z0-9\s\-]/gi,'').replace(/\s+/g,'_').slice(0,60);
+    let bodyHtml='<div class="doc-header"><div><div class="doc-title">'+esc(instTitle)+'</div>'+(cohort?'<div class="doc-cohort">'+esc(cohort)+'</div>':'')+'</div><div class="doc-meta">CLEAR Learning<br>Instructor Agenda<br>Generated '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div></div>';
+    bodyHtml+='<div style="font-size:8.5pt;color:#888;margin-bottom:10px;font-style:italic;">This document is for internal use only. Do not distribute to program attendees.</div>';
+    bodyHtml+='<div style="font-size:8.5pt;font-weight:700;color:#484848;margin-bottom:10px;">All times are in '+esc(tz)+'</div><table><colgroup><col style="width:82px"><col style="width:72px"><col style="width:72px"><col style="width:78px"><col style="width:130px"><col></colgroup><thead><tr><th>Date</th><th>Start</th><th>End</th><th>Platform</th><th>Instructor</th><th>'+esc(lastCol)+'</th></tr></thead><tbody>'+trs+'</tbody></table>';
+    const html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>'+esc(fullTitle)+'</title><style>@page{size:landscape;margin:0.5in 0.55in;}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:"Open Sans","Trebuchet MS",Arial,sans-serif;font-size:10pt;color:#484848;background:#fff;}.doc-header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:3px solid #64092c;padding-bottom:10px;margin-bottom:16px;}.doc-title{font-size:15pt;font-weight:800;color:#64092c;line-height:1.2;}.doc-cohort{font-size:10pt;color:#484848;margin-top:3px;}.doc-meta{font-size:8.5pt;color:#7a6b62;text-align:right;line-height:1.6;}table{width:100%;border-collapse:collapse;font-size:9pt;page-break-inside:auto;}thead{display:table-header-group;}th{background:#64092c;color:#fff;padding:6pt 7pt;text-align:left;font-weight:700;font-size:8pt;letter-spacing:0.3pt;text-transform:uppercase;border:1px solid #4a0620;}td{padding:5pt 7pt;border:1px solid #d4c8c0;vertical-align:top;line-height:1.4;background:#fff;}td,th{word-break:normal;white-space:nowrap;}td.col-name-cell{white-space:normal;word-break:break-word;}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body>'+bodyHtml+'<script>window.onload=function(){document.title='+JSON.stringify(safe)+';window.print();};<\/script></body></html>';
+    const win=window.open('','_blank');if(!win){alert('Pop-up blocked.');return;}win.document.write(html);win.document.close();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ICS EXPORT — OUTLOOK CALENDAR INVITES
+// ═══════════════════════════════════════════════════════
+function buildIcsText(){
+  const title=document.getElementById('programTitle').value||'Program Session';
+  const cohort=document.getElementById('cohortName').value;
+  const tz=document.getElementById('timezone').value;
+  const isIP=selectedCourse&&selectedCourse.isInPerson;
+  const location=isIP?(document.getElementById('ipLocation').value||''):'';
+
+  const iltRows=rows.filter(r=>!r.isDayHeader&&r.isILT&&r.date&&r.startTime&&r.endTime);
+  if(!iltRows.length) return null;
+
+  const tzMap={ET:'America/New_York',CT:'America/Chicago',MT:'America/Denver',PT:'America/Los_Angeles',UTC:'UTC'};
+  const tzLabels={ET:'Eastern Time',CT:'Central Time',MT:'Mountain Time',PT:'Pacific Time',UTC:'UTC'};
+  const tzId=tzMap[tz]||'America/New_York';
+  const tzLabel=tzLabels[tz]||'Eastern Time';
+
+  function toIcsDatetime(isoDate,time24){
+    return isoDate.replace(/-/g,'')+'T'+time24.replace(':','')+'00';
+  }
+
+  function subtractMinutes(time24,mins){
+    const[h,m]=time24.split(':').map(Number);
+    const total=h*60+m-mins;
+    const adj=((total%1440)+1440)%1440;
+    return String(Math.floor(adj/60)).padStart(2,'0')+':'+String(adj%60).padStart(2,'0');
+  }
+
+  function fmtTime12(t24){
+    const[h,m]=t24.split(':').map(Number);
+    return(h%12||12)+':'+String(m).padStart(2,'0')+' '+(h>=12?'PM':'AM');
+  }
+
+  function icsEscape(s){
+    return String(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n').replace(/\r/g,'');
+  }
+
+  function fold(line){
+    if(line.length<=75)return line;
+    let out='',pos=0;
+    while(pos<line.length){
+      if(pos===0){out+=line.slice(0,75);pos=75;}
+      else{out+='\r\n '+line.slice(pos,pos+74);pos+=74;}
+    }
+    return out;
+  }
+
+  const programLabel=cohort?title+' \u2014 '+cohort:title;
+  const now=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+
+  let ics='BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//CLEAR Learning//Program Agenda Generator//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n';
+  ics+=fold('X-WR-CALNAME:'+icsEscape(programLabel))+'\r\n';
+  ics+='X-WR-TIMEZONE:'+tzId+'\r\n';
+  ics+='BEGIN:VTIMEZONE\r\nTZID:'+tzId+'\r\nEND:VTIMEZONE\r\n';
+
+  iltRows.forEach((row,idx)=>{
+    const sessionStart12=fmtTime12(row.startTime);
+    const earlyStart=subtractMinutes(row.startTime,15);
+    const dtStart=toIcsDatetime(row.date,earlyStart);
+    const dtEnd=toIcsDatetime(row.date,row.endTime);
+
+    const instrLine=row.instructor?'Instructor: '+row.instructor+'\n':'';
+    const zoomLine=(row.zoomLink&&!isIP)?'Zoom Link: '+row.zoomLink+'\n':'';
+
+    const descBody=
+      'The '+row.displayName+' session will begin at '+sessionStart12+' '+tzLabel+'. '+
+      'Please log in 15 minutes early to allow time to set up, run a tech check, and troubleshoot any issues that may arise.\n\n'+
+      instrLine+
+      zoomLine+
+      'Thank you \u2014 please contact clearlearning@clearhq.org if you have any questions or need further assistance.';
+
+    const locationVal=(row.zoomLink&&!isIP)?row.zoomLink:(location||'');
+    const uid=icsUidFor(row,idx);
+    const summary=icsEscape(row.displayName+(cohort?' \u2014 '+cohort:''));
+
+    ics+='BEGIN:VEVENT\r\n';
+    ics+=fold('UID:'+uid)+'\r\n';
+    ics+='DTSTAMP:'+now+'\r\n';
+    ics+=fold('DTSTART;TZID='+tzId+':'+dtStart)+'\r\n';
+    ics+=fold('DTEND;TZID='+tzId+':'+dtEnd)+'\r\n';
+    ics+=fold('SUMMARY:'+summary)+'\r\n';
+    ics+=fold('DESCRIPTION:'+icsEscape(descBody))+'\r\n';
+    if(locationVal)ics+=fold('LOCATION:'+icsEscape(locationVal))+'\r\n';
+    ics+='ORGANIZER;CN=CLEAR Learning:mailto:clearlearning@clearhq.org\r\n';
+    ics+='STATUS:CONFIRMED\r\nTRANSP:OPAQUE\r\n';
+    ics+='END:VEVENT\r\n';
+  });
+
+  // ── Testing window: all-day event spanning review session date → close Thursday, shown as Free ──
+  const tw=getTestingWindow();
+  if(tw){
+    const firstLive=rows.filter(r=>!r.isDayHeader&&r.isILT&&r.date).map(r=>r.date).sort()[0]||tw.openDate;
+    const twSummary=firstLive.replace(/-/g,'.')+' '+selectedCourse.testingWindow.code+' Testing Window';
+    const twDesc='The final exam testing window opens after the '+tw.reviewLabel+' session on '+fmtDateLong(tw.openDate)+
+      (tw.openTime?' at '+fmtTime12(tw.openTime)+' '+tzLabel:'')+
+      ' and closes at 11:59 PM Eastern Time on '+fmtDateLong(tw.closeDate)+'.\n\n'+
+      'Attendees who have completed all required program components may take the exam anytime during this window.';
+    ics+='BEGIN:VEVENT\r\n';
+    ics+=fold('UID:CLEAR-TW-'+tw.openDate.replace(/-/g,'')+'-'+tw.closeDate.replace(/-/g,'')+'@clearhq.org')+'\r\n';
+    ics+='DTSTAMP:'+now+'\r\n';
+    ics+='DTSTART;VALUE=DATE:'+tw.openDate.replace(/-/g,'')+'\r\n';
+    ics+='DTEND;VALUE=DATE:'+isoAddDays(tw.closeDate,1).replace(/-/g,'')+'\r\n';
+    ics+=fold('SUMMARY:'+icsEscape(twSummary))+'\r\n';
+    ics+=fold('DESCRIPTION:'+icsEscape(twDesc))+'\r\n';
+    ics+='ORGANIZER;CN=CLEAR Learning:mailto:clearlearning@clearhq.org\r\n';
+    ics+='STATUS:CONFIRMED\r\nTRANSP:TRANSPARENT\r\n';
+    ics+='X-MICROSOFT-CDO-BUSYSTATUS:FREE\r\nX-MICROSOFT-CDO-ALLDAYEVENT:TRUE\r\n';
+    ics+='END:VEVENT\r\n';
+  }
+
+  ics+='END:VCALENDAR';
+  return ics;
+}
+function icsRows(){return rows.filter(r=>!r.isDayHeader&&r.isILT&&r.date&&r.startTime&&r.endTime);}
+// Stable per-program UID so calendars don't merge two programs that share a date, and the portal can match sessions.
+function icsUidFor(row,idx){
+  const first=rows.filter(r=>!r.isDayHeader&&r.isILT&&r.date).map(r=>r.date).sort()[0]||row.date;
+  const slug=String(selectedCourse?selectedCourse.id:'program').replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'-'+first.replace(/-/g,'');
+  return 'CLEAR-'+slug+'-'+row.date.replace(/-/g,'')+'-'+String(idx+1).padStart(3,'0')+'@clearhq.org';
+}
+function icsFileName(){const title=(document.getElementById('programTitle').value||'Program Session').replace(/\s*\u2014\s*(Schedule|Program Agenda)$/,''),cohort=document.getElementById('cohortName').value;return (cohort?title+' '+cohort:title).replace(/[^a-z0-9\s\-]/gi,'').replace(/\s+/g,'_').slice(0,70)+'_Instructor_Invites.ics';}
+function downloadText(name,text,type){const blob=new Blob([text],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},1000);}
+function exportOutlookICS(){
+  const ics=buildIcsText();
+  if(!ics){alert('No sessions with dates and times found.\nPlease fill in dates and start/end times for your sessions first.');return;}
+  downloadText(icsFileName(),ics,'text/calendar;charset=utf-8');
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')[+m-1]+' '+(+d)+', '+y;}
+function fmtTime(t){if(!t)return'';const[h,m]=t.split(':').map(Number);return(h%12||12)+':'+String(m).padStart(2,'0')+' '+(h>=12?'PM':'AM');}
+</script>
+<script>
+// ═══════════════════════════════════════════════════════
+// QUARTER BATCH (TeamGantt → agendas, calendar files, portal package)
+// ═══════════════════════════════════════════════════════
+const BATCH_KEY='clear_agenda_batch_v1';
+const DEADLINE_DAYS=30;
+let BATCH={cohorts:[],quarter:'upcoming',round:'',fileName:'',loadedAt:''};
+let batchEditing=null;
+
+// Cohort name (after the date) + TeamGantt group → program template id. First match wins.
+const COHORT_RULES=[
+  [/NCIT\s*B\s*CAN\s*V\b/i,'128'],
+  [/NCIT\s*B\s*(US\s*)?V\b/i,'126'],
+  [/NCIT\s*S\s*V\b/i,'129'],
+  [/NCIT\s*W\s*Series/i,'ncit-workshop-series'],
+  [/NCIT\s*W\s*Comm/i,'146'],
+  [/NCIT\s*W\s*Ethic/i,'157'],
+  [/NCIT\s*W\s*(DDI|Drug)/i,'169'],
+  [/NCIT\s*W\s*(IRSM|Sexual)/i,'143'],
+  [/NCIT\s*AIT/i,'ip-ncit-ait'],
+  [/NCIT\s*B\s*CAN\b/i,'ip-ncit-b-can'],
+  [/NCIT\s*B\b/i,'ip-ncit-b-us'],
+  [/NCIT\s*S\b/i,'ip-ncit-s'],
+  [/\bSRA\b|Staffing a Board/i,'147'],
+  [/\bELPR\b|Executive Leadership/i,'138'],
+  [/\bACRG\b|Advanced Concepts/i,'142'],
+  [/GMFB|Getting the Most|Chair/i,'165'],
+  [/\bDDI\b|Drug Diversion/i,'169'],
+  [/\bIRSM\b|Sexual Misconduct/i,'143'],
+  [/Ethics|Professional Attitude/i,'157'],
+  [/Communications|Persuasion/i,'146']
+];
+// TeamGantt task name → template live session. Each rule: task test, then a test on the template row text.
+const SESSION_RULES=[
+  [/welcome/,x=>/welcome/.test(x)],
+  [/\bddi\b\s*s?(ession)?\s*1\b|drug diversion.*\b(1|one)\b/,x=>/drug diversion.*session one/.test(x)||/^session one/.test(x)],
+  [/\bddi\b\s*s?(ession)?\s*2\b|drug diversion.*\b(2|two)\b/,x=>/drug diversion.*session two/.test(x)||/^session two/.test(x)],
+  [/\birsm\b\s*s?(ession)?\s*1\b|sexual.*\b(1|one)\b/,x=>/workshop (session )?one/.test(x)],
+  [/\birsm\b\s*s?(ession)?\s*2\b|sexual.*\b(2|two)\b/,x=>/workshop (session )?two/.test(x)],
+  [/workshop\s*(1|one)\b/,x=>/workshop (session )?one/.test(x)],
+  [/workshop\s*(2|two)\b/,x=>/workshop (session )?two/.test(x)],
+  [/communicat/,x=>/communications/.test(x)],
+  [/ethic/,x=>/ethics/.test(x)],
+  [/investigative (process|techniques)/,x=>/investigative process/.test(x)],
+  [/interview/,x=>/interviewing/.test(x)],
+  [/week\s*(1|one)|q\s*&\s*a/,x=>/week one/.test(x)],
+  [/report writing/,x=>/report writing/.test(x)],
+  [/testif/,x=>/testifying/.test(x)],
+  [/program review/,x=>/program review/.test(x)],
+  [/cmrt|cognitive/,x=>/cmrt|cognitive memory/.test(x)],
+  [/\bbaq\b|behavio/,x=>/behavioral analysis/.test(x)],
+  [/observation/,x=>/observation/.test(x)],
+  [/\bm(odule)?\s*\d\s*review|module review/,x=>/module review/.test(x)],
+  [/chair/,x=>/board chair/.test(x)],
+  [/meeting/,x=>/board meetings/.test(x)],
+  [/challenge/,x=>/challenges/.test(x)],
+  [/staff interaction/,x=>/staff interactions/.test(x)],
+  [/\bs(ession)?\s*1\b/,x=>/session one/.test(x)],
+  [/\bs(ession)?\s*2\b/,x=>/session two/.test(x)]
+];
+const STATE_TZ={CT:'AL AR IA IL KS LA MN MO MS NE ND OK SD TN TX WI MB SK',MT:'AZ CO ID MT NM UT WY AB',PT:'CA NV OR WA BC'};
+const LONG_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+const courseOf=c=>COURSES.find(x=>String(x.id)===String(c.courseId));
+const clone=o=>JSON.parse(JSON.stringify(o));
+function quarterOf(iso){ if(!iso) return ''; const [y,m]=iso.split('-').map(Number); return 'Q'+(Math.floor((m-1)/3)+1)+' '+y; }
+function nextQuarterLabel(){ const d=new Date(); let q=Math.floor(d.getMonth()/3)+2, y=d.getFullYear(); if(q>4){q=1;y++;} return 'Q'+q+' '+y; }
+function qSort(a,b){ const [qa,ya]=a.slice(1).split(' ').map(Number),[qb,yb]=b.slice(1).split(' ').map(Number); return ya-yb||qa-qb; }
+
+/* ---------- CSV + TeamGantt parsing ---------- */
+function csvParse(text){
+  const out=[]; let row=[], f='', q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){ if(ch==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=ch; }
+    else if(ch==='"') q=true;
+    else if(ch===','){ row.push(f); f=''; }
+    else if(ch==='\n'||ch==='\r'){ if(ch==='\r'&&text[i+1]==='\n') i++; row.push(f); out.push(row); row=[]; f=''; }
+    else f+=ch;
+  }
+  if(f||row.length){ row.push(f); out.push(row); }
+  return out.filter(r=>r.some(v=>String(v).trim()));
+}
+function tgDate(s){ const m=String(s||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m) return m[3]+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0'); const x=String(s||'').trim(); return /^\d{4}-\d{2}-\d{2}/.test(x)?x.slice(0,10):''; }
+function mapCourse(code,group){ const s=code+' | '+group; const hit=COHORT_RULES.find(r=>r[0].test(s)); return hit?hit[1]:''; }
+function parseLocation(code){ const m=code.match(/\b([A-Z][a-z][A-Za-z.' -]*?)\s+([A-Z]{2})$/); return m?m[1].trim()+', '+m[2]:''; }
+function tzForLocation(loc){ const st=(String(loc).match(/\b([A-Z]{2})$/)||[])[1]; if(!st) return 'ET'; for(const [tz,list] of Object.entries(STATE_TZ)) if(list.split(' ').includes(st)) return tz; return 'ET'; }
+
+function parseTeamGantt(text){
+  const rows=csvParse(text.replace(/^\uFEFF/,''));
+  if(!rows.length) throw new Error('The file is empty.');
+  const head=rows[0].map(h=>h.trim().toLowerCase());
+  const col=n=>head.findIndex(h=>h===n);
+  const C={wbs:col('wbs #'),name:col('name / title'),type:col('type'),start:col('start date'),end:col('end date')};
+  if(C.wbs<0||C.name<0||C.type<0||C.start<0) throw new Error('This doesn\u2019t look like a TeamGantt CSV export. It needs the WBS #, Name / Title, Type and Start Date columns.');
+  const items=rows.slice(1).filter(r=>(r[C.wbs]||'').trim()).map(r=>({wbs:r[C.wbs].trim(),name:(r[C.name]||'').trim(),type:(r[C.type]||'').trim().toLowerCase(),start:tgDate(r[C.start]),end:tgDate(r[C.end])||tgDate(r[C.start])}));
+  const byWbs=new Map(items.map(i=>[i.wbs,i]));
+  const parent=i=>byWbs.get(i.wbs.split('.').slice(0,-1).join('.'));
+  const cohorts=[];
+  for(const it of items){
+    const m=it.name.match(/^(\d{4})\.(\d{2})\.(\d{2})\s+(.+)$/); if(!m) continue;
+    const par=parent(it);
+    const isCohort=it.type==='subgroup'||(it.type==='task'&&par&&par.type==='group');
+    if(!isCohort) continue;
+    const kids=it.type==='subgroup'?items.filter(k=>k.type==='task'&&parent(k)===it):[];
+    cohorts.push(buildCohort(it,m[4].trim(),par?par.name:'',kids));
+  }
+  // Default labels: "January 2027 Cohort", with the day added when one program has two cohorts in a month
+  const seen={};
+  cohorts.forEach(c=>{ const k=c.courseId+'|'+c.startDate.slice(0,7); seen[k]=(seen[k]||0)+1; });
+  cohorts.forEach(c=>{ const [y,mo,d]=c.startDate.split('-').map(Number); c.label=seen[c.courseId+'|'+c.startDate.slice(0,7)]>1?`${LONG_MONTHS[mo-1]} ${d}, ${y} Cohort`:`${LONG_MONTHS[mo-1]} ${y} Cohort`; });
+  return cohorts;
+}
+function buildCohort(it,code,group,kids){
+  const courseId=mapCourse(code,group);
+  const course=COURSES.find(x=>String(x.id)===courseId);
+  const tw=kids.find(k=>/testing window/i.test(k.name));
+  const tasks=kids.filter(k=>k!==tw).map(k=>({name:k.name,date:k.start}));
+  const c={id:'c_'+it.wbs.replace(/\./g,'_'),key:it.name,group,code,courseId,startDate:it.start,endDate:it.end,tasks,twClose:tw?tw.end:'',
+    include:true,startTime:'12:00',dailyStart:'',location:'',tz:'ET',label:'',edited:null,map:null};
+  if(course&&course.isInPerson){ c.dailyStart=course.defaultStart; c.location=parseLocation(code); c.tz=tzForLocation(c.location); }
+  if(!kids.length&&course&&!course.isInPerson) c.tasks=[{name:code,date:it.start}]; // a one-session program listed as a single task
+  c.map=mapSessions(c);
+  return c;
+}
+function mapSessions(c){
+  const course=courseOf(c), out={dates:{},extras:[],missing:[],byOrder:false,warnings:[]};
+  if(!course){ out.warnings.push('No program template matched this cohort. Choose one.'); return out; }
+  if(course.isInPerson){ if(!c.location) out.warnings.push('Add the location (City, ST).'); return out; }
+  const tpl=course.rows.map((r,i)=>({i,r,text:(r.displayName+' '+(r.title||'')).toLowerCase()})).filter(x=>x.r.isILT);
+  const used=new Set(), unmatched=[];
+  for(const t of c.tasks){
+    const n=t.name.toLowerCase(); let hit=null;
+    for(const [tre,rowTest] of SESSION_RULES){ if(!tre.test(n)) continue; hit=tpl.find(x=>!used.has(x.i)&&rowTest(x.text)); if(hit) break; }
+    if(!hit){ const mm=n.match(/\bmodule\s*(\d)\b/); if(mm) hit=tpl.find(x=>!used.has(x.i)&&new RegExp('module\\s*'+mm[1]+'\\b').test(x.text)); }
+    if(!hit) hit=tpl.find(x=>!used.has(x.i)&&x.text.includes(n));
+    if(hit){ used.add(hit.i); out.dates[hit.i]=t.date; } else unmatched.push(t);
+  }
+  const free=tpl.filter(x=>!used.has(x.i));
+  if(unmatched.length&&unmatched.length===free.length){
+    unmatched.forEach((t,k)=>{ out.dates[free[k].i]=t.date; used.add(free[k].i); });
+    out.byOrder=true; out.warnings.push('Matched by order: '+unmatched.map((t,k)=>`\u201c${t.name}\u201d \u2192 ${free[k].r.displayName}`).join('; ')+'. Check these.');
+  } else {
+    out.extras=unmatched;
+    if(unmatched.length) out.warnings.push('Not in the template, added as extra sessions: '+unmatched.map(t=>t.name).join(', ')+'.');
+  }
+  out.missing=tpl.filter(x=>!used.has(x.i)).map(x=>x.r.displayName);
+  if(out.missing.length) out.warnings.push('No date in TeamGantt for: '+out.missing.join(', ')+'. These are left out of the calendar file and portal.');
+  return out;
+}
+
+/* ---------- Persist ---------- */
+function saveBatch(){ try{ localStorage.setItem(BATCH_KEY,JSON.stringify(BATCH)); }catch(e){} }
+function loadSavedBatch(){ try{ const j=JSON.parse(localStorage.getItem(BATCH_KEY)||'null'); if(j&&Array.isArray(j.cohorts)) BATCH=j; }catch(e){} }
+
+/* ---------- Mode ---------- */
+function setMode(m){
+  if(m==='batch'&&batchEditing&&!confirm('You\u2019re editing a cohort from the batch. Go back without saving those edits?')) return;
+  if(m==='batch'&&batchEditing) leaveBatchEdit(false,true);
+  document.getElementById('batchMode').classList.toggle('hidden',m!=='batch');
+  document.getElementById('singleMode').classList.toggle('hidden',m==='batch');
+  document.getElementById('modeBtnBatch').classList.toggle('active',m==='batch');
+  document.getElementById('modeBtnSingle').classList.toggle('active',m!=='batch');
+  if(m==='batch') renderBatch();
+}
+
+/* ---------- Load file ---------- */
+async function loadBatchFile(file){
+  const st=document.getElementById('batchStatus');
+  try{
+    const cohorts=parseTeamGantt(await file.text());
+    if(!cohorts.length) throw new Error('No cohorts found. Cohort rows start with a date like \u201c2027.01.07 \u2026\u201d.');
+    if(BATCH.cohorts.some(c=>c.edited)&&!confirm('Loading a new file replaces the current batch, including cohorts you edited. Continue?')) return;
+    BATCH={cohorts,quarter:'upcoming',round:nextQuarterLabel(),fileName:file.name,loadedAt:new Date().toISOString()};
+    BATCH.cohorts.forEach(c=>c.include=quarterOf(c.startDate)===BATCH.round);
+    saveBatch(); renderBatch();
+    const up=shownCohorts().length, tk=pickedCohorts().length;
+    st.className='status-bar success'; st.textContent=`\u2713 Read ${cohorts.length} cohorts from ${file.name}. Showing the ${up} that haven't started yet, with the ${tk} starting in ${BATCH.round} ticked. Tick any others that belong in this round.`;
+  }catch(e){ st.className='status-bar error'; st.textContent=e.message; }
+}
+function onBatchQuarter(q){ BATCH.quarter=q; if(/^Q\d/.test(q)){ BATCH.cohorts.forEach(c=>c.include=quarterOf(c.startDate)===q); BATCH.round=q; } saveBatch(); renderBatch(); }
+function todayIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+const shownCohorts=()=>BATCH.cohorts.filter(c=>BATCH.quarter==='all'||(BATCH.quarter==='upcoming'?c.startDate>=todayIso():quarterOf(c.startDate)===BATCH.quarter));
+const pickedCohorts=()=>shownCohorts().filter(c=>c.include&&courseOf(c));
+
+/* ---------- Render ---------- */
+function timeOptions(sel,from=6*60,to=20*60){ let h=''; for(let m=from;m<=to;m+=15){ const v=minToTime(m); h+=`<option value="${v}" ${v===sel?'selected':''}>${fmtTime(v)}</option>`; } return h; }
+function courseOptions(sel){ return '<option value="">\u2014 Choose a template \u2014</option>'+COURSES.map(c=>`<option value="${esc(String(c.id))}" ${String(c.id)===String(sel)?'selected':''}>${esc(c.name)}</option>`).join(''); }
+function renderBatch(){
+  const has=BATCH.cohorts.length;
+  document.getElementById('batchCohortsSec').classList.toggle('hidden',!has);
+  document.getElementById('batchExportSec').classList.toggle('hidden',!has);
+  if(!has) return;
+  const st=document.getElementById('batchStatus');
+  if(!st.textContent){ st.className='status-bar info'; st.textContent=`Batch from ${BATCH.fileName}, loaded ${new Date(BATCH.loadedAt).toLocaleString()}. Load a new export any time.`; }
+  const qs=[...new Set(BATCH.cohorts.map(c=>quarterOf(c.startDate)))].sort(qSort);
+  document.getElementById('batchQuarter').innerHTML=`<option value="upcoming" ${BATCH.quarter==='upcoming'?'selected':''}>Upcoming (not started yet)</option>`+qs.map(q=>`<option ${q===BATCH.quarter?'selected':''}>${q}</option>`).join('')+`<option value="all" ${BATCH.quarter==='all'?'selected':''}>All cohorts in the file</option>`;
+  const rd=document.getElementById('batchRound'); if(document.activeElement!==rd) rd.value=BATCH.round||nextQuarterLabel();
+  const allSel=document.getElementById('batchAllTime'); if(!allSel.innerHTML) allSel.innerHTML=timeOptions('12:00');
+  const list=shownCohorts();
+  document.getElementById('batchCount').textContent=`${pickedCohorts().length} of ${list.length} cohorts ticked`;
+  document.getElementById('batchBody').innerHTML=list.map(c=>{
+    const course=courseOf(c), ip=course&&course.isInPerson, idx=BATCH.cohorts.indexOf(c);
+    const nLive=course&&!ip?Object.keys(c.map.dates).length+c.map.extras.length:0;
+    const warns=c.edited?[]:(c.map?c.map.warnings:[]);
+    const startCell=!course?'<span class="sub">Choose a template first</span>':c.edited?'<span class="sub">Edited: change times in the editor</span>':ip
+      ?`<div class="sub">Daily start</div><select class="tbl-select" onchange="setC(${idx},'dailyStart',this.value)">${timeOptions(c.dailyStart||course.defaultStart,6*60,11*60)}</select>
+        <div class="sub" style="margin-top:4px">Location</div><input type="text" class="tbl-input" style="border-color:var(--gray-mid);background:#fff;min-width:150px" value="${esc(c.location)}" placeholder="City, ST" onchange="setC(${idx},'location',this.value)">
+        <div class="sub" style="margin-top:4px">Local time zone</div><select class="tbl-select" onchange="setC(${idx},'tz',this.value)">${['ET','CT','MT','PT'].map(z=>`<option ${c.tz===z?'selected':''}>${z}</option>`).join('')}</select>`
+      :`<select class="tbl-select" onchange="setC(${idx},'startTime',this.value)">${timeOptions(c.startTime)}</select>`;
+    return `<tr class="${c.include?'':'skip'} ${course&&!warns.length?'':'bad'}">
+      <td><input type="checkbox" class="ck" ${c.include?'checked':''} onchange="setC(${idx},'include',this.checked)" aria-label="Include ${esc(c.key)}"></td>
+      <td><div class="key">${esc(c.key)}</div><div class="sub">${esc(c.group)}</div></td>
+      <td><select class="tbl-select" style="max-width:260px" onchange="setC(${idx},'courseId',this.value)">${courseOptions(c.courseId)}</select>${ip?'<div class="sub">In-person, staffed as a whole</div>':''}</td>
+      <td style="white-space:nowrap">${esc(fmtDate(c.startDate))}${c.endDate&&c.endDate!==c.startDate?' \u2013<br>'+esc(fmtDate(c.endDate)):''}${course&&!ip?`<div class="sub">${nLive} live session${nLive===1?'':'s'}</div>`:''}</td>
+      <td>${startCell}</td>
+      <td><input type="text" class="tbl-input" style="border-color:var(--gray-mid);background:#fff;min-width:170px" value="${esc(c.label)}" onchange="setC(${idx},'label',this.value)"></td>
+      <td>${!course?'<span class="bt-warn">\u26a0 No template</span>':warns.length?`<div class="bt-warn">\u26a0 Check<ul>${warns.map(w=>`<li>${esc(w)}</li>`).join('')}</ul></div>`:'<span class="bt-ok">\u2713 Ready</span>'}${c.edited?'<span class="bt-edited">Edited</span>':''}${c.sentAt?`<div class="sub">Sent ${esc(new Date(c.sentAt).toLocaleDateString())}</div>`:''}</td>
+      <td><div class="bt-actions"><button class="btn btn-ghost" ${course?'':'disabled'} onclick="editCohort(${idx})">Edit</button><button class="btn btn-ghost" ${course?'':'disabled'} onclick="cohortAgenda(${idx})">Agenda</button><button class="btn btn-ghost" ${course?'':'disabled'} onclick="cohortIcs(${idx})">.ics</button>${c.edited?`<button class="btn btn-ghost" onclick="resetCohort(${idx})" title="Discard edits and rebuild from TeamGantt">Reset</button>`:''}</div></td></tr>`;
+  }).join('');
+}
+function setC(i,k,v){
+  const c=BATCH.cohorts[i];
+  if(k==='courseId'&&c.edited&&!confirm('Changing the template discards the edits you made to this cohort. Continue?')){ renderBatch(); return; }
+  c[k]=v;
+  if(k==='courseId'){ c.edited=null; const course=courseOf(c); if(course&&course.isInPerson){ c.dailyStart=course.defaultStart; if(!c.location){ c.location=parseLocation(c.code); c.tz=tzForLocation(c.location); } } }
+  if(k==='location') c.tz=tzForLocation(v)||c.tz;
+  if(['courseId','location'].includes(k)) c.map=mapSessions(c);
+  saveBatch(); renderBatch();
+}
+function applyBatchTimeAll(){ const v=document.getElementById('batchAllTime').value; let n=0; shownCohorts().forEach(c=>{ const co=courseOf(c); if(co&&!co.isInPerson&&!c.edited){ c.startTime=v; n++; } }); saveBatch(); renderBatch(); batchMsg('success',`Start time set to ${fmtTime(v)} ET for ${n} virtual cohorts.`); }
+function resetCohort(i){ if(!confirm('Discard your edits to this cohort and rebuild it from TeamGantt?')) return; BATCH.cohorts[i].edited=null; saveBatch(); renderBatch(); }
+function batchMsg(cls,msg){ const el=document.getElementById('batchGenStatus'); el.className='status-bar '+cls; el.innerHTML=msg; }
+
+/* ---------- Editor state ---------- */
+const ED_FIELDS=['programTitle','cohortName','introText','timezone','ipStartDate','ipStartTime','ipLocation','twClose','courseInput','courseValue','defHour','defMin','defAmPm'];
+const val=id=>document.getElementById(id).value;
+function ensureOption(id,v,label){ const s=document.getElementById(id); if(![...s.options].some(o=>o.value===v)){ const o=document.createElement('option'); o.value=v; o.textContent=label||v; s.appendChild(o); } s.value=v; }
+function setDefTime(t24){ const [h,m]=t24.split(':').map(Number); ensureOption('defHour',String(h%12||12)); ensureOption('defMin',String(m).padStart(2,'0')); document.getElementById('defAmPm').value=h>=12?'PM':'AM'; }
+function editorSnapshot(){ return {course:selectedCourse?String(selectedCourse.id):null,rows:clone(rows),pbo:[...programBlockOrder],twCloseEdited,twEnabled:document.getElementById('twEnabled').checked,
+  f:Object.fromEntries(ED_FIELDS.map(id=>[id,val(id)])),status:document.getElementById('courseStatus').outerHTML}; }
+function applyFields(f){ for(const [id,v] of Object.entries(f)){ const el=document.getElementById(id); if(!el) continue; if(el.tagName==='SELECT') ensureOption(id,v,id==='ipStartTime'?fmtTime(v):v); else el.value=v; } }
+function editorRestore(s){
+  if(s.course){ onCourseSelect(s.course); }
+  else { selectedCourse=null; rows=[]; document.getElementById('scheduleEmpty').style.display=''; document.getElementById('scheduleTableWrap').classList.add('hidden');
+    ['ipFields','twPanel','programOrderPanel'].forEach(id=>document.getElementById(id).classList.add('hidden')); document.getElementById('defaultTimePanelVirtual').classList.remove('hidden'); }
+  applyFields(s.f); rows=s.rows; programBlockOrder=s.pbo; twCloseEdited=s.twCloseEdited; document.getElementById('twEnabled').checked=s.twEnabled;
+  if(s.course){ renderProgramOrderPanel(); renderTable(); updateIltCount(); }
+  document.getElementById('courseStatus').outerHTML=s.status;
+}
+function loadCohortIntoEditor(c){
+  const course=courseOf(c); if(!course) throw new Error(`${c.key}: choose a program template.`);
+  if(!course.isInPerson) setDefTime(c.startTime||'12:00');
+  document.getElementById('courseInput').value=course.name;
+  document.getElementById('courseValue').value=String(course.id);
+  onCourseSelect(String(course.id));
+  document.getElementById('cohortName').value=c.label||'';
+  document.getElementById('timezone').value=course.isInPerson?(c.tz||'ET'):'ET';
+  if(c.edited){
+    applyFields(c.edited.fields);
+    rows=clone(c.edited.rows); programBlockOrder=[...(c.edited.programBlockOrder||[])]; twCloseEdited=c.edited.twCloseEdited;
+    document.getElementById('twEnabled').checked=c.edited.twEnabled!==false;
+    if(course.programBlocks) renderProgramOrderPanel();
+  } else if(course.isInPerson){
+    document.getElementById('ipStartDate').value=c.startDate;
+    ensureOption('ipStartTime',c.dailyStart||course.defaultStart,fmtTime(c.dailyStart||course.defaultStart));
+    document.getElementById('ipLocation').value=c.location||'';
+    buildInPersonRows();
+  } else {
+    Object.entries(c.map.dates).forEach(([i,d])=>{ if(rows[i]) rows[i].date=d; });
+    const def=getDefaultTime24();
+    (c.map.extras||[]).forEach(x=>rows.push({id:++_rowId,displayName:x.name,isILT:true,platform:'Zoom',title:null,topicsHtml:null,date:x.date,startTime:def,endTime:calcEndTime(def,60),instructor:'',zoomLink:'',selected:false,isDayHeader:false,startTimeEdited:false,endTimeEdited:false}));
+    if(course.programBlocks){
+      const first=k=>rows.filter(r=>r.blockKey===k&&r.date).map(r=>r.date).sort()[0]||'9999';
+      programBlockOrder.sort((a,b)=>first(a).localeCompare(first(b)));
+      applyProgramBlockOrder(); renderProgramOrderPanel();
+    }
+    if(c.twClose&&course.testingWindow){
+      const rr=getReviewRow();
+      if(rr&&rr.date&&c.twClose!==calcTwClose(rr.date)){ document.getElementById('twClose').value=c.twClose; twCloseEdited=true; }
+    }
+  }
+  renderTable(); updateIltCount();
+}
+function withEachCohort(list,fn){
+  const snap=editorSnapshot(), out=[], errors=[];
+  try{ for(const c of list){ try{ loadCohortIntoEditor(c); out.push({c,v:fn(c)}); }catch(e){ errors.push(c.key+': '+e.message); } } }
+  finally{ editorRestore(snap); }
+  return {out,errors};
+}
+
+/* ---------- Edit a cohort in the single editor ---------- */
+function editCohort(i){
+  const c=BATCH.cohorts[i];
+  if(selectedCourse&&!batchEditing&&rows.length&&!confirm('This replaces what\u2019s in the single-program editor. Continue?')) return;
+  try{ loadCohortIntoEditor(c); }catch(e){ alert(e.message); return; }
+  batchEditing=c.id;
+  document.getElementById('batchEditTxt').innerHTML=`Editing <strong>${esc(c.key)}</strong> from the quarter batch. Add instructors or Zoom links, adjust any session, then save it back to the batch.`;
+  document.getElementById('batchEditBar').classList.remove('hidden');
+  document.getElementById('batchMode').classList.add('hidden'); document.getElementById('singleMode').classList.remove('hidden');
+  document.getElementById('modeBtnBatch').classList.remove('active'); document.getElementById('modeBtnSingle').classList.add('active');
+  window.scrollTo(0,0);
+}
+function saveEditToBatch(){
+  const c=BATCH.cohorts.find(x=>x.id===batchEditing); if(!c) return leaveBatchEdit(false);
+  c.edited={rows:clone(rows),programBlockOrder:[...programBlockOrder],twCloseEdited,twEnabled:document.getElementById('twEnabled').checked,
+    fields:Object.fromEntries(['programTitle','cohortName','introText','timezone','ipStartDate','ipStartTime','ipLocation','twClose'].map(id=>[id,val(id)]))};
+  c.label=val('cohortName'); if(selectedCourse.isInPerson){ c.location=val('ipLocation'); c.tz=val('timezone'); c.dailyStart=val('ipStartTime'); }
+  saveBatch(); leaveBatchEdit(true);
+}
+function leaveBatchEdit(saved,stay){
+  batchEditing=null; document.getElementById('batchEditBar').classList.add('hidden');
+  if(stay) return;
+  setMode('batch');
+  batchMsg(saved?'success':'info',saved?'\u2713 Saved your edits to the batch.':'Back to the batch. Your edits in the editor weren\u2019t saved to it.');
+}
+
+/* ---------- Per-cohort actions ---------- */
+function cohortAgenda(i){ const r=withEachCohort([BATCH.cohorts[i]],()=>buildProgramAgendaHtml()); if(r.errors.length) return alert(r.errors.join('\n')); openPrintWindow(r.out[0].v); }
+function cohortIcs(i){ const r=withEachCohort([BATCH.cohorts[i]],()=>({ics:buildIcsText(),name:icsFileName()})); if(r.errors.length) return alert(r.errors.join('\n'));
+  const x=r.out[0].v; if(!x.ics) return alert('This cohort has no sessions with dates and times yet.'); downloadText(x.name,x.ics,'text/calendar;charset=utf-8'); }
+
+/* ---------- Bulk outputs ---------- */
+function scopeCss(css,scope){
+  css=css.replace(/@import[^;]+;/g,'').replace(/@page\s*\{[^}]*\}/g,'').replace(/@media\s+print\s*\{(?:[^{}]*\{[^}]*\})*\s*\}/g,'');
+  return css.replace(/([^{}]+)\{([^}]*)\}/g,(m,sel,decl)=>{ sel=sel.trim(); if(!sel||sel.startsWith('@')) return m;
+    return sel.split(',').map(s=>{ s=s.trim(); if(s==='body'||s==='html') return scope; if(s==='*') return scope+' *,'+scope; return scope+' '+s; }).join(',')+'{'+decl+'}'; });
+}
+function combineAgendas(list){
+  let css='',body='';
+  list.forEach((html,i)=>{ const st=(html.match(/<style>([\s\S]*?)<\/style>/)||[])[1]||''; const bd=(html.match(/<body>([\s\S]*?)<script>/)||[])[1]||''; css+=scopeCss(st,'.ag'+i); body+=`<section class="ag ag${i}">${bd}</section>`; });
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>CLEAR Learning program agendas</title><style>@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap");@page{size:portrait;margin:0.45in 0.55in;}body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}.ag{break-after:page;page-break-after:always;}.ag:last-child{break-after:auto;page-break-after:auto;}'+css+'</style></head><body>'+body+'<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script></body></html>';
+}
+function needPicked(){ const l=pickedCohorts(); if(!l.length){ batchMsg('error','Tick at least one cohort that has a program template.'); return null; } return l; }
+function batchPrintAgendas(){
+  const list=needPicked(); if(!list) return;
+  const r=withEachCohort(list,()=>buildProgramAgendaHtml());
+  if(r.out.length) openPrintWindow(combineAgendas(r.out.map(x=>x.v)));
+  batchMsg(r.errors.length?'warn':'success',`Opened ${r.out.length} agenda${r.out.length===1?'':'s'} in one print window.${r.errors.length?'<br>'+r.errors.map(esc).join('<br>'):''}`);
+}
+async function batchZipIcs(){
+  const list=needPicked(); if(!list) return;
+  if(typeof JSZip==='undefined'){ batchMsg('error','The zip library didn\u2019t load. Check your connection and reload, or use the .ics button on each row.'); return; }
+  const r=withEachCohort(list,()=>({ics:buildIcsText(),name:icsFileName()}));
+  const zip=new JSZip(), skipped=[]; const names=new Set();
+  r.out.forEach(({c,v})=>{ if(!v.ics){ skipped.push(c.key); return; } let n=v.name, k=2; while(names.has(n)) n=v.name.replace(/\.ics$/,'_'+(k++)+'.ics'); names.add(n); zip.file(n,v.ics); });
+  if(!names.size){ batchMsg('error','None of the ticked cohorts have sessions with dates and times.'); return; }
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`Instructor_Invites_${(BATCH.round||'batch').replace(/\s+/g,'_')}.zip`; a.click();
+  batchMsg(skipped.length||r.errors.length?'warn':'success',`Downloaded ${names.size} calendar file${names.size===1?'':'s'}.${skipped.length?'<br>No dated sessions, skipped: '+skipped.map(esc).join(', '):''}${r.errors.length?'<br>'+r.errors.map(esc).join('<br>'):''}`);
+}
+
+/* ---------- Portal package ---------- */
+function isoAdd(iso,n){ return isoAddDays(iso,n); }
+function portalProgramFromEditor(c,round){
+  const course=selectedCourse; if(!course) throw new Error('Choose a program first.');
+  const isIP=course.isInPerson, live=icsRows();
+  let sessions=[],startDate='',endDate='';
+  if(isIP){ const ds=rows.filter(r=>!r.isDayHeader&&r.date).map(r=>r.date).sort(); startDate=ds[0]||val('ipStartDate'); endDate=ds[ds.length-1]||startDate; }
+  else { sessions=live.map((r,idx)=>({title:r.title||r.displayName,date:r.date,start:fmtTime(r.startTime),end:fmtTime(r.endTime),zoomLink:r.zoomLink||'',icsUid:icsUidFor(r,idx)}));
+    const ds=sessions.map(s=>s.date).sort(); startDate=ds[0]||''; endDate=ds[ds.length-1]||''; }
+  if(!startDate) throw new Error('No dated sessions yet.');
+  const ics=buildIcsText();
+  return { externalKey:c?'teamgantt:'+c.key:'agenda:'+course.id+':'+startDate, courseId:String(course.id), title:course.name, cohort:val('cohortName'),
+    quarter:round||quarterOf(startDate), format:isIP?'In-Person':'Virtual (Zoom)', location:isIP?val('ipLocation'):'Virtual', timezone:val('timezone')||'ET',
+    startDate, endDate, deadline:isoAdd(startDate,-DEADLINE_DAYS), sessions, ics:ics||'', icsName:ics?icsFileName():'' };
+}
+function packageFile(programs,name){
+  const pkg={format:'clear-availability-package',version:1,source:'Program Agenda Generator',generatedAt:new Date().toISOString(),programs};
+  downloadText(name,JSON.stringify(pkg,null,1),'application/json');
+}
+function batchPackage(){
+  const list=needPicked(); if(!list) return;
+  const r=withEachCohort(list,c=>portalProgramFromEditor(c,BATCH.round));
+  if(!r.out.length){ batchMsg('error','Nothing to package.<br>'+r.errors.map(esc).join('<br>')); return; }
+  packageFile(r.out.map(x=>x.v),`portal-package-${(BATCH.round||'batch').replace(/\s+/g,'-')}.json`);
+  const noIcs=r.out.filter(x=>!x.v.ics).map(x=>x.c.key);
+  batchMsg(r.errors.length?'warn':'success',`Downloaded the portal package with ${r.out.length} program${r.out.length===1?'':'s'}. Import it on the Programs tab of the instructor availability dashboard.${noIcs.length?'<br>No calendar file for: '+noIcs.map(esc).join(', '):''}${r.errors.length?'<br>Left out: '+r.errors.map(esc).join('<br>'):''}`);
+}
+async function sendPackage(programs){
+  const pkg={format:'clear-availability-package',version:1,source:'Program Agenda Generator',generatedAt:new Date().toISOString(),programs};
+  const r=await fetch('/api/admin/import-package',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(pkg)});
+  let j={}; try{ j=await r.json(); }catch(e){ j={error:'The portal returned '+r.status+'.'}; }
+  if(r.status===401) throw new Error('Your sign-in expired. Reload the page to sign in again, then send again.');
+  if(!r.ok) throw new Error(j.error||('The portal returned '+r.status+'.'));
+  return j;
+}
+function sendSummary(j){
+  return `Sent to the availability portal: ${j.created.length} new draft${j.created.length===1?'':'s'}, ${j.updated.length} updated. <a href="/admin-dashboard" target="_blank">Open the staff dashboard</a> to check and open them.`+
+    (j.warnings&&j.warnings.length?'<br>'+j.warnings.map(esc).join('<br>'):'');
+}
+async function batchSend(){
+  const list=needPicked(); if(!list) return;
+  const r=withEachCohort(list,c=>portalProgramFromEditor(c,BATCH.round));
+  if(!r.out.length){ batchMsg('error','Nothing to send.<br>'+r.errors.map(esc).join('<br>')); return; }
+  if(!confirm(`Send ${r.out.length} program${r.out.length===1?'':'s'} to the availability portal? New ones arrive as drafts that only staff can see.`)) return;
+  batchMsg('info','Sending\u2026');
+  try{ const j=await sendPackage(r.out.map(x=>x.v)); r.out.forEach(x=>x.c.sentAt=new Date().toISOString()); saveBatch(); renderBatch();
+    batchMsg(j.warnings&&j.warnings.length||r.errors.length?'warn':'success',sendSummary(j)+(r.errors.length?'<br>Left out: '+r.errors.map(esc).join('<br>'):''));
+  }catch(e){ batchMsg('error',esc(e.message)); }
+}
+async function sendSingle(){
+  let p;
+  try{ const c=batchEditing?BATCH.cohorts.find(x=>x.id===batchEditing):null; p=portalProgramFromEditor(c,c?BATCH.round:''); }
+  catch(e){ alert(e.message+' Set the program\u2019s dates and times first.'); return; }
+  if(!confirm(`Send ${p.title}${p.cohort?' ('+p.cohort+')':''} to the availability portal?`)) return;
+  try{ const j=await sendPackage([p]); const tmp=document.createElement('div'); tmp.innerHTML=sendSummary(j); alert(tmp.textContent); }
+  catch(e){ alert(e.message); }
+}
+function exportSinglePackage(){
+  try{
+    const c=batchEditing?BATCH.cohorts.find(x=>x.id===batchEditing):null;
+    const p=portalProgramFromEditor(c,c?BATCH.round:'');
+    packageFile([p],`portal-package-${(p.title+' '+p.cohort).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').slice(0,60)}.json`);
+  }catch(e){ alert(e.message+' Set the program\u2019s dates and times first.'); }
+}
+
+loadSavedBatch();
+</script>
+
+</body>
+</html>
