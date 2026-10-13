@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instructor Availability Dashboard | CLEAR Learning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --burgundy:#64092C; --burgundy-dk:#4A0620; --gold:#DDA838; --gold-lt:#F8EDD3;
+  --charcoal:#484848; --ink:#2B2B2B; --blue:#084D78; --blue-lt:#E2EDF4;
+  --bg:#F3F3F5; --surface:#FFFFFF; --line:#DEDCE0; --muted:#6E6B70;
+  --avail:#1F6B3F; --avail-lt:#E3F1E8; --notavail:#5A5A5A; --na:#A9A6AB; --warn:#9A5B00;
+  --radius-lg:10px; --radius-sm:6px;
+  font-family:"Open Sans","Trebuchet MS",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+a{color:var(--blue)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+
+.top{background:var(--burgundy);color:#fff}
+.top-in{max-width:1400px;margin:0 auto;padding:18px 24px 0;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.brand small{display:block;font-size:12px;opacity:.8;font-weight:600}
+.brand h1{margin:2px 0 14px;font-size:24px;font-weight:800}
+.who{text-align:right;font-size:12px;padding-bottom:14px}
+.who strong{display:block;font-size:14px}
+.who a{color:#fff;opacity:.85}
+.tabs{max-width:1400px;margin:0 auto;padding:0 24px;display:flex;gap:2px;overflow-x:auto}
+.tab{background:none;border:0;color:#fff;opacity:.75;padding:9px 15px 11px;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0;white-space:nowrap}
+.tab:hover{opacity:1}
+.tab[aria-selected="true"]{background:var(--bg);color:var(--burgundy);opacity:1}
+main{max-width:1400px;margin:0 auto;padding:22px 24px 60px}
+
+h2{font-size:20px;margin:0 0 4px;color:var(--burgundy)}
+h3{font-size:16px;margin:0 0 6px}
+.sub{color:var(--muted);margin:0 0 18px;max-width:80ch}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.bar .grow{flex:1}
+.bar label{font-weight:600;font-size:13px;color:var(--muted)}
+select,input[type=text],input[type=email],input[type=date],input[type=search],textarea{padding:7px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff}
+textarea{width:100%;resize:vertical}
+
+.btn{border:0;border-radius:var(--radius-sm);padding:8px 14px;font-weight:700;cursor:pointer;background:var(--burgundy);color:#fff;white-space:nowrap}
+.btn:hover{background:var(--burgundy-dk)}
+.btn:disabled{background:#CFCBD0;cursor:default}
+.btn.ghost{background:#fff;color:var(--burgundy);border:1px solid var(--burgundy)}
+.btn.ghost:hover{background:#FAF4F6}
+.btn.small{padding:5px 10px;font-size:12px}
+.btn.link{background:none;color:var(--blue);padding:2px 4px;font-weight:600;text-decoration:underline}
+.btn.danger{background:#fff;color:#9B1C1C;border:1px solid #D9B3B3}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:12px;background:#ECEAEE;color:var(--charcoal);text-transform:capitalize}
+.pill.open{background:var(--avail-lt);color:var(--avail)}
+.pill.draft{background:var(--gold-lt);color:#7A5410}
+.pill.closed{background:#ECEAEE}
+.pill.archived{background:#F4F4F4;color:var(--muted)}
+.pill.call{background:var(--blue-lt);color:var(--blue);text-transform:none}
+.facts{font-size:12px;color:var(--muted)}
+.stat-row{display:flex;gap:22px;margin:12px 0}
+.stat b{display:block;font-size:22px;line-height:1.1;color:var(--ink)}
+.stat span{font-size:12px;color:var(--muted)}
+.meter{height:6px;background:#E4E2E6;border-radius:3px;overflow:hidden;margin-top:4px}
+.meter span{display:block;height:100%;background:var(--avail)}
+.meter.gold span{background:var(--gold)}
+.notice{background:var(--gold-lt);border-left:4px solid var(--gold);padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:16px}
+.err{background:#FBE9EC;border-left:4px solid var(--burgundy);padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:16px}
+.empty{background:#fff;border:1px dashed var(--line);border-radius:var(--radius-lg);padding:30px;text-align:center;color:var(--charcoal)}
+.loading{padding:60px;text-align:center;color:var(--muted)}
+
+/* tables */
+.tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:var(--radius-lg);background:#fff;max-height:72vh}
+table{border-collapse:separate;border-spacing:0;width:100%}
+th,td{padding:7px 10px;border-bottom:1px solid #EEECEF;text-align:left;vertical-align:middle}
+thead th{position:sticky;top:0;background:#FAF7F8;z-index:2;font-size:12px;color:var(--charcoal);border-bottom:1px solid var(--line)}
+tbody tr:hover td{background:#FCFBFC}
+.mx th.inst{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;height:150px;padding:8px 4px;text-align:left;font-weight:600;min-width:34px}
+.mx th.inst a{color:inherit;text-decoration:none}
+.mx th.inst a:hover{text-decoration:underline}
+.mx td.first,.mx th.first{position:sticky;left:0;background:#fff;z-index:1;min-width:300px;max-width:360px;border-right:1px solid var(--line)}
+.mx thead th.first{z-index:3;background:#FAF7F8}
+.mx tr.whole td{background:#FAF7F8;font-weight:700}
+.mx tr.whole td.first{background:#FAF7F8}
+.cell{width:34px;height:28px;border:0;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;background:#F2F1F3;color:var(--muted)}
+.cell.A{background:var(--avail);color:#fff}
+.cell.N{background:#DAD8DC;color:var(--notavail)}
+.cell.NA{background:#EFEEF0;color:var(--na)}
+.cell.inh{opacity:.55}
+.cell:hover{outline:2px solid var(--gold)}
+td.num{text-align:center;font-weight:700}
+.s-date{font-size:12px;color:var(--muted);font-weight:400}
+
+/* selection */
+.slot{display:grid;grid-template-columns:260px 1fr;gap:16px;padding:14px 0;border-top:1px solid #EEECEF}
+.slot:first-of-type{border-top:0}
+.slot .meta{font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:16px;padding:3px 10px;font-size:12px;cursor:pointer}
+.chip:hover{border-color:var(--avail);background:var(--avail-lt)}
+.chip .load{color:var(--muted);margin-left:4px}
+.chip.na-maybe{border-style:dashed}
+.picked{display:flex;flex-direction:column;gap:6px}
+.pick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#FAF7F8;border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px 10px}
+.pick.Confirmed{background:var(--gold-lt);border-color:#E8CF94}
+.pick .nm{font-weight:700;min-width:150px}
+.pick select{padding:3px 6px;font-size:12px}
+.warn{color:var(--warn);font-size:12px;font-weight:600}
+.note{border-left:3px solid var(--gold);padding:4px 10px;margin:8px 0;font-size:13px}
+.note small{color:var(--muted);display:block}
+
+/* editor */
+dialog{border:0;border-radius:var(--radius-lg);padding:0;max-width:980px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(40,10,20,.25)}
+dialog::backdrop{background:rgba(40,20,28,.45)}
+.dlg-head{background:var(--burgundy);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.dlg-head h3{margin:0;font-size:17px}
+.dlg-head button{background:none;border:0;color:#fff;font-size:22px;cursor:pointer;line-height:1}
+.dlg-body{padding:18px 20px;max-height:70vh;overflow:auto}
+.dlg-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+.form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.form .f{display:flex;flex-direction:column;gap:4px}
+.form .f label{font-weight:600;font-size:12px;color:var(--charcoal)}
+.form .span2{grid-column:span 2}.form .span4{grid-column:1 / -1}
+.sess-tbl input{width:100%;padding:5px 7px}
+.menu{position:absolute;z-index:50;background:#fff;border:1px solid var(--line);border-radius:var(--radius-sm);box-shadow:0 8px 24px rgba(0,0,0,.15);padding:4px;display:flex;flex-direction:column;min-width:170px}
+.menu .hd{font-size:11px;color:var(--muted);padding:4px 8px;max-width:220px}
+.menu button{background:none;border:0;text-align:left;padding:6px 10px;border-radius:4px;cursor:pointer;font-size:13px}
+.menu button:hover{background:#F5F3F6}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:100;max-width:90vw}
+.toast.show{opacity:1}
+.log-row{display:grid;grid-template-columns:150px 220px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid #EEECEF;font-size:13px}
+.log-row .t{color:var(--muted)}
+.pill.locked{background:#FBE9EC;color:#9B1C1C;text-transform:none}
+.pill.src{background:#F4F1F5;color:var(--muted);text-transform:none;font-weight:600}
+.okc{color:var(--avail);font-weight:700}
+.mailst{font-size:11px;color:var(--muted);white-space:nowrap}
+.mailst.chg{color:var(--warn);font-weight:700}
+.chipwrap{display:inline-flex;align-items:stretch}
+.chipwrap .chip{border-radius:16px 0 0 16px}
+.chipwrap .chip-x{border:1px solid var(--line);border-left:0;border-radius:0 16px 16px 0;padding:3px 8px;font-size:12px;text-decoration:none;color:var(--blue);background:#fff}
+.chipwrap .chip-x:hover{background:var(--blue-lt)}
+a.ext{font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
+a.ext:hover{text-decoration:underline}
+.checks{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;background:#FCFBFC}
+.checks label{display:flex;gap:8px;align-items:baseline;cursor:pointer}
+.mail-prev{margin-top:14px}
+.mail-prev iframe{width:100%;height:440px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff}
+.mail-prev .hdr{font-size:13px;background:#FAF7F8;border:1px solid var(--line);border-bottom:0;border-radius:var(--radius-sm) var(--radius-sm) 0 0;padding:8px 12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:#fff}
+.seg button{border:0;background:#fff;padding:6px 12px;font-weight:600;cursor:pointer;font-size:13px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--burgundy);color:#fff}
+.ans{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;margin:2px 4px 2px 0;background:#F2F1F3;color:var(--muted)}
+.ans.A{background:var(--avail-lt);color:var(--avail)}
+.ans.N{background:#E6E4E8;color:var(--notavail)}
+.icsbox{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;background:#FAF7F8;border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 12px;margin-top:12px}
+@media (max-width:820px){.slot{grid-template-columns:1fr}.form{grid-template-columns:1fr 1fr}.log-row{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><small>CLEAR Learning</small><h1>Instructor availability dashboard</h1></div>
+    <div class="who" id="who"></div>
+  </div>
+  <nav class="tabs" id="tabs" role="tablist">
+    <button class="tab" data-tab="overview" aria-selected="true">Overview</button>
+    <button class="tab" data-tab="responses">Responses</button>
+    <button class="tab" data-tab="selection">Selection</button>
+    <button class="tab" data-tab="programs">Programs</button>
+    <button class="tab" data-tab="roster">Instructors</button>
+    <button class="tab" data-tab="staff">Staff</button>
+    <button class="tab" data-tab="log">Activity</button>
+  </nav>
+</header>
+<main id="main"><div class="loading">Loading dashboard…</div></main>
+
+<dialog id="dlg"><div class="dlg-head"><h3 id="dlg-title"></h3><button onclick="closeDlg()" aria-label="Close">×</button></div><div class="dlg-body" id="dlg-body"></div><div class="dlg-foot" id="dlg-foot"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const PS='__program';
+const LBL={A:'Available',N:'Not available',NA:'N/A'};
+const SHORT={A:'A',N:'N',NA:'–'};
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const U={ tab:'overview', rview:'program', iid:null, pid:null, quarter:'all', assignDraft:{}, assignDirty:new Set(), rosterDraft:null, rosterDirty:false, staffDraft:null, importPreview:null, log:null, filter:'' };
+let D=null;
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const parseD=d=>{const [y,m,dd]=String(d||'').split('-').map(Number);return y?new Date(y,m-1,dd):null;};
+const fmtD=(d,y=true)=>{const x=parseD(d);return x?`${MONTHS[x.getMonth()]} ${x.getDate()}${y?', '+x.getFullYear():''}`:'';};
+const fmtRange=(a,b)=>!a?'':(!b||a===b?fmtD(a):`${fmtD(a,false)} – ${fmtD(b)}`);
+const stamp=iso=>iso?new Date(iso).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'';
+const clone=o=>JSON.parse(JSON.stringify(o));
+const daysBetween=(a,b)=>Math.round((parseD(b)-parseD(a))/86400000);
+const titleOf=p=>p.title+(p.cohort?` (${p.cohort})`:'');
+function dueText(p){
+  if(!p.deadline) return 'no response date';
+  if(p.pastDeadline) return `responses closed ${fmtD(p.deadline)}`;
+  const n=daysBetween(D.today,p.deadline);
+  return `respond by ${fmtD(p.deadline)}${p.deadlineMode==='auto'?' (auto)':''}${p.status==='open'?`, ${n<=0?'due today':n+' day'+(n===1?'':'s')+' left'}`:''}`;
+}
+function evalUrl(iid){ const r=inst(iid), u=(D.config||{}).staffingUrl; if(!u||!r) return '';
+  return `${u}${u.includes('?')?'&':'?'}instructor=${encodeURIComponent(r.name)}${(r.emails||[])[0]?'&email='+encodeURIComponent(r.emails[0]):''}`; }
+function evalLink(iid,label='History & evals ↗'){ const u=evalUrl(iid); return u?`<a class="ext" href="${esc(u)}" target="_blank" rel="noopener" title="Open this instructor's teaching history and evaluation scores in the Instructor Staffing Dashboard">${label}</a>`:''; }
+function mineSig(pid,iid){ const out=[]; for(const [k,l] of Object.entries((D.assignments[pid]||{}).slots||{})) for(const e of l) if(e.iid===iid&&e.status==='Confirmed') out.push(k+':'+e.role); return out.sort().join('|'); }
+function mailState(pid,iid){ const n=((D.assignments[pid]||{}).notified||{})[iid]; const sig=mineSig(pid,iid);
+  if(!sig) return {code:'none'}; if(!n) return {code:'new',text:'Not emailed yet'};
+  if(n.sig!==sig) return {code:'chg',text:`Changed since emailed ${fmtD(n.at.slice(0,10))}`,n};
+  return {code:'sent',text:`Emailed ${fmtD(n.at.slice(0,10))}`,n}; }
+function emailSetupNote(){ return (D.config||{}).email?'':`<div class="err"><strong>Email isn't set up yet.</strong> Add NOTIFY_FLOW_URL and NOTIFY_MAILBOX to the Pages project (see the setup steps), then redeploy. Until then, use Preview to see the message, and the Copy emails buttons to send it yourself.</div>`; }
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200);}
+async function api(path,opts={}){
+  const r=await fetch('/api/'+path,{...opts,headers:{'Content-Type':'application/json'},credentials:'same-origin'});
+  let j={};try{j=await r.json();}catch{j={error:`The server returned ${r.status}. Reload and try again.`};}
+  if(!r.ok) throw new Error(j.error||`Request failed (${r.status}).`);
+  return j;
+}
+async function copyText(t,msg){try{await navigator.clipboard.writeText(t);toast(msg);}catch{prompt('Copy this:',t);}}
+function download(name,text,type='text/csv'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+text],{type}));a.download=name;a.click();}
+const csvRow=a=>a.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',');
+
+/* ---------- Data helpers ---------- */
+const prog=id=>D.programs.find(p=>p.id===id);
+const inst=id=>D.roster.find(r=>r.id===id);
+const active=()=>D.roster.filter(r=>r.active!==false);
+const resp=(iid,pid)=>(D.responses[iid]||{})[pid]||null;
+function units(p){ return (p.kind!=='call'&&p.sessions.length)?p.sessions.map(s=>({key:s.id,s})):[{key:PS,s:null}]; }
+function eff(iid,p,key){ const r=resp(iid,p.id); if(!r) return ''; if(key===PS) return r.program||''; return (r.sessions||{})[key]||r.program||''; }
+function inherited(iid,p,key){ const r=resp(iid,p.id); return !!(r&&key!==PS&&!(r.sessions||{})[key]&&r.program); }
+function answeredAll(iid,p){ return units(p).every(u=>eff(iid,p,u.key)); }
+function answeredAny(iid,p){ return units(p).some(u=>eff(iid,p,u.key)); }
+function slots(pid){ return (U.assignDraft[pid]||(D.assignments[pid]||{}).slots||{}); }
+function loadCount(iid){ let n=0; for(const p of D.programs){ if(p.status==='archived') continue; for(const l of Object.values((D.assignments[p.id]||{}).slots||{})) if(l.some(e=>e.iid===iid)) n++; } return n; }
+function staffedCount(p){ const s=(D.assignments[p.id]||{}).slots||{}; return units(p).filter(u=>(s[u.key]||[]).some(e=>e.status==='Confirmed')).length; }
+function quarters(){ return [...new Set(D.programs.map(p=>p.quarter).filter(Boolean))]; }
+function inQuarter(p){ return U.quarter==='all'||p.quarter===U.quarter; }
+
+async function load(keep=true){
+  try{
+    D=await api('admin/data');
+    if(!keep){U.assignDraft={};U.assignDirty.clear();U.rosterDraft=null;U.rosterDirty=false;U.staffDraft=null;}
+    if(!U.pid||!prog(U.pid)) U.pid=(D.programs.find(p=>p.status==='open')||D.programs[0]||{}).id||null;
+    render();
+  }catch(e){ document.getElementById('main').innerHTML=`<div class="err"><strong>Couldn't load the dashboard.</strong> ${esc(e.message)}</div>`; }
+}
+
+function render(){
+  const me=D.me;
+  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/agenda-generator" target="_blank">Agenda Generator</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
+  document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===U.tab));
+  const fn={overview:vOverview,responses:vResponses,selection:vSelection,programs:vPrograms,roster:vRoster,staff:vStaff,log:vLog}[U.tab];
+  const y=window.scrollY, ae=document.activeElement, refocus=ae&&ae.type==='search'?{pos:ae.selectionStart}:null;
+  document.getElementById('main').innerHTML=fn(); window.scrollTo(0,y);
+  if(refocus){ const sb=document.querySelector('main input[type=search]'); if(sb){ sb.focus(); sb.setSelectionRange(refocus.pos,refocus.pos); } }
+  if(U.tab==='log'&&!U.log) loadLog();
+}
+document.getElementById('tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;U.tab=t.dataset.tab;closeMenu();render();});
+
+function quarterSelect(){ const q=quarters(); if(q.length<2) return '';
+  return `<label for="qsel">Quarter</label><select id="qsel" onchange="U.quarter=this.value;render()"><option value="all">All</option>${q.map(x=>`<option ${U.quarter===x?'selected':''}>${esc(x)}</option>`).join('')}</select>`; }
+function programSelect(filterFn=()=>true){
+  const list=D.programs.filter(p=>p.status!=='archived'&&inQuarter(p)&&filterFn(p));
+  if(list.length&&!list.find(p=>p.id===U.pid)) U.pid=list[0].id;
+  return `<label for="psel">Program</label><select id="psel" onchange="U.pid=this.value;render()" style="max-width:520px">${list.map(p=>`<option value="${p.id}" ${p.id===U.pid?'selected':''}>${esc(titleOf(p))}${p.status!=='open'?' ('+p.status+')':''}</option>`).join('')}</select>`;
+}
+
+/* ================= Overview ================= */
+function vOverview(){
+  const act=active();
+  const noEmail=act.filter(r=>!(r.emails||[]).length);
+  const live=D.programs.filter(p=>p.status!=='archived'&&inQuarter(p));
+  let h=`<h2>Overview</h2><p class="sub">Open a program to collect answers, then announce it so instructors know to look. Answers lock automatically after the response date (${(D.config||{}).deadlineDays||30} days before the first live session unless you set one). Confirm instructors on the Selection tab; they see an assignment only after it's confirmed.</p>`;
+  if(!D.programs.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Start on the Programs tab: send the quarter's cohorts from the Program Agenda Generator, or add a program by hand.</p><button class="btn" onclick="U.tab='programs';render()">Go to Programs</button></div>`;
+  if(noEmail.length) h+=`<div class="notice"><strong>${noEmail.length} active instructor${noEmail.length>1?'s have':' has'} no email yet</strong>, so they can't sign in: ${noEmail.slice(0,8).map(r=>esc(r.name)).join('; ')}${noEmail.length>8?'…':''}. <button class="btn link" onclick="U.tab='roster';render()">Add emails</button></div>`;
+
+  const openP=live.filter(p=>p.status==='open');
+  const unann=openP.filter(p=>!p.announcedAt);
+  if(unann.length) h+=`<div class="notice"><strong>${unann.length} open program${unann.length>1?'s haven\'t':' hasn\'t'} been announced.</strong> Instructors won't know to look until you tell them. <button class="btn small" onclick="announceDlg()">Announce by email</button></div>`;
+  const drafts=live.filter(p=>p.status==='draft');
+  if(drafts.length) h+=`<div class="notice" style="border-left-color:var(--blue);background:var(--blue-lt)"><strong>${drafts.length} draft${drafts.length>1?'s':''}</strong> only staff can see. Check the dates and times, then open ${drafts.length>1?'them':'it'}. <button class="btn small" onclick="openAllDrafts()">Open all ${drafts.length} drafts</button></div>`;
+  const waiting=act.filter(r=>(r.emails||[]).length&&openP.some(p=>!p.locked&&!answeredAll(r.id,p)));
+  h+=`<div class="bar">${quarterSelect()}<span class="grow"></span>
+    ${openP.length?`<button class="btn ghost" onclick="announceDlg()">Announce programs</button><button class="btn ghost" onclick="remindDlg()">Send reminders</button>
+    <button class="btn ghost" onclick="copyText('${waiting.flatMap(r=>r.emails.slice(0,1)).join('; ')}','Copied ${waiting.length} emails')">Copy emails of the ${waiting.length} still answering</button>`:''}</div>`;
+  h+=`<div class="grid">`+live.map(p=>{
+    const responded=act.filter(r=>answeredAny(r.id,p)).length, full=act.filter(r=>answeredAll(r.id,p)).length;
+    const n=units(p).length, staffed=staffedCount(p);
+    const next={draft:['open','Open for responses'],open:['closed','Close responses'],closed:['open','Reopen']}[p.status];
+    return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+      <div><h3 style="color:var(--burgundy);margin-bottom:0">${esc(p.title)}</h3>${p.cohort?`<div style="font-size:13px;font-weight:600">${esc(p.cohort)}</div>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))}${p.format?', '+esc(p.format):''}<br>${esc(dueText(p))}</div></div>
+      <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end">${p.kind==='call'?'<span class="pill call">Opportunity</span>':''}<span class="pill ${p.status}">${p.status}</span>${p.status==='open'&&p.pastDeadline?'<span class="pill locked">Answers locked</span>':''}</div></div>
+      <div class="stat-row">
+        <div class="stat"><b>${responded}<small style="font-size:13px;color:var(--muted)">/${act.length}</small></b><span>responded (${full} complete)</span><div class="meter"><span style="width:${act.length?responded/act.length*100:0}%"></span></div></div>
+        <div class="stat"><b>${staffed}<small style="font-size:13px;color:var(--muted)">/${n}</small></b><span>${n===1?'confirmed':'sessions confirmed'}</span><div class="meter gold"><span style="width:${n?staffed/n*100:0}%"></span></div></div>
+      </div>
+      ${p.status==='open'?`<p class="facts" style="margin:-4px 0 10px">${p.announcedAt?`Announced ${esc(stamp(p.announcedAt))}`:'<span class="warn">Not announced yet</span>'}</p>`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost small" onclick="U.pid='${p.id}';U.rview='program';U.tab='responses';render()">Responses</button>
+        <button class="btn ghost small" onclick="U.pid='${p.id}';U.tab='selection';render()">Selection</button>
+        ${next?`<button class="btn small" onclick="setStatus('${p.id}','${next[0]}')">${next[1]}</button>`:''}
+      </div></div>`;
+  }).join('')+`</div>`;
+  return h;
+}
+async function openAllDrafts(){
+  const list=D.programs.filter(p=>p.status==='draft'&&inQuarter(p));
+  if(!confirm(`Open ${list.length} draft program${list.length>1?'s':''} so instructors can see and answer ${list.length>1?'them':'it'}? You can announce them by email next.`)) return;
+  let ok=0;
+  for(const p of list){ try{ const r=await api('admin/program/'+p.id,{method:'PUT',body:JSON.stringify({program:{...p,status:'open'},baseUpdatedAt:p.updatedAt})}); Object.assign(p,r.program); ok++; }catch(e){ toast(p.title+': '+e.message); } }
+  render(); toast(`Opened ${ok} program${ok===1?'':'s'}`);
+}
+async function setStatus(pid,status){
+  const p=prog(pid);
+  if(status==='open'&&!active().some(r=>(r.emails||[]).length)&&!confirm('No instructors have emails yet, so nobody can sign in to answer. Open anyway?')) return;
+  try{ const r=await api('admin/program/'+pid,{method:'PUT',body:JSON.stringify({program:{...p,status},baseUpdatedAt:p.updatedAt})});
+    Object.assign(p,r.program); render(); toast(status==='open'&&!p.announcedAt?`${p.title} is open. Announce it from the Overview when you're ready.`:`${p.title}: ${status}`);}catch(e){render();toast(e.message);}
+}
+
+/* ================= Responses matrix ================= */
+function vResponses(){
+  let h=`<h2>Responses</h2><div class="bar"><div class="seg" role="group" aria-label="View"><button aria-pressed="${U.rview==='program'}" onclick="U.rview='program';render()">By program</button><button aria-pressed="${U.rview==='instructor'}" onclick="U.rview='instructor';render()">By instructor</button></div></div>`;
+  if(!D.programs.length) return h+`<div class="empty">No programs yet.</div>`;
+  if(U.rview==='instructor') return h+vByInstructor();
+  h+=`<p class="sub">Every instructor's answers for one program, laid out like the coordinator's spreadsheet. Faded cells come from the instructor's whole-program answer. Click any cell to enter or change an answer for someone who sent it by email; it's logged as a staff entry.</p>`;
+  h+=`<div class="bar">${quarterSelect()}${programSelect()}<input type="search" placeholder="Filter instructors" value="${esc(U.filter)}" oninput="U.filter=this.value;clearTimeout(window._f);window._f=setTimeout(render,250)"><span class="grow"></span>
+    <button class="btn ghost" onclick="exportMatrix('one')">Export this program</button><button class="btn ghost" onclick="exportMatrix('all')">Export all open programs</button></div>`;
+  const p=prog(U.pid); if(!p) return h;
+  const insts=active().filter(r=>!U.filter||r.name.toLowerCase().includes(U.filter.toLowerCase()));
+  const rows=[];
+  if(p.kind!=='call'&&p.sessions.length) rows.push({key:PS,label:'Whole program',whole:true});
+  for(const u of units(p)) rows.push(u.s?{key:u.key,label:u.s.title,date:u.s.date,time:u.s.start?`${u.s.start} – ${u.s.end} ${p.timezone||''}`:''}:{key:PS,label:p.kind==='call'?'Volunteer':'Entire program',whole:false});
+  h+=`<div class="tbl-wrap"><table class="mx"><thead><tr><th class="first">Session</th>${insts.map(r=>`<th class="inst" title="${esc(r.name)}: click for their answers across programs"><a href="#" onclick="U.rview='instructor';U.iid='${r.id}';render();return false">${esc(r.name)}</a></th>`).join('')}<th>Avail.</th><th>Not answered</th></tr></thead><tbody>`;
+  for(const row of rows){
+    let nA=0,nBlank=0;
+    const cells=insts.map(r=>{
+      const isWholeHeader=row.whole;
+      const v=isWholeHeader?(resp(r.id,p.id)||{}).program||'':eff(r.id,p,row.key);
+      const inh=!isWholeHeader&&inherited(r.id,p,row.key);
+      if(v==='A')nA++; if(!v)nBlank++;
+      const label=p.kind==='call'&&v==='A'?'V':(SHORT[v]||'');
+      return `<td style="padding:3px 2px;text-align:center"><button class="cell ${v} ${inh?'inh':''}" title="${esc(r.name)}: ${v?LBL[v]:'Not answered'}${inh?' (from whole program)':''}" onclick="cellMenu(event,'${r.id}','${p.id}','${row.whole?PS:row.key}',${row.whole})">${label}</button></td>`;
+    }).join('');
+    h+=`<tr class="${row.whole?'whole':''}"><td class="first">${esc(row.label)}${row.date?`<div class="s-date">${fmtD(row.date)}${row.time?', '+esc(row.time):''}</div>`:''}</td>${cells}<td class="num">${nA}</td><td class="num">${nBlank}</td></tr>`;
+  }
+  h+=`</tbody></table></div>`;
+  const comments=insts.map(r=>({r,c:(resp(r.id,p.id)||{}).comment,at:(resp(r.id,p.id)||{}).updatedAt,by:(resp(r.id,p.id)||{}).updatedBy})).filter(x=>x.c);
+  h+=`<div class="card" style="margin-top:16px"><h3>Comments</h3>${comments.length?comments.map(x=>`<div class="note"><strong>${esc(x.r.name)}</strong>: ${esc(x.c)}<small>${stamp(x.at)}</small></div>`).join(''):'<p class="sub" style="margin:0">No comments on this program yet.</p>'}</div>`;
+  return h;
+}
+
+function vByInstructor(){
+  const list=active(); if(!list.length) return `<div class="empty">No instructors yet.</div>`;
+  if(!U.iid||!inst(U.iid)) U.iid=list[0].id;
+  const r=inst(U.iid);
+  const progs=D.programs.filter(p=>p.status!=='archived'&&p.status!=='draft'&&inQuarter(p));
+  let h=`<p class="sub">Everything one instructor has told you, across programs. Use it alongside their teaching history and evaluation scores when deciding who to select.</p>
+    <div class="bar">${quarterSelect()}<label for="isel">Instructor</label><select id="isel" onchange="U.iid=this.value;render()">${list.map(x=>`<option value="${x.id}" ${x.id===U.iid?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+    <span class="grow"></span><a class="ext" href="/?as=${r.id}" target="_blank">Preview their page ↗</a>${evalLink(r.id)?' &nbsp; '+evalLink(r.id):''}</div>`;
+  if(!progs.length) return h+`<div class="empty">No open or closed programs in this quarter.</div>`;
+  const totA=progs.reduce((n,p)=>n+units(p).filter(u=>eff(r.id,p,u.key)==='A').length,0);
+  h+=`<div class="card"><div class="stat-row" style="margin:0"><div class="stat"><b>${progs.filter(p=>answeredAll(r.id,p)).length}<small style="font-size:13px;color:var(--muted)">/${progs.length}</small></b><span>programs fully answered</span></div>
+    <div class="stat"><b>${totA}</b><span>sessions marked available</span></div><div class="stat"><b>${loadCount(r.id)}</b><span>slots selected this cycle</span></div></div></div>`;
+  h+=`<div class="tbl-wrap"><table><thead><tr><th style="min-width:260px">Program</th><th>Answered</th><th>Answers</th><th>Selected for</th><th>Last saved</th><th>Comment</th></tr></thead><tbody>`+progs.map(p=>{
+    const rs=resp(r.id,p.id), us=units(p), done=us.filter(u=>eff(r.id,p,u.key)).length;
+    const s=(D.assignments[p.id]||{}).slots||{};
+    const sel=us.filter(u=>(s[u.key]||[]).some(e=>e.iid===r.id)).map(u=>{const e=s[u.key].find(e=>e.iid===r.id);return `${u.s?esc(u.s.title):'Entire program'} <span class="facts">(${esc(e.role)}, ${esc(e.status)})</span>`;});
+    return `<tr><td><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))} · ${esc(dueText(p))}</div></td>
+      <td class="num">${done}/${us.length}</td>
+      <td style="min-width:260px">${us.map(u=>{const v=eff(r.id,p,u.key);return `<span class="ans ${v}" title="${esc(u.s?u.s.title+', '+fmtD(u.s.date):'Entire program')}">${u.s?esc(fmtD(u.s.date,false)):'Program'}: ${v?LBL[v]:'—'}</span>`;}).join('')}</td>
+      <td style="font-size:13px">${sel.join('<br>')||'<span class="facts">—</span>'}</td>
+      <td style="font-size:12px;white-space:nowrap">${rs&&rs.updatedAt?esc(stamp(rs.updatedAt))+(rs.changes?`<div class="facts">changed ${rs.changes} time${rs.changes>1?'s':''}</div>`:''):'<span class="facts">Not answered</span>'}</td>
+      <td style="font-size:13px;max-width:280px">${rs&&rs.comment?esc(rs.comment):''}</td></tr>`;
+  }).join('')+`</tbody></table></div>`;
+  return h;
+}
+let menuEl=null;
+function closeMenu(){ if(menuEl){menuEl.remove();menuEl=null;} }
+document.addEventListener('click',e=>{ if(menuEl&&!menuEl.contains(e.target)&&!e.target.classList.contains('cell')) closeMenu(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
+function cellMenu(ev,iid,pid,key,wholeRow){
+  ev.stopPropagation(); closeMenu();
+  const p=prog(pid), r=inst(iid), labels=p.kind==='call'?{A:'Volunteer',N:'Not this time'}:LBL;
+  const what=key===PS?(wholeRow?'whole program':(p.kind==='call'?'this opportunity':'entire program')):((p.sessions.find(s=>s.id===key)||{}).title||'session');
+  menuEl=document.createElement('div'); menuEl.className='menu';
+  menuEl.innerHTML=`<div class="hd">${esc(r.name)}, ${esc(what)}</div>`+Object.entries(labels).map(([v,l])=>`<button onclick="setCell('${iid}','${pid}','${key}','${v}')">${l}</button>`).join('')+`<button onclick="setCell('${iid}','${pid}','${key}','')">Clear${key!==PS?' (use whole-program answer)':''}</button>`;
+  document.body.appendChild(menuEl);
+  const b=ev.target.getBoundingClientRect();
+  menuEl.style.left=Math.min(window.scrollX+b.left,window.scrollX+innerWidth-200)+'px'; menuEl.style.top=(window.scrollY+b.bottom+4)+'px';
+}
+async function setCell(iid,pid,key,v){
+  closeMenu();
+  const cur=resp(iid,pid)||{program:'',sessions:{},comment:''};
+  const body={program:cur.program||'',sessions:{...(cur.sessions||{})},comment:cur.comment||''};
+  if(key===PS) body.program=v; else if(v) body.sessions[key]=v; else delete body.sessions[key];
+  try{ const r=await api(`admin/response/${iid}/${pid}`,{method:'PUT',body:JSON.stringify(body)});
+    D.responses[iid]=D.responses[iid]||{}; D.responses[iid][pid]={...r.response}; render(); toast('Answer saved for '+inst(iid).name);}catch(e){toast(e.message);}
+}
+function exportMatrix(which){
+  const list=which==='one'?[prog(U.pid)]:D.programs.filter(p=>p.status==='open'&&inQuarter(p));
+  const insts=active();
+  const out=[csvRow(['Program','Date','Session','Start','End','Time Zone','Format','Location',...insts.map(r=>r.name),'# Available','# Not Answered','Comments'])];
+  for(const p of list){
+    const rows=[];
+    if(p.kind!=='call'&&p.sessions.length) rows.push({key:PS,whole:true,title:`ENTIRE PROGRAM (${fmtRange(p.startDate,p.endDate)})`,date:p.startDate,start:'All dates',end:'All dates'});
+    for(const u of units(p)) rows.push(u.s?{key:u.key,title:u.s.title,date:u.s.date,start:u.s.start,end:u.s.end}:{key:PS,title:p.kind==='call'?'Volunteer':`ENTIRE PROGRAM (${fmtRange(p.startDate,p.endDate)})`,date:p.startDate,start:'All dates',end:'All dates'});
+    rows.forEach((row,i)=>{
+      const vals=insts.map(r=>row.whole?((resp(r.id,p.id)||{}).program||''):eff(r.id,p,row.key));
+      const comments=i===0?insts.map(r=>(resp(r.id,p.id)||{}).comment?`${r.name}: ${(resp(r.id,p.id)).comment}`:'').filter(Boolean).join(' | '):'';
+      out.push(csvRow([titleOf(p),row.date,row.title,row.start,row.end,p.timezone,p.format,p.location,...vals.map(v=>v?LBL[v]:''),vals.filter(v=>v==='A').length,vals.filter(v=>!v).length,comments]));
+    });
+  }
+  download(`instructor-availability-${which==='one'?prog(U.pid).title.replace(/[^\w]+/g,'-'):'open-programs'}.csv`,out.join('\r\n'));
+}
+
+/* ================= Selection ================= */
+function vSelection(){
+  let h=`<h2>Selection</h2><p class="sub">Pick instructors from the people who said they're available. New picks start as Tentative, which only staff can see. Mark a pick Confirmed once you've decided, save, then email the instructor their selection notice with the calendar file. The number after each name is how many slots they already hold this cycle; ↗ opens their teaching history and evaluations.</p>`;
+  if(!D.programs.length) return h+`<div class="empty">No programs yet.</div>`;
+  h+=`<div class="bar">${quarterSelect()}${programSelect()}<span class="grow"></span><button class="btn ghost" onclick="exportSelections()">Export selections</button></div>`;
+  const p=prog(U.pid); if(!p) return h;
+  const s=slots(p.id), dirty=U.assignDirty.has(p.id), a=D.assignments[p.id]||{};
+  const confirmed=[...new Set(Object.values((a.slots||{})).flat().filter(e=>e.status==='Confirmed').map(e=>e.iid))];
+  const toEmail=confirmed.filter(iid=>mailState(p.id,iid).code!=='sent').length;
+  h+=`<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+    <div><h3 style="color:var(--burgundy);margin:0">${esc(p.title)}</h3>${p.cohort?`<div style="font-size:13px;font-weight:600">${esc(p.cohort)}</div>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))}, ${esc(dueText(p))}${a.updatedAt?`<br>Selections last saved ${stamp(a.updatedAt)} by ${esc(a.updatedBy)}`:''}</div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      ${p.sessions.length&&p.kind!=='call'?`<select id="bulk-i"><option value="">Add one instructor to every session they're available for…</option>${active().filter(r=>units(p).some(u=>eff(r.id,p,u.key)==='A')).map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select><button class="btn ghost small" onclick="bulkAdd('${p.id}')">Add</button>`:''}
+      <button class="btn ghost small" onclick="confirmAll('${p.id}')">Mark all confirmed</button>
+      ${dirty?`<button class="btn ghost small" onclick="delete U.assignDraft['${p.id}'];U.assignDirty.delete('${p.id}');render()">Discard changes</button>`:''}
+      <button class="btn" ${dirty?'':'disabled'} onclick="saveAssign('${p.id}')">Save selections</button>
+      <button class="btn ghost" ${confirmed.length&&!dirty?'':'disabled'} title="${dirty?'Save selections first':confirmed.length?'':'Confirm and save at least one pick first'}" onclick="selectionDlg('${p.id}')">Email selection notices${toEmail?` (${toEmail})`:''}</button></div></div>
+    <div class="icsbox"><strong>Calendar file</strong>${p.hasIcs?`<span>${esc(p.icsName)} <span class="facts">(${esc(p.icsSource||'')}${p.icsUpdatedAt?', '+esc(stamp(p.icsUpdatedAt)):''})</span>. Selection emails attach each person's own sessions from it.</span>`:`<span class="facts">None uploaded. Selection emails will include a calendar file built from the session dates, times and Zoom links.</span>`}
+      <span class="grow" style="flex:1"></span>${p.hasIcs?`<button class="btn link" onclick="downloadIcs('${p.id}')">Download</button>`:''}<label class="btn link" style="cursor:pointer">${p.hasIcs?'Replace':'Upload .ics'}<input type="file" accept=".ics,text/calendar" hidden onchange="uploadIcs('${p.id}',this)"></label></div></div>`;
+  h+=`<div class="card">`;
+  for(const u of units(p)){
+    const picked=s[u.key]||[];
+    const avail=active().filter(r=>eff(r.id,p,u.key)==='A'&&!picked.some(e=>e.iid===r.id));
+    const label=u.s?u.s.title:(p.kind==='call'?'Volunteers':'Entire program');
+    h+=`<div class="slot"><div><div class="meta">${esc(label)}</div><div class="facts">${u.s?fmtD(u.s.date)+(u.s.start?`, ${esc(u.s.start)} – ${esc(u.s.end)} ${esc(p.timezone||'')}`:''):esc(fmtRange(p.startDate,p.endDate))}</div>${u.s&&u.s.zoomLink?`<div class="facts" style="word-break:break-all">${esc(u.s.zoomLink)}</div>`:''}</div>
+      <div><div class="picked">${picked.map((e,i)=>{const r=inst(e.iid)||{name:'(removed instructor)'};const v=eff(e.iid,p,u.key);const ms=e.status==='Confirmed'&&!dirty?mailState(p.id,e.iid):null;
+        return `<div class="pick ${e.status}"><span class="nm">${esc(r.name)}</span>
+          <select onchange="editPick('${p.id}','${u.key}',${i},'role',this.value)">${['Lead','Co-instructor','Backup'].map(x=>`<option ${e.role===x?'selected':''}>${x}</option>`).join('')}</select>
+          <select onchange="editPick('${p.id}','${u.key}',${i},'status',this.value)">${['Tentative','Confirmed'].map(x=>`<option ${e.status===x?'selected':''}>${x}</option>`).join('')}</select>
+          ${v!=='A'?`<span class="warn">Marked ${v?LBL[v].toLowerCase():'not answered'}</span>`:''}
+          ${ms&&ms.text?`<span class="mailst ${ms.code==='chg'?'chg':''}">✉ ${esc(ms.text)}</span>`:''}
+          ${evalLink(e.iid,'History ↗')}
+          <button class="btn link" onclick="editPick('${p.id}','${u.key}',${i},'remove')">Remove</button></div>`;}).join('')}</div>
+        <div class="chips">${avail.length?avail.map(r=>`<span class="chipwrap"><button class="chip" onclick="addPick('${p.id}','${u.key}','${r.id}')">+ ${esc(r.name)}<span class="load">${loadCount(r.id)}</span></button>${evalUrl(r.id)?`<a class="chip-x" href="${esc(evalUrl(r.id))}" target="_blank" rel="noopener" title="Teaching history and evaluations for ${esc(r.name)}">↗</a>`:''}</span>`).join(''):`<span class="facts">${picked.length?'No other instructors marked available.':'Nobody has marked this available yet.'}</span>`}
+        <button class="chip na-maybe" onclick="pickAnyone('${p.id}','${u.key}')">+ Someone else</button></div></div></div>`;
+  }
+  h+=`</div><div class="card"><h3>Staffing notes</h3><p class="sub" style="margin-bottom:8px">Notes are for staff only and are kept with the date, time and who wrote them.</p>
+    ${(a.notes||[]).map(n=>`<div class="note">${esc(n.text)}<small>${esc(n.by)}, ${stamp(n.at)}</small></div>`).join('')||''}
+    <textarea id="note-txt" rows="2" placeholder="Add a note, like who you've reached out to"></textarea><div style="margin-top:8px"><button class="btn small" onclick="addNote('${p.id}')">Add note</button></div>
+    ${(a.history||[]).length?`<p class="facts" style="margin-top:12px">${a.history.length} earlier version${a.history.length>1?'s':''} of these selections are kept.</p>`:''}</div>`;
+  return h;
+}
+async function downloadIcs(pid,iid){
+  try{ const r=await fetch('/api/admin/ics/'+pid+(iid?'?iid='+iid:''),{credentials:'same-origin'});
+    if(!r.ok){ let j={}; try{j=await r.json();}catch{} throw new Error(j.error||'Download failed ('+r.status+')'); }
+    const m=(r.headers.get('Content-Disposition')||'').match(/filename="([^"]+)"/); const a=document.createElement('a'); a.href=URL.createObjectURL(await r.blob()); a.download=m?m[1]:'calendar.ics'; a.click();
+  }catch(e){ toast(e.message); }
+}
+async function uploadIcs(pid,input){
+  const f=input.files[0]; if(!f) return;
+  try{ const ics=await f.text(); const r=await api('admin/ics/'+pid,{method:'PUT',body:JSON.stringify({ics,name:f.name})});
+    Object.assign(prog(pid),{hasIcs:r.program.hasIcs,icsName:r.program.icsName,icsSource:r.program.icsSource,icsUpdatedAt:r.program.icsUpdatedAt}); render(); toast('Calendar file saved'); }catch(e){ toast(e.message); }
+}
+async function removeIcs(pid){
+  if(!confirm('Remove the calendar file? Selection emails will build one from the session details instead.')) return;
+  try{ const r=await api('admin/ics/'+pid,{method:'DELETE'}); Object.assign(prog(pid),{hasIcs:false,icsName:'',icsSource:'',icsUpdatedAt:''}); closeDlg(); render(); toast('Calendar file removed'); }catch(e){ toast(e.message); }
+}
+function draftOf(pid){ if(!U.assignDraft[pid]) U.assignDraft[pid]=clone((D.assignments[pid]||{}).slots||{}); return U.assignDraft[pid]; }
+function addPick(pid,key,iid){ const d=draftOf(pid); (d[key]=d[key]||[]).push({iid,role:(d[key].length?'Co-instructor':'Lead'),status:'Tentative'}); U.assignDirty.add(pid); render(); }
+function editPick(pid,key,i,field,val){ const d=draftOf(pid); if(field==='remove') d[key].splice(i,1); else d[key][i][field]=val; U.assignDirty.add(pid); render(); }
+function bulkAdd(pid){ const iid=document.getElementById('bulk-i').value; if(!iid) return; const p=prog(pid), d=draftOf(pid); let n=0;
+  for(const u of units(p)) if(eff(iid,p,u.key)==='A'){ d[u.key]=d[u.key]||[]; if(!d[u.key].some(e=>e.iid===iid)){ d[u.key].push({iid,role:d[u.key].length?'Co-instructor':'Lead',status:'Tentative'}); n++; } }
+  U.assignDirty.add(pid); render(); toast(`Added to ${n} session${n===1?'':'s'}`); }
+function confirmAll(pid){ const d=draftOf(pid); Object.values(d).forEach(l=>l.forEach(e=>e.status='Confirmed')); U.assignDirty.add(pid); render(); }
+function pickAnyone(pid,key){
+  const p=prog(pid), taken=(slots(pid)[key]||[]).map(e=>e.iid);
+  openDlg('Add an instructor',`<p class="sub">Use this for someone who didn't mark this slot available, for example after a phone call. They'll be flagged so the gap is visible.</p><select id="any-i" style="width:100%">${active().filter(r=>!taken.includes(r.id)).map(r=>`<option value="${r.id}">${esc(r.name)}: ${eff(r.id,p,key)?LBL[eff(r.id,p,key)]:'not answered'}</option>`).join('')}</select>`,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="addPick('${pid}','${key}',document.getElementById('any-i').value);closeDlg()">Add</button>`);
+}
+async function saveAssign(pid){
+  try{ const r=await api('admin/assignment/'+pid,{method:'PUT',body:JSON.stringify({slots:U.assignDraft[pid],baseUpdatedAt:(D.assignments[pid]||{}).updatedAt||null})});
+    D.assignments[pid]=r.assignment; delete U.assignDraft[pid]; U.assignDirty.delete(pid); render(); toast('Selections saved');}catch(e){toast(e.message);}
+}
+async function addNote(pid){ const t=document.getElementById('note-txt').value.trim(); if(!t) return;
+  try{ const r=await api('admin/note/'+pid,{method:'POST',body:JSON.stringify({text:t})}); D.assignments[pid]=D.assignments[pid]||{slots:{},history:[]}; D.assignments[pid].notes=r.notes; render(); toast('Note added');}catch(e){toast(e.message);} }
+function exportSelections(){
+  const out=[csvRow(['Program','Session','Date','Start','End','Time Zone','Instructor','Email','Role','Status','Marked'])];
+  for(const p of D.programs.filter(x=>x.status!=='archived'&&inQuarter(x))){ const s=(D.assignments[p.id]||{}).slots||{};
+    for(const u of units(p)) for(const e of s[u.key]||[]){ const r=inst(e.iid)||{name:'',emails:[]}; const v=eff(e.iid,p,u.key);
+      out.push(csvRow([titleOf(p),u.s?u.s.title:'Entire program',u.s?u.s.date:p.startDate,u.s?u.s.start:'',u.s?u.s.end:'',p.timezone,r.name,(r.emails||[])[0]||'',e.role,e.status,v?LBL[v]:'Not answered'])); } }
+  download('instructor-selections.csv',out.join('\r\n'));
+}
+
+/* ================= Email ================= */
+function mailFoot(kind,sendLabel){ return `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn ghost" onclick="mailGo('${kind}','preview')">Preview</button><button class="btn ghost" ${(D.config||{}).email?'':'disabled'} onclick="mailGo('${kind}','test')">Send test to me</button><button class="btn" ${(D.config||{}).email?'':'disabled'} onclick="mailGo('${kind}')">${sendLabel}</button>`; }
+function announceDlg(){
+  const list=D.programs.filter(p=>p.status==='open'&&inQuarter(p));
+  if(!list.length){ toast('Open at least one program first.'); return; }
+  const n=active().filter(r=>(r.emails||[]).length).length;
+  openDlg('Announce programs to instructors',`${emailSetupNote()}<p class="sub">Sends one email to all ${n} active instructors with an email address, with instructors in BCC so nobody sees the list. It lists each program you tick with its dates, number of live sessions and response date, and links to the portal. Already-announced programs are unticked.</p>
+    <div class="checks">${list.map(p=>`<label><input type="checkbox" class="ann-p" value="${p.id}" ${p.announcedAt?'':'checked'}><span><strong>${esc(p.title)}</strong>${p.cohort?' · '+esc(p.cohort):''} <span class="facts">${esc(fmtRange(p.startDate,p.endDate))}${p.announcedAt?' · announced '+esc(stamp(p.announcedAt)):''}</span></span></label>`).join('')}</div>
+    <div class="f"><label for="mail-note" style="font-weight:600;font-size:12px">Personal note at the top (optional)</label><textarea id="mail-note" rows="3" placeholder="For example: We're especially looking for a lead for the Canadian cohort."></textarea></div><div class="mail-prev" id="mail-prev"></div>`,
+    mailFoot('announce',`Send to ${n} instructors`));
+}
+function remindDlg(){
+  const list=D.programs.filter(p=>p.status==='open'&&!p.pastDeadline&&inQuarter(p));
+  if(!list.length){ toast('No open programs are still taking answers.'); return; }
+  openDlg('Remind instructors who haven\'t answered',`${emailSetupNote()}<p class="sub">Each active instructor who still has unanswered sessions in the programs you tick gets their own email listing just the programs they haven't finished. People who've answered everything get nothing.</p>
+    <div class="checks">${list.map(p=>{const miss=active().filter(r=>(r.emails||[]).length&&!answeredAll(r.id,p)).length;return `<label><input type="checkbox" class="rem-p" value="${p.id}" ${miss?'checked':''}><span><strong>${esc(p.title)}</strong>${p.cohort?' · '+esc(p.cohort):''} <span class="facts">${esc(dueText(p))} · ${miss} still answering</span></span></label>`;}).join('')}</div>
+    <div class="f"><label for="mail-note" style="font-weight:600;font-size:12px">Personal note (optional)</label><textarea id="mail-note" rows="3"></textarea></div><div class="mail-prev" id="mail-prev"></div>`,
+    mailFoot('remind','Send reminders'));
+}
+function selectionDlg(pid){
+  const p=prog(pid), a=D.assignments[pid]||{};
+  const ids=[...new Set(Object.values(a.slots||{}).flat().filter(e=>e.status==='Confirmed').map(e=>e.iid))];
+  openDlg('Email selection notices',`${emailSetupNote()}<p class="sub">Each instructor you tick gets their own email listing the sessions they're confirmed for in ${esc(titleOf(p))}, with role, times and Zoom links, plus a calendar file with just their sessions${p.hasIcs?' taken from the uploaded calendar file':' built from the session details (no calendar file uploaded)'}. People already emailed with no changes since are unticked.</p>
+    <div class="checks">${ids.map(iid=>{const r=inst(iid)||{name:'(removed)',emails:[]};const ms=mailState(pid,iid);const n=Object.values(a.slots||{}).filter(l=>l.some(e=>e.iid===iid&&e.status==='Confirmed')).length;
+      return `<label><input type="checkbox" class="sel-i" value="${iid}" ${ms.code!=='sent'&&(r.emails||[]).length?'checked':''} ${(r.emails||[]).length?'':'disabled'}><span><strong>${esc(r.name)}</strong> <span class="facts">${n} slot${n>1?'s':''} · ${(r.emails||[])[0]?esc(r.emails[0]):'no email on file'} · </span><span class="mailst ${ms.code==='chg'?'chg':''}">${esc(ms.text||'')}</span></span></label>`;}).join('')}</div>
+    <div class="f"><label for="mail-note" style="font-weight:600;font-size:12px">Personal note (optional, same for everyone ticked)</label><textarea id="mail-note" rows="3" placeholder="For example: Instructor materials will follow two weeks before the first session."></textarea></div>
+    <p class="facts">Preview shows the first ticked instructor's email. <a href="#" onclick="const x=document.querySelector('.sel-i:checked');if(x)downloadIcs('${pid}',x.value);return false">Download their calendar file</a> to check it.</p><div class="mail-prev" id="mail-prev"></div>`,
+    mailFoot('selection','Send to ticked instructors'));
+}
+function mailBody(kind){
+  const vals=sel=>[...document.querySelectorAll(sel+':checked')].map(x=>x.value);
+  const note=(document.getElementById('mail-note')||{}).value||'';
+  if(kind==='announce') return {pids:vals('.ann-p'),note};
+  if(kind==='remind') return {pids:vals('.rem-p'),note};
+  return {iids:vals('.sel-i'),note};
+}
+async function mailGo(kind,mode){
+  const body=mailBody(kind), list=body.pids||body.iids;
+  if(!list.length){ toast(kind==='selection'?'Tick at least one instructor.':'Tick at least one program.'); return; }
+  if(mode) body[mode]=true;
+  if(!mode && !confirm(kind==='announce'?'Send the announcement to every active instructor now?':kind==='remind'?'Send reminder emails now?':`Email ${list.length} instructor${list.length>1?'s':''} their selection notice now?`)) return;
+  const path=kind==='selection'?'admin/notify/selection/'+U.pid:'admin/notify/'+kind;
+  try{
+    const r=await api(path,{method:'POST',body:JSON.stringify(body)});
+    if(mode==='preview'){ const pv=r.preview||{};
+      document.getElementById('mail-prev').innerHTML=pv.error?`<div class="err">${esc(pv.error)}</div>`:`<div class="hdr"><strong>To:</strong> ${esc(pv.to)}<br><strong>Subject:</strong> ${esc(pv.subject)}${pv.attachment?`<br><strong>Attachment:</strong> ${esc(pv.attachment)}`:''}</div><iframe sandbox title="Email preview" srcdoc="${esc(pv.html)}"></iframe>`;
+      document.getElementById('mail-prev').scrollIntoView({behavior:'smooth',block:'nearest'}); return; }
+    if(mode==='test'){ toast('Test sent to '+D.me.email); return; }
+    if(kind==='announce') body.pids.forEach(id=>{const p=prog(id); if(p){p.announcedAt=r.announcedAt; p.announcedBy=D.me.email;}});
+    if(kind==='selection'){ D.assignments[U.pid]=D.assignments[U.pid]||{slots:{}}; D.assignments[U.pid].notified=r.notified; }
+    closeDlg(); render();
+    const bad=(r.results||[]).filter(x=>!x.ok);
+    toast(kind==='selection'?`Sent ${(r.results||[]).filter(x=>x.ok).length}${bad.length?`, ${bad.length} not sent: ${bad.map(b=>b.error).join('; ')}`:''}`:`Sent to ${r.sent} instructor${r.sent===1?'':'s'}`);
+  }catch(e){ toast(e.message); }
+}
+
+/* ================= Programs ================= */
+function vPrograms(){
+  let h=`<h2>Programs and opportunities</h2><p class="sub">Each quarter, load the TeamGantt export in the Program Agenda Generator's Quarter batch and choose Send to availability portal; every cohort arrives here with its sessions and calendar file. Add one-off programs or volunteer opportunities by hand. Everything starts as a draft that only staff can see; open it here or on the Overview, then announce it.</p>
+    <div class="bar">${quarterSelect()}<span class="grow"></span><a class="btn" href="/agenda-generator" target="_blank" style="text-decoration:none">Open Agenda Generator</a><button class="btn ghost" onclick="packageDlg()">Import package file</button><button class="btn ghost" onclick="importDlg()">Import spreadsheet</button><button class="btn ghost" onclick="editProgram(null,'call')">New opportunity</button><button class="btn ghost" onclick="editProgram(null,'program')">New one-off program</button></div>`;
+  const list=D.programs.filter(inQuarter);
+  if(!list.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Open the Program Agenda Generator, use Quarter batch to load the TeamGantt export, then choose Send to availability portal.</p></div>`;
+  h+=`<div class="tbl-wrap"><table><thead><tr><th>Program</th><th>Quarter</th><th>Dates</th><th>Format</th><th>Sessions</th><th>Respond by</th><th>Calendar</th><th>Announced</th><th>Status</th><th></th></tr></thead><tbody>`+
+    list.map(p=>`<tr><td><strong>${esc(p.title)}</strong>${p.kind==='call'?' <span class="pill call">Opportunity</span>':''}${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}${p.source==='agenda-generator'?'<span class="pill src">Agenda Generator</span>':''}</td><td>${esc(p.quarter)}</td><td style="white-space:nowrap">${esc(fmtRange(p.startDate,p.endDate))}</td><td>${esc(p.format)}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''}</td><td>${p.sessions.length||'Whole program'}</td>
+      <td style="white-space:nowrap">${fmtD(p.deadline)}${p.deadline?`<div class="facts">${p.deadlineMode==='auto'?'automatic':'set by hand'}${p.pastDeadline?', passed':''}</div>`:''}</td>
+      <td>${p.hasIcs?'<span class="okc" title="'+esc(p.icsName)+'">✓ .ics</span>':'<span class="facts">—</span>'}</td>
+      <td style="font-size:12px">${p.announcedAt?esc(fmtD(p.announcedAt.slice(0,10))):'<span class="facts">—</span>'}</td>
+      <td><select onchange="setStatus('${p.id}',this.value)">${['draft','open','closed','archived'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}</select></td>
+      <td style="white-space:nowrap"><button class="btn link" onclick="editProgram('${p.id}')">Edit</button><button class="btn link" style="color:#9B1C1C" onclick="delProgram('${p.id}')">Delete</button></td></tr>`).join('')+`</tbody></table></div>`;
+  return h;
+}
+function autoDeadline(p){ const ds=(p.sessions||[]).map(s=>s.date).filter(Boolean).sort(); const first=ds[0]||p.startDate; if(!first) return ''; const d=parseD(first); d.setDate(d.getDate()-((D.config||{}).deadlineDays||30)); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function editProgram(pid,kind){
+  const p=pid?clone(prog(pid)):{kind,title:'',cohort:'',quarter:U.quarter!=='all'?U.quarter:(quarters()[0]||''),format:kind==='call'?'':'Virtual (Zoom)',location:kind==='call'?'':'Virtual',timezone:'ET',startDate:'',endDate:'',deadline:'',deadlineMode:kind==='call'?'manual':'auto',status:'draft',description:'',sessions:[]};
+  if(!p.deadlineMode) p.deadlineMode=p.deadline?'manual':'auto';
+  window._edit=p;
+  const titles=[...new Set(D.programs.filter(x=>x.kind!=='call').map(x=>x.title))].sort();
+  const f=(id,label,val,type='text',cls='',extra='')=>`<div class="f ${cls}"><label for="e-${id}">${label}</label><input id="e-${id}" type="${type}" value="${esc(val)}" ${extra}></div>`;
+  let body=`<div class="form">${f('title',p.kind==='call'?'Title':'Course name',p.title,'text','span2','list="dl-titles"')}${p.kind==='call'?'':f('cohort','Cohort label',p.cohort,'text','span2','placeholder="e.g. Jan 7, 2027 Cohort"')}
+    ${f('quarter','Quarter (for filtering)',p.quarter,'text','','placeholder="Q1 2027"')}${f('format','Format',p.format,'text','','list="dl-format"')}${f('location','Location',p.location,'text','','placeholder="Virtual, or City, ST"')}
+    <div class="f"><label for="e-timezone">Times are in</label><select id="e-timezone">${[['ET','Eastern (ET)'],['CT','Central (CT)'],['MT','Mountain (MT)'],['PT','Pacific (PT)'],['AT','Atlantic (AT)']].map(([v,l])=>`<option value="${v}" ${(p.timezone||'ET')===v?'selected':''}>${l}</option>`).join('')}</select></div>
+    ${f('startDate','Start date',p.startDate,'date')}${f('endDate','End date',p.endDate,'date')}
+    <div class="f span2"><label for="e-deadline">Respond by</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input id="e-deadline" type="date" value="${esc(p.deadlineMode==='auto'?autoDeadline(p):p.deadline)}" ${p.deadlineMode==='auto'?'disabled':''}>
+      <label style="font-weight:400;font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="e-dlauto" ${p.deadlineMode==='auto'?'checked':''} onchange="dlToggle()"> Automatic: ${(D.config||{}).deadlineDays||30} days before the first live session</label></div></div>
+    <div class="f"><label for="e-status">Status</label><select id="e-status">${['draft','open','closed','archived'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="f span4"><label for="e-description">Description for instructors (optional)</label><textarea id="e-description" rows="3">${esc(p.description)}</textarea></div></div>
+    <datalist id="dl-titles">${titles.map(x=>`<option value="${esc(x)}">`).join('')}</datalist><datalist id="dl-format"><option value="Virtual (Zoom)"><option value="In-Person"><option value="Hybrid"></datalist>`;
+  if(p.kind!=='call') body+=`<h3 style="margin-top:18px">Live sessions</h3><p class="sub" style="margin-bottom:8px">Leave this empty for programs staffed as a whole, like in-person programs. Start and end dates fill in from the sessions if left blank. Zoom links are optional now; they go into selection emails and calendar files.</p><div id="sess-ed"></div><button class="btn ghost small" onclick="sessAdd()" style="margin-top:8px">Add session</button>`;
+  if(pid) body+=`<div class="icsbox"><strong>Calendar file</strong>${p.hasIcs?`<span>${esc(p.icsName)} <span class="facts">(${esc(p.icsSource||'')})</span></span><span style="flex:1"></span><button class="btn link" onclick="downloadIcs('${pid}')">Download</button><button class="btn link" style="color:#9B1C1C" onclick="removeIcs('${pid}')">Remove</button>`:`<span class="facts">None. Upload the program's .ics so selection emails attach it.</span><span style="flex:1"></span>`}<label class="btn link" style="cursor:pointer">${p.hasIcs?'Replace':'Upload .ics'}<input type="file" accept=".ics,text/calendar" hidden onchange="uploadIcs('${pid}',this).then(()=>{closeDlg();editProgram('${pid}')})"></label></div>`;
+  else if(p.kind!=='call') body+=`<p class="facts" style="margin-top:12px">You can upload the program's calendar file (.ics) after you save.</p>`;
+  openDlg(pid?'Edit '+(p.kind==='call'?'opportunity':'program'):(p.kind==='call'?'New opportunity':'New one-off program'),body,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="saveProgram(${pid?`'${pid}'`:'null'})">Save</button>`);
+  if(p.kind!=='call') sessRender();
+}
+function dlToggle(){ const on=document.getElementById('e-dlauto').checked, el=document.getElementById('e-deadline'); el.disabled=on; if(on){ syncEdit(); el.value=autoDeadline(window._edit); } }
+function syncEdit(){ const p=window._edit; const sd=document.getElementById('e-startDate'); if(sd) p.startDate=sd.value; }
+function sessRender(){ const p=window._edit;
+  document.getElementById('sess-ed').innerHTML=p.sessions.length?`<table class="sess-tbl"><thead><tr><th style="width:150px">Date</th><th>Session title</th><th style="width:105px">Start</th><th style="width:105px">End</th><th style="width:220px">Zoom link</th><th style="width:60px"></th></tr></thead><tbody>${p.sessions.map((s,i)=>`<tr>
+    <td><input type="date" value="${esc(s.date)}" onchange="window._edit.sessions[${i}].date=this.value;dlRefresh()"></td><td><input value="${esc(s.title)}" onchange="window._edit.sessions[${i}].title=this.value"></td>
+    <td><input value="${esc(s.start)}" placeholder="1:00 PM" onchange="window._edit.sessions[${i}].start=this.value"></td><td><input value="${esc(s.end)}" placeholder="3:00 PM" onchange="window._edit.sessions[${i}].end=this.value"></td>
+    <td><input value="${esc(s.zoomLink||'')}" placeholder="https://zoom.us/j/…" onchange="window._edit.sessions[${i}].zoomLink=this.value"></td>
+    <td><button class="btn link" style="color:#9B1C1C" onclick="window._edit.sessions.splice(${i},1);sessRender();dlRefresh()">Remove</button></td></tr>`).join('')}</tbody></table>`:'<p class="facts">No sessions. Instructors will answer for the entire program.</p>'; }
+function dlRefresh(){ const cb=document.getElementById('e-dlauto'); if(cb&&cb.checked){ syncEdit(); document.getElementById('e-deadline').value=autoDeadline(window._edit); } }
+function sessAdd(){ const l=window._edit.sessions, last=l[l.length-1]||{}; l.push({id:'s_'+Math.random().toString(36).slice(2,10),date:last.date||'',title:'',start:last.start||'',end:last.end||'',zoomLink:''}); sessRender(); }
+async function saveProgram(pid){
+  const p=window._edit, g=id=>{const el=document.getElementById('e-'+id);return el?el.value:'';};
+  ['title','cohort','quarter','format','location','timezone','startDate','endDate','deadline','status','description'].forEach(k=>p[k]=g(k));
+  p.deadlineMode=document.getElementById('e-dlauto')&&document.getElementById('e-dlauto').checked?'auto':'manual';
+  if(pid&&p.sessions.length<prog(pid).sessions.length&&!confirm('You removed sessions. Instructor answers for those sessions will no longer show. Save anyway?')) return;
+  const id=pid||'p_'+crypto.randomUUID().replace(/-/g,'').slice(0,10);
+  try{ const r=await api('admin/program/'+id,{method:'PUT',body:JSON.stringify({program:p,baseUpdatedAt:pid?prog(pid).updatedAt:undefined})});
+    if(pid) Object.assign(prog(pid),r.program); else D.programs.push(r.program);
+    D.programs.sort((a,b)=>String(a.startDate).localeCompare(String(b.startDate))); closeDlg(); render(); toast('Saved '+r.program.title);}catch(e){toast(e.message);}
+}
+async function delProgram(pid){ const p=prog(pid);
+  if(!confirm(`Delete "${titleOf(p)}" and its selections? Instructors' answers stay in their records but won't be visible anywhere. Usually Archive is the better choice.`)) return;
+  try{ await api('admin/program/'+pid,{method:'DELETE'}); D.programs=D.programs.filter(x=>x.id!==pid); render(); toast('Deleted');}catch(e){toast(e.message);} }
+
+/* ---------- Agenda Generator package ---------- */
+function packageDlg(){
+  U.pkg=null;
+  openDlg('Import from the Program Agenda Generator',`<p class="sub">Use this if you downloaded a package file from the Agenda Generator instead of sending it directly. New cohorts come in as drafts with the response date set automatically. Cohorts already here are updated in place: dates, times, Zoom links and the calendar file refresh, and instructors' answers stay attached. Status, notes and selections aren't touched.</p>
+    <div class="form"><div class="f span2"><label for="pkg-file">Portal package</label><input type="file" id="pkg-file" accept=".json,application/json" onchange="parsePackage()"></div></div><div id="pkg-prev" style="margin-top:14px"></div>`,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" id="pkg-go" disabled onclick="runPackage()">Import</button>`);
+}
+async function parsePackage(){
+  const f=document.getElementById('pkg-file').files[0], prev=document.getElementById('pkg-prev'); if(!f) return;
+  try{
+    const j=JSON.parse(await f.text());
+    if(j.format!=='clear-availability-package'||!Array.isArray(j.programs)) throw new Error('That file isn\'t a portal package from the Program Agenda Generator.');
+    if(!j.programs.length) throw new Error('The package has no programs in it.');
+    U.pkg=j;
+    const byKey=new Map(D.programs.filter(p=>p.externalKey).map(p=>[p.externalKey,p]));
+    prev.innerHTML=`<div class="tbl-wrap" style="max-height:340px"><table><thead><tr><th>Program</th><th>Dates</th><th>Sessions</th><th>Respond by</th><th>Calendar</th><th></th></tr></thead><tbody>${j.programs.map(p=>{const ex=byKey.get(p.externalKey);const dl=ex&&ex.deadlineMode==='manual'?ex.deadline:autoDeadline(p);
+      return `<tr><td><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}</td><td style="white-space:nowrap">${esc(fmtRange(p.startDate,p.endDate))}</td><td>${(p.sessions||[]).length||'Whole program'}</td><td style="white-space:nowrap">${fmtD(dl)}</td><td>${p.ics?'<span class="okc">✓</span>':'—'}</td><td>${ex?`<span class="warn">Update (${esc(ex.status)})</span>`:'<span class="pill draft">New draft</span>'}</td></tr>`;}).join('')}</tbody></table></div>
+      <p class="facts" style="margin-top:8px">${j.programs.length} programs from ${esc(j.source||'the Agenda Generator')}, made ${esc(stamp(j.generatedAt))}.</p>`;
+    document.getElementById('pkg-go').disabled=false;
+  }catch(e){ U.pkg=null; prev.innerHTML=`<div class="err">${esc(e.message)}</div>`; document.getElementById('pkg-go').disabled=true; }
+}
+async function runPackage(){
+  if(!U.pkg) return;
+  try{ const r=await api('admin/import-package',{method:'POST',body:JSON.stringify(U.pkg)});
+    const q=(U.pkg.programs.find(p=>p.quarter)||{}).quarter; if(q) U.quarter=q;
+    await load(false);
+    if(r.warnings&&r.warnings.length){ openDlg('Imported, with notes',`<p>${r.created.length} created, ${r.updated.length} updated.</p>${r.warnings.map(w=>`<div class="notice">${esc(w)}</div>`).join('')}`,`<button class="btn" onclick="closeDlg()">OK</button>`); }
+    else { closeDlg(); toast(`Imported: ${r.created.length} new draft${r.created.length===1?'':'s'}, ${r.updated.length} updated`); }
+  }catch(e){ toast(e.message); }
+}
+
+/* ---------- Spreadsheet import ---------- */
+function importDlg(){
+  U.importPreview=null;
+  openDlg('Import the availability spreadsheet',`<p class="sub">Choose the coordinator's workbook (the same layout as Q1_2027.xlsx, with an Availability tab). Each program becomes a draft, sessions come from the rows under its ENTIRE PROGRAM row, and instructor names from the header row are added to the Instructors list. Programs already in the dashboard with the same title and start date are skipped.</p>
+    <div class="form"><div class="f span2"><label for="imp-file">Workbook</label><input type="file" id="imp-file" accept=".xlsx,.xls" onchange="parseImport()"></div><div class="f"><label for="imp-q">Quarter label</label><input id="imp-q" type="text" placeholder="Q1 2027"></div>
+    <div class="f"><label for="imp-dl">Answer by (optional)</label><input id="imp-dl" type="date"></div></div><div id="imp-prev" style="margin-top:14px"></div>`,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" id="imp-go" disabled onclick="runImport()">Import as drafts</button>`);
+}
+function cellDate(v){
+  if(typeof v==='number'){ const c=XLSX.SSF.parse_date_code(v); return c?`${c.y}-${String(c.m).padStart(2,'0')}-${String(c.d).padStart(2,'0')}`:''; }
+  if(v instanceof Date) return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`;
+  const s=String(v||'').trim(); if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  const d=new Date(s); return isNaN(d)?'':cellDate(d);
+}
+function cellTime(v){
+  if(typeof v==='number'){ const mins=Math.round((v%1)*1440); let h=Math.floor(mins/60),m=mins%60; const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${String(m).padStart(2,'0')} ${ap}`; }
+  return String(v||'').trim();
+}
+function rangeEnd(label,start){ // "ENTIRE PROGRAM (Jan 21-Feb 4)" -> end date
+  const m=String(label).match(/\(([A-Za-z]{3})\s*(\d{1,2})\s*-\s*(?:([A-Za-z]{3})\s*)?(\d{1,2})\)/); if(!m||!start) return '';
+  const y=+start.slice(0,4), sm=MONTHS.indexOf(m[1]), em=m[3]?MONTHS.indexOf(m[3]):sm; if(em<0) return '';
+  const yy=em<sm?y+1:y; return `${yy}-${String(em+1).padStart(2,'0')}-${String(+m[4]).padStart(2,'0')}`;
+}
+async function parseImport(){
+  const f=document.getElementById('imp-file').files[0]; if(!f) return;
+  const prev=document.getElementById('imp-prev');
+  try{
+    if(!window.XLSX) throw new Error('The spreadsheet reader didn\'t load. Check your connection and reload the page.');
+    const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+    const ws=wb.Sheets['Availability']||wb.Sheets[wb.SheetNames.find(n=>/avail/i.test(n))||wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+    const hi=rows.findIndex(r=>String(r[0]).trim().toLowerCase()==='program');
+    if(hi<0) throw new Error('Couldn\'t find the header row (a row starting with "Program").');
+    const head=rows[hi].map(x=>String(x).trim());
+    const col=n=>head.findIndex(x=>x.toLowerCase()===n);
+    const C={prog:0,date:col('date'),sess:col('session'),start:col('start'),end:col('end'),tz:col('time zone'),fmt:col('format'),loc:col('location')};
+    const firstInst=Math.max(C.loc,C.fmt,C.tz)+1, stop=head.findIndex((x,i)=>i>=firstInst&&/^#|comments/i.test(x));
+    const instructors=head.slice(firstInst,stop<0?undefined:stop).filter(Boolean);
+    const map=new Map();
+    for(const r of rows.slice(hi+1)){
+      const title=String(r[C.prog]||'').trim(); if(!title) continue;
+      const sess=String(r[C.sess]||'').trim(), date=cellDate(r[C.date]);
+      if(!map.has(title)) map.set(title,{kind:'program',title,format:String(r[C.fmt]||'').trim(),location:String(r[C.loc]||'').trim(),timezone:String(r[C.tz]||'').trim(),startDate:date,endDate:'',sessions:[]});
+      const p=map.get(title);
+      if(/^entire program/i.test(sess)){ p.startDate=date||p.startDate; p.endDate=rangeEnd(sess,p.startDate)||p.endDate; continue; }
+      if(sess) p.sessions.push({title:sess,date,start:cellTime(r[C.start]),end:cellTime(r[C.end])});
+    }
+    const programs=[...map.values()];
+    if(!programs.length) throw new Error('No program rows found under the header.');
+    U.importPreview={programs,instructors};
+    const q=document.getElementById('imp-q'); if(!q.value){ const m=f.name.match(/Q([1-4])[\s_-]*(\d{4})/i); if(m) q.value=`Q${m[1]} ${m[2]}`; }
+    const have=new Set(D.programs.map(p=>p.title.toLowerCase()+'|'+p.startDate));
+    prev.innerHTML=`<div class="tbl-wrap" style="max-height:300px"><table><thead><tr><th>Program</th><th>Dates</th><th>Format</th><th>Sessions</th><th></th></tr></thead><tbody>${programs.map(p=>`<tr><td>${esc(p.title)}</td><td>${esc(fmtRange(p.startDate,p.endDate))}</td><td>${esc(p.format)}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''}</td><td>${p.sessions.length||'Whole program'}</td><td>${have.has(p.title.toLowerCase()+'|'+p.startDate)?'<span class="warn">Already here, will skip</span>':''}</td></tr>`).join('')}</tbody></table></div>
+      <p class="facts" style="margin-top:10px">${instructors.length} instructor names found. ${instructors.filter(n=>!D.roster.some(r=>r.name.toLowerCase()===n.toLowerCase())).length} are new and will be added without emails.</p>`;
+    document.getElementById('imp-go').disabled=false;
+  }catch(e){ prev.innerHTML=`<div class="err">${esc(e.message)}</div>`; document.getElementById('imp-go').disabled=true; }
+}
+async function runImport(){
+  const q=document.getElementById('imp-q').value.trim(), dl=document.getElementById('imp-dl').value;
+  const programs=U.importPreview.programs.map(p=>({...p,quarter:q,deadline:dl}));
+  try{ const r=await api('admin/import',{method:'POST',body:JSON.stringify({programs,instructors:U.importPreview.instructors})});
+    closeDlg(); if(q) U.quarter=q; await load(false);
+    toast(`Imported ${r.created.length} program${r.created.length===1?'':'s'}${r.skipped.length?`, skipped ${r.skipped.length}`:''}${r.addedInstructors.length?`, added ${r.addedInstructors.length} instructors`:''}`);}catch(e){toast(e.message);}
+}
+
+/* ================= Roster ================= */
+function vRoster(){
+  if(!U.rosterDraft) U.rosterDraft=clone(D.roster);
+  const L=U.rosterDraft;
+  const withEmail=L.filter(r=>r.active!==false&&(r.emails||[]).length);
+  let h=`<h2>Instructors</h2><p class="sub">An instructor can sign in with any email listed here. Separate multiple emails with commas. Inactive instructors can't sign in and don't appear on the Responses tab, but their history is kept.</p>
+    <div class="${D.accessSync?'notice':'err'}">${D.accessSync?'Saving this list also updates the CLEAR Instructors Access group in Cloudflare automatically.':'<strong>Access sync isn\'t set up.</strong> After you save, also paste the email list into the CLEAR Instructors Access group in Cloudflare Zero Trust, or instructors won\'t get a login code.'}</div>
+    <div class="bar"><input type="search" placeholder="Filter by name or email" value="${esc(U.filter)}" oninput="U.filter=this.value;clearTimeout(window._f);window._f=setTimeout(render,250)"><span class="grow"></span>
+    <button class="btn ghost" onclick="copyText('${withEmail.flatMap(r=>r.emails).join(', ')}','Copied ${withEmail.flatMap(r=>r.emails).length} emails')">Copy all active emails</button>
+    ${D.accessSync?`<button class="btn ghost" onclick="syncNow()">Sync Access group now</button>`:''}
+    <button class="btn ghost" onclick="pasteRoster()">Paste names and emails</button><button class="btn ghost" onclick="U.rosterDraft.push({name:'',emails:[],active:true,notes:''});U.rosterDirty=true;render()">Add instructor</button>
+    <button class="btn" ${U.rosterDirty?'':'disabled'} onclick="saveRoster()">Save instructors</button></div>`;
+  const f=U.filter.toLowerCase();
+  h+=`<div class="tbl-wrap"><table><thead><tr><th style="width:60px">Active</th><th style="width:240px">Name (Last, First)</th><th>Emails</th><th>Notes</th><th style="width:90px">Assigned</th><th style="width:150px"></th></tr></thead><tbody>`+
+    L.map((r,i)=>({r,i})).filter(({r})=>!f||r.name.toLowerCase().includes(f)||(r.emails||[]).join(' ').includes(f)).map(({r,i})=>`<tr>
+      <td><input type="checkbox" ${r.active!==false?'checked':''} onchange="U.rosterDraft[${i}].active=this.checked;markRoster()" aria-label="Active"></td>
+      <td><input type="text" value="${esc(r.name)}" style="width:100%" onchange="U.rosterDraft[${i}].name=this.value;markRoster()"></td>
+      <td><input type="text" value="${esc((r.emails||[]).join(', '))}" style="width:100%;${(r.emails||[]).length?'':'border-color:#E0B54A;background:#FFFBF0'}" placeholder="Needs an email to sign in" onchange="U.rosterDraft[${i}].emails=this.value.split(/[,;\\s]+/).filter(Boolean);markRoster()"></td>
+      <td><input type="text" value="${esc(r.notes||'')}" style="width:100%" onchange="U.rosterDraft[${i}].notes=this.value;markRoster()"></td>
+      <td>${r.id?loadCount(r.id):''}</td>
+      <td style="white-space:nowrap">${r.id?`<a href="/?as=${r.id}" target="_blank">Preview page</a>`:''} ${r.id?'':`<button class="btn link" onclick="U.rosterDraft.splice(${i},1);render()">Remove</button>`}</td></tr>`).join('')+`</tbody></table></div>`;
+  return h;
+}
+function markRoster(){ if(!U.rosterDirty){U.rosterDirty=true;render();} }
+function pasteRoster(){
+  openDlg('Paste names and emails',`<p class="sub">Paste two columns from Excel: name (Last, First) and email. Names that match someone already listed get the email added; new names are added as new instructors.</p><textarea id="paste-r" rows="10" placeholder="Anderegg, Karen&#9;karen@example.gov"></textarea>`,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="applyPaste()">Add to list</button>`);
+}
+function applyPaste(){
+  const lines=document.getElementById('paste-r').value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean); let added=0,updated=0;
+  for(const l of lines){
+    const parts=l.includes('\t')?l.split('\t'):l.split(/,(?=[^,]*@)/); const name=(parts[0]||'').trim(), emails=(parts.slice(1).join(',')).split(/[,;\s]+/).map(e=>e.trim().toLowerCase()).filter(e=>e.includes('@'));
+    if(!name) continue; const ex=U.rosterDraft.find(r=>r.name.toLowerCase()===name.toLowerCase());
+    if(ex){ ex.emails=[...new Set([...(ex.emails||[]),...emails])]; updated++; } else { U.rosterDraft.push({name,emails,active:true,notes:''}); added++; }
+  }
+  U.rosterDirty=true; closeDlg(); render(); toast(`${updated} updated, ${added} added. Save instructors to keep them.`);
+}
+async function saveRoster(){
+  try{ const r=await api('admin/roster',{method:'PUT',body:JSON.stringify({roster:U.rosterDraft})});
+    D.roster=r.roster; U.rosterDraft=null; U.rosterDirty=false; render(); toast('Instructors saved. '+(r.sync&&r.sync.message?r.sync.message:''));}catch(e){toast(e.message);}
+}
+async function syncNow(){ try{ const r=await api('admin/sync-access',{method:'POST',body:'{}'}); toast(r.message||'Synced'); }catch(e){toast(e.message);} }
+
+/* ================= Staff ================= */
+function vStaff(){
+  if(!U.staffDraft) U.staffDraft=clone(D.staff);
+  const can=D.me.isAdmin;
+  let h=`<h2>Staff</h2><p class="sub">Staff can use this dashboard and enter answers for instructors. Admins come from the ADMIN_EMAILS setting in Cloudflare and are always staff. ${can?'':'Only admins can change this list.'}</p>
+    <div class="notice">Each person here also needs to be in the CLEAR Learning Staff Access group in Cloudflare Zero Trust so they can get a login code.</div>
+    <div class="card"><h3>Admins</h3><p class="facts">${D.admins.map(esc).join(', ')||'None set'}</p></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Email</th><th></th></tr></thead><tbody>${U.staffDraft.map((s,i)=>`<tr><td><input type="text" value="${esc(s.name)}" ${can?'':'disabled'} style="width:100%" onchange="U.staffDraft[${i}].name=this.value"></td><td><input type="email" value="${esc(s.email)}" ${can?'':'disabled'} style="width:100%" onchange="U.staffDraft[${i}].email=this.value"></td><td>${can?`<button class="btn link" onclick="U.staffDraft.splice(${i},1);render()">Remove</button>`:''}</td></tr>`).join('')}</tbody></table></div>
+    ${can?`<div class="bar" style="margin-top:12px"><button class="btn ghost" onclick="U.staffDraft.push({name:'',email:''});render()">Add staff member</button><button class="btn" onclick="saveStaff()">Save staff</button></div>`:''}`;
+  return h;
+}
+async function saveStaff(){ try{ const r=await api('admin/staff',{method:'PUT',body:JSON.stringify({staff:U.staffDraft})}); D.staff=r.staff; U.staffDraft=null; render(); toast('Staff saved');}catch(e){toast(e.message);} }
+
+/* ================= Activity ================= */
+async function loadLog(){ try{ const r=await api('admin/log'); U.log=r.entries; if(U.tab==='log') render(); }catch(e){toast(e.message);} }
+function vLog(){
+  let h=`<h2>Activity</h2><p class="sub">The 300 most recent changes, newest first. Entries are kept for two years.</p><div class="bar"><button class="btn ghost" onclick="U.log=null;render()">Refresh</button></div>`;
+  if(!U.log) return h+`<div class="loading">Loading…</div>`;
+  if(!U.log.length) return h+`<div class="empty">No activity yet.</div>`;
+  return h+`<div class="card">${U.log.map(e=>`<div class="log-row"><span class="t">${stamp(e.at)}</span><span>${esc(e.by)}</span><span><strong>${esc(e.action)}</strong>${e.detail?': '+esc(e.detail):''}</span></div>`).join('')}</div>`;
+}
+
+/* ---------- Dialog ---------- */
+function openDlg(title,body,foot){ document.getElementById('dlg-title').textContent=title; document.getElementById('dlg-body').innerHTML=body; document.getElementById('dlg-foot').innerHTML=foot; document.getElementById('dlg').showModal(); }
+function closeDlg(){ document.getElementById('dlg').close(); }
+
+window.addEventListener('beforeunload',e=>{ if(U.assignDirty.size||U.rosterDirty){e.preventDefault();e.returnValue='';} });
+load();
+</script>
+</body>
+</html>
