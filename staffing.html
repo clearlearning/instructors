@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLEAR Learning Instructor Staffing Dashboard</title>
+<link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+:root{--burgundy:#64092c;--burgundy-light:#8a1e4a;--gold:#dda838;--gold-faint:#fdf6e3;--blue:#084d78;--blue-light:#0a6191;--charcoal:#484848;--light-bg:#f7f5f2;--white:#fff;--border:#e0dcd6;--text:#333;--text-light:#6b6b6b;--success:#2e7d4f;--success-faint:#f0f9f4;--shadow:0 2px 12px rgba(100,9,44,.08);--shadow-lg:0 8px 32px rgba(100,9,44,.12)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Open Sans',sans-serif;background:var(--light-bg);color:var(--text);min-height:100vh}
+.header{background:linear-gradient(135deg,var(--burgundy),var(--burgundy-light));color:var(--white);padding:20px 40px;display:flex;align-items:center;gap:20px;box-shadow:0 4px 20px rgba(100,9,44,.25)}
+.header-icon img{width:80px;height:auto;border-radius:4px;box-shadow:0 4px 8px rgba(0,0,0,.3);padding:8px;background:#fff}
+.header h1{font-size:22px;font-weight:700;letter-spacing:.5px}
+.header p{font-size:13px;opacity:.85;margin-top:2px}
+.container{max-width:1400px;margin:0 auto;padding:28px 40px 60px}
+.card{background:var(--white);border-radius:12px;box-shadow:var(--shadow);margin-bottom:24px;overflow:hidden}
+.card-hdr{padding:16px 28px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--charcoal),#5a5a5a);color:var(--white)}
+.card-body{padding:24px 28px}
+.card-flush{padding:0}
+
+.cfg-panel{background:var(--white);border-radius:12px;box-shadow:var(--shadow);padding:28px 32px;margin-bottom:24px;border-left:4px solid var(--gold)}
+.cfg-panel h2{font-size:16px;font-weight:700;color:var(--burgundy);margin-bottom:6px}
+.cfg-panel p{font-size:13px;color:var(--text-light);margin-bottom:20px;line-height:1.6}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.cfg-group label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:5px}
+.cfg-group input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Open Sans',sans-serif}
+.cfg-group input:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(221,168,56,.15)}
+.cfg-note{font-size:12px;color:var(--text-light);margin-top:10px}
+
+.status-bar{background:var(--white);border-radius:12px;box-shadow:var(--shadow);padding:16px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.status-item{display:flex;align-items:center;gap:8px;font-size:13px}
+.status-dot{width:10px;height:10px;border-radius:50%;background:#ccc;flex-shrink:0}
+.status-dot.loading{background:var(--gold);animation:pulse 1s infinite}
+.status-dot.ok{background:var(--success)}
+.status-dot.err{background:#c62828}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-label{font-weight:600;color:var(--charcoal)}
+.status-meta{color:var(--text-light);font-size:12px}
+.status-bar .spacer{flex:1}
+.reload-btn{background:0 0;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--text-light);cursor:pointer;font-family:'Open Sans',sans-serif;transition:.2s}
+.reload-btn:hover{border-color:var(--burgundy);color:var(--burgundy)}
+
+.data-summary{display:flex;gap:16px;flex-wrap:wrap;padding:16px 28px;background:var(--gold-faint);border:1px solid var(--gold);border-radius:12px;margin-bottom:24px;align-items:center}
+.stat{display:flex;flex-direction:column;align-items:center;padding:0 16px;border-right:1px solid rgba(221,168,56,.3)}
+.stat:last-child{border-right:0}
+.stat-val{font-size:22px;font-weight:700;color:var(--burgundy)}
+.stat-lbl{font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px}
+
+.vtabs{display:flex;gap:4px;border-bottom:2px solid var(--border);padding:0 4px;margin-bottom:0;flex-wrap:wrap}
+.vtab{padding:12px 22px;border-radius:8px 8px 0 0;font-size:14px;font-weight:600;cursor:pointer;border:1px solid transparent;border-bottom:0;background:0 0;color:var(--text-light);transition:.2s;font-family:'Open Sans',sans-serif;position:relative}
+.vtab:hover{background:#f0ede8;color:var(--charcoal)}
+.vtab.active{background:var(--white);color:var(--burgundy);border-color:var(--border);z-index:1}
+.vtab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--white)}
+.tc{display:none}.tc.active{display:block}
+.fp{background:var(--white);border-radius:0 12px 12px 12px;padding:28px 32px;box-shadow:var(--shadow);margin-bottom:24px}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:16px}
+.fgl{display:block;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.fgi{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Open Sans',sans-serif;color:var(--text);background:var(--white);transition:border-color .2s}
+.fgi:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(221,168,56,.15)}
+textarea.fgi{resize:vertical;min-height:70px}
+.ms{position:relative;width:100%}
+.mst{width:100%;padding:9px 32px 9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Open Sans',sans-serif;color:var(--text);background:var(--white);cursor:pointer;text-align:left;transition:border-color .2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;-webkit-appearance:none;appearance:none}
+.mst::after{content:'';position:absolute;right:12px;top:50%;transform:translateY(-50%);border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid var(--text-light);pointer-events:none}
+.mst:hover,.mst.open{border-color:var(--gold);box-shadow:0 0 0 3px rgba(221,168,56,.15)}
+.mst .ph{color:var(--text-light)}
+.msd{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-lg);z-index:100;max-height:280px;overflow-y:auto}
+.msd.open{display:block}
+.mss{width:calc(100% - 16px);margin:8px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:'Open Sans',sans-serif}
+.mss:focus{outline:0;border-color:var(--gold)}
+.mso{display:flex;align-items:center;gap:10px;padding:7px 14px;cursor:pointer;font-size:13px;transition:background .15s}
+.mso:hover{background:var(--gold-faint)}
+.mso.hid{display:none}
+.mso input[type=checkbox]{accent-color:var(--burgundy);width:15px;height:15px;cursor:pointer;flex-shrink:0}
+.mso label{cursor:pointer;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msa{display:flex;gap:8px;padding:8px 14px;border-top:1px solid var(--border);background:#faf9f7;border-radius:0 0 8px 8px;position:sticky;bottom:0}
+.msa button{background:0 0;border:0;font-size:12px;font-family:'Open Sans',sans-serif;color:var(--blue);cursor:pointer;font-weight:600;padding:2px 4px}
+.msa button:hover{text-decoration:underline}
+.br{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--border)}
+.btn{padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;font-family:'Open Sans',sans-serif;cursor:pointer;border:0;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-p{background:var(--burgundy);color:var(--white)}.btn-p:hover{background:var(--burgundy-light);box-shadow:var(--shadow)}
+.btn-s{background:var(--white);color:var(--charcoal);border:1px solid var(--border)}.btn-s:hover{border-color:var(--charcoal)}
+.btn-e{background:var(--blue);color:var(--white)}.btn-e:hover{background:var(--blue-light);box-shadow:var(--shadow)}
+.btn-d{background:#fce1ec;color:#c62828}.btn-d:hover{background:#f8c6d8}
+.btn-sm{padding:6px 14px;font-size:12px}
+.fsm{font-size:12px;color:var(--text-light);margin-left:auto}
+table{width:100%;border-collapse:collapse}
+thead th{background:#f9f7f4;padding:11px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);text-align:center;border-bottom:2px solid var(--border)}
+thead th:first-child{text-align:left}
+tbody td{padding:10px 14px;font-size:13px;text-align:center;border-bottom:1px solid #f0ede8;vertical-align:middle}
+tbody td:first-child{text-align:left;font-weight:600;color:var(--burgundy)}
+tbody tr:hover{background:#fdfcfa}
+tbody tr.clk{cursor:pointer}
+.sb{display:inline-block;padding:3px 10px;border-radius:12px;font-weight:600;font-size:12px}
+.sh{background:#e8f5e9;color:#2e7d32}.sm{background:#fff8e1;color:#b8860b}.sl{background:#fce1ec;color:#c62828}.sn{background:#f0f0f0;color:#757575}
+.pill{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:var(--gold-faint);color:var(--charcoal);border:1px solid var(--gold);margin:2px 3px 2px 0;white-space:nowrap}
+.pill.blue{background:#eaf3fa;border-color:var(--blue);color:var(--blue)}
+.pill.small{font-size:10px;padding:2px 8px}
+.mth-both{color:var(--success);font-weight:700}.mth-ip{color:var(--blue);font-weight:700}.mth-v{color:#b8860b;font-weight:700}
+.empty{text-align:center;padding:48px 20px;color:var(--text-light)}
+.empty .icon{font-size:40px;margin-bottom:12px}
+.empty h3{font-size:15px;color:var(--charcoal);margin-bottom:6px}
+.hidden{display:none!important}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:16px}
+.pgroup{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#fdfcfb}
+.pgroup h4{font-size:13px;font-weight:700;color:var(--burgundy);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.pgroup h4 .tag{font-size:10px;font-weight:700;color:var(--blue);background:#eaf3fa;padding:2px 8px;border-radius:8px}
+.pgroup .mrow{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px}
+.pgroup .mrow input{accent-color:var(--burgundy);width:15px;height:15px;cursor:pointer;flex-shrink:0}
+.pgroup .mrow label{cursor:pointer}
+.radio-row{display:flex;gap:18px;flex-wrap:wrap;padding:8px 0}
+.radio-row label{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+.radio-row input{accent-color:var(--burgundy);width:15px;height:15px;cursor:pointer}
+.profile-card{background:var(--white);border-radius:12px;box-shadow:var(--shadow);padding:26px 30px;margin-bottom:24px;border-top:4px solid var(--burgundy)}
+.profile-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.profile-hd h2{font-size:19px;color:var(--burgundy);font-weight:700}
+.profile-hd .sub{font-size:12px;color:var(--text-light);margin-top:4px}
+.dsearch{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.dsearch input{flex:1;min-width:220px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Open Sans',sans-serif}
+.section-title{font-size:14px;font-weight:700;color:var(--burgundy);margin:20px 0 10px;padding-top:16px;border-top:1px solid var(--border)}
+.section-title:first-child{margin-top:0;padding-top:0;border-top:0}
+.evalbadge{display:inline-flex;align-items:center;gap:4px;font-size:11px}
+.importPrevRow.excl td{opacity:.35;text-decoration:line-through}
+.dropzone{border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;color:var(--text-light);font-size:13px;cursor:pointer;transition:.2s}
+.dropzone:hover,.dropzone.drag{border-color:var(--gold);background:var(--gold-faint)}
+.dropzone input{display:none}
+.summary-line{font-size:13px;color:var(--charcoal);background:var(--success-faint);border:1px solid var(--success);border-radius:8px;padding:10px 16px;margin-bottom:16px}
+.acc{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden}
+.acc summary{list-style:none;cursor:pointer;padding:12px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;transition:background .15s}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary:hover{background:#faf9f7}
+.acc-name{font-weight:700;color:var(--burgundy);white-space:nowrap}
+.acc-meta{color:var(--text-light);font-size:12px;white-space:nowrap}
+.acc .chev{margin-left:auto;transition:transform .2s;color:var(--text-light);font-size:11px;flex-shrink:0}
+.acc[open] .chev{transform:rotate(90deg)}
+.acc-body{border-top:1px solid var(--border);background:#fdfcfb}
+.acc-body table{width:100%}
+.acc-body thead th{background:transparent;border-bottom:1px solid var(--border)}
+.acc-nested{padding:10px 12px 10px 22px;background:var(--light-bg)}
+.acc-nested .acc{background:var(--white)}
+.acc-l1>summary .acc-name{font-size:14px}
+@media(max-width:800px){.container{padding:20px}.header{padding:16px 20px}.fg{grid-template-columns:1fr 1fr}.cfg-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-icon"><img src="https://assets-002.noviams.com/novi-file-uploads/clear/graphics/CLEAR_Learning_New.png" alt="CLEAR Learning Logo"></div>
+  <div><h1>CLEAR Learning Instructor Staffing Dashboard</h1><p>Instructor availability, roster management, and teaching history &middot; linked to module evaluations</p></div>
+</div>
+<div class="container">
+
+  <!-- CONFIG -->
+  <div class="cfg-panel" id="cfgPanel">
+    <h2>Connect to Shared Storage</h2>
+    <p>This tool stores your instructor roster and teaching history in the same Cloudflare Worker / KV store used by the Module Evaluation Dashboard, so settings are shared automatically if you've already configured that tool in this browser. The ILT Survey ID is used to pull live evaluation scores into each instructor's teaching history.</p>
+    <div class="cfg-grid">
+      <div class="cfg-group" style="grid-column:1/-1">
+        <label>Worker Proxy URL</label>
+        <input type="text" id="cfgProxy" placeholder="https://clear-lms-proxy.avance.workers.dev">
+      </div>
+      <div class="cfg-group" style="grid-column:1/-1">
+        <label>Auth Token (X-Auth-Token)</label>
+        <input type="password" id="cfgToken" placeholder="your-auth-token">
+      </div>
+      <div class="cfg-group">
+        <label>ILT Evaluation Survey ID (optional)</label>
+        <input type="text" id="cfgILT" placeholder="e.g. 123456789">
+      </div>
+      <div class="cfg-group">
+        <label>Async Evaluation Survey ID (optional)</label>
+        <input type="text" id="cfgAsync" placeholder="e.g. 987654321">
+      </div>
+      <div class="cfg-group" style="grid-column:1/-1">
+        <label>Instructor Availability Survey ID</label>
+        <input type="text" id="cfgInstSurvey" placeholder="e.g. 423168541">
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <button class="btn btn-p" onclick="saveConfig()">Save &amp; Load</button>
+      <button class="btn btn-s" onclick="toggleCfg(false)">Cancel</button>
+    </div>
+    <p class="cfg-note">💡 Leave the Evaluation Survey ID fields blank if you don't want eval scores linked into teaching history &mdash; everything else still works. The Instructor Availability Survey ID lets this tool pull the "Instructor Information Form" directly from SurveyMonkey on the Import tab instead of requiring a manual file export.</p>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar hidden" id="statusBar">
+    <div class="status-item"><div class="status-dot" id="dotDir"></div><span class="status-label">Directory</span><span class="status-meta" id="metaDir">—</span></div>
+    <div class="status-item"><div class="status-dot" id="dotHist"></div><span class="status-label">Teaching History</span><span class="status-meta" id="metaHist">—</span></div>
+    <div class="status-item"><div class="status-dot" id="dotEval"></div><span class="status-label">Eval Data</span><span class="status-meta" id="metaEval">—</span></div>
+    <div class="status-item"><div class="status-dot" id="dotInstForm"></div><span class="status-label">Instructor Form</span><span class="status-meta" id="metaInstForm">—</span></div>
+    <div class="spacer"></div>
+    <button class="reload-btn" onclick="reloadAll()">↺ Refresh</button>
+    <button class="reload-btn" onclick="exportDirXLSX()">📗 Export Directory</button>
+    <button class="reload-btn" onclick="exportHistXLSX()">📗 Export History</button>
+    <button class="reload-btn" onclick="toggleCfg(true)">⚙ Settings</button>
+  </div>
+
+  <div class="data-summary hidden" id="dsum"></div>
+
+  <div class="hidden" id="main">
+    <div class="vtabs">
+      <button class="vtab active" onclick="sw('find')">🔎 Find Instructors</button>
+      <button class="vtab" onclick="sw('dir')">📇 Directory</button>
+      <button class="vtab" onclick="sw('hist')">📝 Teaching History</button>
+      <button class="vtab" onclick="sw('imp')">📥 Import Roster</button>
+    </div>
+
+    <!-- FIND -->
+    <div class="tc active" id="vfind">
+      <div class="fp">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h2 style="font-size:16px;font-weight:700;color:var(--burgundy)">Staffing Search</h2>
+          <span class="fsm" id="ffs"></span>
+        </div>
+        <div class="fg">
+          <div class="filter-group">
+            <label class="fgl">Program</label>
+            <select class="fgi" id="fProgram" onchange="onProgramChange()">
+              <option value="">Any Program</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="fgl">Delivery Method</label>
+            <select class="fgi" id="fMethod">
+              <option value="">Any</option>
+              <option value="In-Person">Can deliver In-Person</option>
+              <option value="Virtual">Can deliver Virtual</option>
+              <option value="Both In-Person and Virtual">Both Required</option>
+            </select>
+          </div>
+          <div class="filter-group" style="grid-column:span 2">
+            <label class="fgl">Module(s)</label>
+            <div class="ms" id="fMod_w"><button type="button" class="mst" id="fMod_t"><span class="ph">Select a program first</span></button>
+            <div class="msd" id="fMod_d"><input type="text" class="mss" placeholder="Search..." oninput="msSr('fMod',this.value)">
+            <div id="fMod_o"></div><div class="msa"><button type="button" onclick="msA('fMod',1)">Select All</button><button type="button" onclick="msA('fMod',0)">Clear All</button></div></div></div>
+          </div>
+          <div class="filter-group">
+            <label class="fgl">Name / Email / Location</label>
+            <input type="text" class="fgi" id="fName" placeholder="Search...">
+          </div>
+        </div>
+        <div class="br">
+          <button class="btn btn-p" onclick="runFind()">Search</button>
+          <button class="btn btn-s" onclick="resetFind()">Reset</button>
+        </div>
+      </div>
+      <div id="frc"></div>
+    </div>
+
+    <!-- DIRECTORY -->
+    <div class="tc" id="vdir">
+      <div class="dsearch">
+        <input type="text" id="dirSearch" placeholder="Search directory by name, email, or location..." oninput="renderDirList()">
+        <button class="btn btn-p" onclick="openProfile(null)">+ Add Instructor</button>
+      </div>
+      <div id="dirList"></div>
+      <div id="profileHolder"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="tc" id="vhist">
+      <div class="fp" style="border-left:4px solid var(--gold)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h2 style="font-size:16px;font-weight:700;color:var(--burgundy)">📝 Teaching History</h2>
+          <span class="fsm" id="efs"></span>
+        </div>
+        <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Pulled directly from module evaluation responses — each cohort tagged with an Instructor, Program, Module, and Method <em>is</em> a class that instructor taught. Filter below to see the teaching history and scores for a given instructor, program, method, and/or module.</p>
+        <div class="fg" id="efg"></div>
+        <div class="br">
+          <button class="btn btn-p" onclick="runEvalSearch()">Search</button>
+          <button class="btn btn-s" onclick="resetEvalSearch()">Reset</button>
+        </div>
+      </div>
+      <div id="evalSearchResults"></div>
+    </div>
+
+    <!-- IMPORT -->
+    <div class="tc" id="vimp">
+      <div class="card">
+        <div class="card-hdr">🔄 Sync Live from SurveyMonkey</div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:16px">Pulls the "Instructor Information Form" (Survey ID <span id="instSurveyIdLabel"></span>) directly from SurveyMonkey &mdash; no export/upload needed. Rows are matched to existing directory entries by email (falling back to name), and if someone submitted more than once, only their most recent response is used. Nothing is written to your roster until you review the preview and click <strong>Import Selected</strong>.</p>
+          <div class="br" style="border-top:0;padding-top:0">
+            <button class="btn btn-p" onclick="syncFromSurveyMonkey()">Fetch &amp; Preview Latest Responses</button>
+            <span class="fsm" id="instSyncStatus"></span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr">🩺 Diagnose Sync Issues</div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:16px">If the sync above is missing instructors or leaving fields blank, click below to pull the raw question definitions and one sample response straight from the SurveyMonkey API. Copy the output and share it back so the parser can be corrected against your survey's actual structure.</p>
+          <div class="br" style="border-top:0;padding-top:0">
+            <button class="btn btn-s" onclick="diagnoseSurvey()">Show Raw SurveyMonkey Data</button>
+          </div>
+          <div id="diagHolder"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr">📄 Or Upload a File Manually</div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:16px">Alternative to live sync above &mdash; upload a raw SurveyMonkey .xlsx export of the same form.</p>
+          <label class="dropzone" for="impFile" id="impDrop">
+            <input type="file" id="impFile" accept=".xlsx,.xls" onchange="handleImportFile(this.files[0])">
+            <div>📄 Click to choose a file, or drag one here</div>
+          </label>
+        </div>
+      </div>
+      <div id="impPreviewHolder"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Program / Module Catalog ─────────────────────────────────────────────────
+const PROGRAMS=[
+{key:'ncit_basic',name:'NCIT Basic',inPersonOnly:false,modules:['Module 1: Professional Conduct','Module 2: Principles of Administrative Law','Module 3: Investigative Techniques','Module 4: Principles of Evidence','Module 5: Evidence Collection, Tagging, and Storage','Module 6: Interviewing Techniques','Module 7: Investigator Safety','Module 8: Overview of Inspections and Inspection Procedures','Module 9: Report Writing','Module 10: Testifying in Administrative and Criminal Proceedings']},
+{key:'ncit_ait',name:'NCIT Applied Investigative Techniques',inPersonOnly:true,modules:['Module 1: Complaint Intake & Analysis','Module 2: Investigative Planning','Module 3: Gathering Evidence','Module 4: Interviewing','Module 5: Report Writing','Module 6: Testifying']},
+{key:'ncit_specialized',name:'NCIT Specialized',inPersonOnly:true,modules:['Module 1: Advanced Interviewing Skills','Module 2: Advanced Investigative Techniques','Module 3: Investigative Report Development']},
+{key:'ncit_workshops',name:'NCIT Workshops',inPersonOnly:true,modules:['Investigating Reports of Sexual Misconduct','Drug Diversion Investigations','Developing a Professional Attitude: Ethics for the Regulatory Investigator','Communication Skills and the Art of Persuasion']},
+{key:'elp',name:'Executive Leadership Program for Regulators',inPersonOnly:false,modules:['Module 1: Regulatory Leadership','Module 2: Organizational Culture and Change','Module 3: Creating a Positive Regulatory Reputation through Public Outreach and Relations','Module 4: Creating an Appropriate Relationship with Stakeholders & the Art of Negotiation']},
+{key:'sra_board',name:'Skills for the Regulatory Administrator: Staffing a Board',inPersonOnly:false,modules:['Module 1: Characteristics of Regulatory Governance','Module 2: Leading a Board - The Effective Board Advisor','Module 3: Tips and Tactics for Effective Board Leadership']},
+{key:'ss4r',name:'Soft Skills for Regulators',inPersonOnly:false,modules:['Problem-Solving in Regulatory Work','Emotional Intelligence, Self-awareness & Self-care','Communication Excellence','Relationship Management','Teamwork & Collaboration','Adaptability','Conflict Resolution & De-Escalation','Professionalism, Ethics & Accountability']},
+{key:'dre',name:'Demonstrating Regulatory Effectiveness',inPersonOnly:false,modules:['Attributes of Effective Regulatory Professionals','Managing Reputation and Building Public Trust','Measuring and Demonstrating Regulatory Impact','Data-Driven Evidence and Analysis','Strategic Communication and Community Relations','Storytelling and Persuasive Communication','Issue Management, Crisis Response, and Defensive Communication','Sustaining Effectiveness and Continuous Improvement']},
+{key:'acrg',name:'Advanced Concepts in Regulatory Governance',inPersonOnly:false,modules:['Module 1: Striving for Governance Excellence - Leadership and the Public Trust','Module 2: Evaluation','Module 3: Effective Public Reporting - Essential to Regulatory Excellence']},
+{key:'chairing',name:'Getting the Most From Your Board: Skills for Effective Chairing',inPersonOnly:false,modules:['Module 1: Roles of a Board Chair','Module 2: Running Effective Board Meetings','Module 3: Challenges','Module 4: Staff Interactions']}
+];
+function progByName(n){return PROGRAMS.find(p=>p.name===n)}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let PROXY='',TOKEN='',SURVEY_ILT='',SURVEY_ASYNC='',SURVEY_INSTRUCTOR='';
+let DIR=[];
+let evalILT=[],evalAsync=[],evalLoaded=false;
+let instSurveyRows=[];
+const MS={};
+let CUR_PROFILE_ID=null;
+let findSort={key:'name',dir:1};
+let IMPORT_ROWS=[];
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+  PROXY=localStorage.getItem('eval_proxy')||'';
+  TOKEN=localStorage.getItem('eval_token')||'';
+  SURVEY_ILT=localStorage.getItem('eval_ilt_id')||'';
+  SURVEY_ASYNC=localStorage.getItem('eval_async_id')||'';
+  SURVEY_INSTRUCTOR=localStorage.getItem('instructor_survey_id')||'423168541';
+  if(!localStorage.getItem('instructor_survey_id'))localStorage.setItem('instructor_survey_id',SURVEY_INSTRUCTOR);
+  $('cfgInstSurvey').value=SURVEY_INSTRUCTOR;
+  $('instSurveyIdLabel').textContent=SURVEY_INSTRUCTOR;
+  if(PROXY&&TOKEN){
+    $('cfgProxy').value=PROXY;$('cfgToken').value=TOKEN;
+    $('cfgILT').value=SURVEY_ILT;$('cfgAsync').value=SURVEY_ASYNC;
+    toggleCfg(false);
+    reloadAll();
+  }
+  buildProgramSelect();
+});
+
+function saveConfig(){
+  PROXY=$('cfgProxy').value.trim().replace(/\/$/,'');
+  TOKEN=$('cfgToken').value.trim();
+  SURVEY_ILT=$('cfgILT').value.trim();
+  SURVEY_ASYNC=$('cfgAsync').value.trim();
+  SURVEY_INSTRUCTOR=$('cfgInstSurvey').value.trim();
+  if(!PROXY||!TOKEN){alert('Please fill in the Worker Proxy URL and Auth Token.');return}
+  localStorage.setItem('eval_proxy',PROXY);
+  localStorage.setItem('eval_token',TOKEN);
+  if(SURVEY_ILT)localStorage.setItem('eval_ilt_id',SURVEY_ILT);
+  if(SURVEY_ASYNC)localStorage.setItem('eval_async_id',SURVEY_ASYNC);
+  if(SURVEY_INSTRUCTOR)localStorage.setItem('instructor_survey_id',SURVEY_INSTRUCTOR);
+  $('instSurveyIdLabel').textContent=SURVEY_INSTRUCTOR;
+  toggleCfg(false);
+  reloadAll();
+}
+function toggleCfg(show){$('cfgPanel').style.display=show?'':'none';$('statusBar').classList.toggle('hidden',show)}
+
+// ─── KV helpers ────────────────────────────────────────────────────────────────
+async function kvGet(key,fallback){
+  try{
+    const res=await fetch(`${PROXY}/kv?key=${encodeURIComponent(key)}`,{headers:{'X-Auth-Token':TOKEN}});
+    if(res.ok){const d=await res.json();return Array.isArray(d.value)?d.value:(d.value||fallback)}
+    return fallback;
+  }catch(e){console.error('kvGet failed for',key,e);return fallback}
+}
+async function kvPut(key,value){
+  const res=await fetch(`${PROXY}/kv`,{method:'PUT',headers:{'Content-Type':'application/json','X-Auth-Token':TOKEN},body:JSON.stringify({key,value})});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  return true;
+}
+
+// ─── SurveyMonkey fetch (for linking eval scores) ─────────────────────────────
+async function smFetch(path){
+  const res=await fetch(`${PROXY}/surveymonkey${path}`,{headers:{'X-Auth-Token':TOKEN}});
+  if(!res.ok)throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+async function fetchAllResponses(surveyId){
+  let page=1,all=[];
+  while(true){
+    const data=await smFetch(`/surveys/${surveyId}/responses/bulk?per_page=100&page=${page}&sort_by=date_modified&sort_order=DESC`);
+    const batch=data.data||[];all=all.concat(batch);
+    if(batch.length<100)break;page++;
+  }
+  return all;
+}
+function buildQMap(details){
+  const map={};
+  (details.pages||[]).forEach(p=>(p.questions||[]).forEach(q=>{
+    map[q.id]={heading:cleanText(q.headings?.[0]?.heading||''),family:q.family,
+      rows:Object.fromEntries((q.answers?.rows||[]).map(r=>[r.id,cleanText(r.text)])),
+      choices:Object.fromEntries((q.answers?.choices||[]).map(c=>[c.id,cleanText(c.text)]))};
+  }));
+  return map;
+}
+function cleanText(s){return(s||'').toString().replace(/<[^>]*>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&#39;/g,"'").replace(/&quot;/gi,'"').replace(/\s+/g,' ').trim();}
+function normText(s){return cleanText(s).toLowerCase();}
+function containsMatch(hay,needle){const h=normText(hay),n=normText(needle);return!!h&&!!n&&h.includes(n);}
+function fuzzyEquals(a,b){const na=normText(a),nb=normText(b);return!!na&&!!nb&&(na===nb||na.includes(nb)||nb.includes(na));}
+function canonicalizeMethod(raw){const t=normText(raw);if(!t)return'';if(t.includes('both'))return'Both In-Person and Virtual';if(t.includes('virtual')&&!t.includes('in-person')&&!t.includes('in person'))return'Virtual Only';if((t.includes('in-person')||t.includes('in person'))&&!t.includes('virtual'))return'In-Person Only';return(raw||'').toString().trim();}
+const CONTACT_FIELDS=['First name','Last name','Middle name','Title','Suffix','Email address','Phone number','Ext.','Street address','Street address line 2','City','State/Province','Zip code','Country'];
+const Q1_MAP={'instructor was':'rInstructor','style of delivery':'rStyle','content of':'rContent','amount of material':'rCoverage','usefulness':'rUsefulness'};
+const NA=/^(na|n\/a|none|no comments?|n\/a\.|na\.|none\.)$/i;
+function normalizeEvalResponse(r,qMap,source){
+  const cv=r.custom_variables||{};
+  const g=k=>String(cv[k]||cv[k.toLowerCase()]||cv[k.charAt(0).toUpperCase()+k.slice(1)]||'').trim();
+  let d=null;const raw=r.date_modified||r.date_created;if(raw){d=new Date(raw);if(isNaN(d))d=null}
+  const ratings={};let comment='';
+  (r.pages||[]).forEach(page=>(page.questions||[]).forEach(rq=>{
+    const qInfo=qMap[rq.id];if(!qInfo)return;
+    if(qInfo.family==='matrix'||qInfo.family==='rating_scale'){
+      (rq.answers||[]).forEach(a=>{
+        const rowLabel=(a.row_id&&qInfo.rows[a.row_id])||'';
+        const weight=parseInt(a.choice_metadata?.weight);
+        const val=(!isNaN(weight)&&weight>0)?weight:null;
+        const rowLower=rowLabel.toLowerCase();
+        for(const[pattern,key]of Object.entries(Q1_MAP)){if(rowLower.includes(pattern)){ratings[key]=val;break}}
+      });
+    }
+    if(qInfo.family==='open_ended'){const txt=(rq.answers||[]).map(a=>a.text||'').join(' ').trim();if(txt)comment=txt}
+  }));
+  const comment_final=comment;
+  return{_s:source,_d:d,_co:cv.course||cv.Course||'',_m:cv.method||cv.Method||'',_mod:cv.module_name||cv.Module_Name||'',
+    _c:comment_final,_ch:cv.Cohort||cv.cohort||'',_i:source==='ILT'?(cv.Instructor||cv.instructor||''):'',
+    _na:NA.test(comment_final.trim()),
+    rInstructor:source==='ILT'?(ratings.rInstructor??null):null,rStyle:ratings.rStyle??null,rContent:ratings.rContent??null,
+    rCoverage:ratings.rCoverage??null,rUsefulness:ratings.rUsefulness??null};
+}
+async function loadEvalData(){
+  if(!SURVEY_ILT&&!SURVEY_ASYNC){setStatus('Eval','ok','Not configured');evalLoaded=true;return}
+  setStatus('Eval','loading','Loading…');
+  try{
+    const jobs=[];
+    if(SURVEY_ILT)jobs.push(Promise.all([smFetch(`/surveys/${SURVEY_ILT}/details`),fetchAllResponses(SURVEY_ILT)]));else jobs.push(Promise.resolve(null));
+    if(SURVEY_ASYNC)jobs.push(Promise.all([smFetch(`/surveys/${SURVEY_ASYNC}/details`),fetchAllResponses(SURVEY_ASYNC)]));else jobs.push(Promise.resolve(null));
+    const[iltRes,asyncRes]=await Promise.allSettled(jobs);
+    if(iltRes.status==='fulfilled'&&iltRes.value){
+      const[details,resp]=iltRes.value;const qm=buildQMap(details);
+      evalILT=resp.filter(r=>r.response_status==='completed').map(r=>normalizeEvalResponse(r,qm,'ILT'));
+    }
+    if(asyncRes.status==='fulfilled'&&asyncRes.value){
+      const[details,resp]=asyncRes.value;const qm=buildQMap(details);
+      evalAsync=resp.filter(r=>r.response_status==='completed').map(r=>normalizeEvalResponse(r,qm,'Async'));
+    }
+    setStatus('Eval','ok',`${evalILT.length+evalAsync.length} responses`);
+  }catch(e){console.error('Eval load failed',e);setStatus('Eval','err','Failed to load')}
+  evalLoaded=true;
+}
+const RK=['rInstructor','rStyle','rContent','rCoverage','rUsefulness'];
+const AL=['Instructor','Style','Content','Coverage','Usefulness'];
+const SK=RK.slice(1);
+const SL=AL.slice(1);
+
+// ─── Instructor Information Form (live SurveyMonkey sync) ────────────────────
+function normalizeInstructorResponse(r,qMap){
+  const contact={};let email='',method='';const availability={};
+  (r.pages||[]).forEach(page=>(page.questions||[]).forEach(rq=>{
+    const qInfo=qMap[rq.id];if(!qInfo)return;
+    const heading=qInfo.heading||'';
+    (rq.answers||[]).forEach(a=>{
+      if(a.row_id&&qInfo.rows[a.row_id]){
+        const field=CONTACT_FIELDS.find(f=>fuzzyEquals(f,qInfo.rows[a.row_id]));
+        if(field)contact[field]=(a.text||'').trim();
+      }
+    });
+    if(containsMatch(heading,'email address')&&!containsMatch(heading,'mailing')){
+      const txt=(rq.answers||[]).map(a=>a.text||'').join(' ').trim();
+      if(txt)email=txt;
+    }
+    if(containsMatch(heading,'available to deliver')&&(containsMatch(heading,'in-person instruction')||containsMatch(heading,'in person instruction'))){
+      const a=(rq.answers||[])[0];
+      if(a)method=canonicalizeMethod(a.text||qInfo.choices[a.choice_id]||'');
+    }
+    const knownProg=PROGRAMS.find(p=>containsMatch(heading,p.name));
+    let progName=null;
+    if(knownProg){progName=knownProg.name}
+    else{const m=heading.match(/Which (.+?) (?:modules|topics|topic areas) are you available/i);if(m)progName=m[1].trim()}
+    if(progName){
+      if(!availability[progName])availability[progName]=[];
+      (rq.answers||[]).forEach(a=>{
+        let txt=a.text||qInfo.choices[a.choice_id]||'';
+        if(txt&&!containsMatch(txt,'none of the above')){
+          if(knownProg){const canonMod=knownProg.modules.find(m=>fuzzyEquals(m,txt));if(canonMod)txt=canonMod}
+          availability[progName].push(txt);
+        }
+      });
+    }
+  }));
+  const first=(contact['First name']||'').trim().replace(/,+\s*$/,'');
+  const last=(contact['Last name']||'').trim().replace(/,+\s*$/,'');
+  if(!first&&!last)return null;
+  const name=last&&first?`${last}, ${first}`:(last||first);
+  let d=null;const raw=r.date_modified||r.date_created;if(raw){d=new Date(raw);if(isNaN(d))d=null}
+  return{firstName:first,lastName:last,name,title:contact['Title']||'',email,
+    phone:contact['Phone number']||'',city:contact['City']||'',state:contact['State/Province']||'',
+    country:contact['Country']||'',method,availability,submitted:d?d.toISOString().slice(0,10):'',include:true};
+}
+async function loadInstructorSurveyData(){
+  if(!SURVEY_INSTRUCTOR){setStatus('InstForm','ok','Not configured');instSurveyRows=[];return}
+  setStatus('InstForm','loading','Loading…');
+  try{
+    const details=await smFetch(`/surveys/${SURVEY_INSTRUCTOR}/details`);
+    const qMap=buildQMap(details);
+    const resp=await fetchAllResponses(SURVEY_INSTRUCTOR);
+    const usable=resp.filter(r=>r.response_status!=='deleted'&&r.response_status!=='disqualified');
+    instSurveyRows=usable.map(r=>normalizeInstructorResponse(r,qMap)).filter(Boolean);
+    setStatus('InstForm','ok',`${instSurveyRows.length} of ${resp.length} responses`);
+  }catch(e){console.error('Instructor survey load failed',e);setStatus('InstForm','err','Failed to load');instSurveyRows=[]}
+}
+function syncFromSurveyMonkey(){
+  if(!instSurveyRows.length){$('instSyncStatus').textContent='No responses loaded — check the Survey ID in Settings, then Refresh.';return}
+  const byKey={};
+  instSurveyRows.forEach(o=>{const key=(o.email||o.name).toLowerCase();
+    if(!byKey[key]||(o.submitted||'')>(byKey[key].submitted||''))byKey[key]=o;});
+  IMPORT_ROWS=Object.values(byKey);
+  $('instSyncStatus').textContent=`Loaded ${IMPORT_ROWS.length} instructors from SurveyMonkey.`;
+  renderImportPreview();
+}
+async function diagnoseSurvey(){
+  const h=$('diagHolder');
+  if(!SURVEY_INSTRUCTOR){h.innerHTML='<p style="color:var(--text-light);font-size:13px;margin-top:12px">No Instructor Availability Survey ID configured.</p>';return}
+  h.innerHTML='<p style="color:var(--text-light);font-size:13px;margin-top:12px">Fetching…</p>';
+  try{
+    const details=await smFetch(`/surveys/${SURVEY_INSTRUCTOR}/details`);
+    const qSummary=[];
+    (details.pages||[]).forEach(p=>(p.questions||[]).forEach(q=>{
+      qSummary.push({
+        id:q.id,
+        heading:q.headings?.[0]?.heading||'',
+        family:q.family,
+        subtype:q.subtype,
+        rows:Object.values(q.answers?.rows||{}).length?Object.fromEntries((q.answers?.rows||[]).map(r=>[r.id,r.text])):undefined,
+        choices:Object.values(q.answers?.choices||{}).length?Object.fromEntries((q.answers?.choices||[]).map(c=>[c.id,c.text])):undefined
+      });
+    }));
+    const bulk=await smFetch(`/surveys/${SURVEY_INSTRUCTOR}/responses/bulk?per_page=100&page=1`);
+    const allFirstPage=bulk.data||[];
+    const statusCounts={};
+    allFirstPage.forEach(r=>{statusCounts[r.response_status]=(statusCounts[r.response_status]||0)+1});
+    const sampleResponse=allFirstPage[0]||null;
+    const totalResponses=details.response_count!=null?details.response_count:'(unknown)';
+    const out={
+      note:'Copy everything in this box and share it back so the parser can be matched to your survey.',
+      total_questions:qSummary.length,
+      total_responses_reported_by_survey:totalResponses,
+      responses_fetched_by_this_tool:instSurveyRows.length,
+      response_status_breakdown_first_page:statusCounts,
+      questions:qSummary,
+      sample_raw_response:sampleResponse
+    };
+    const json=JSON.stringify(out,null,2);
+    h.innerHTML=`<div style="margin-top:12px"><button class="btn btn-s btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('diagJson').textContent).then(()=>this.textContent='Copied!')">Copy to Clipboard</button></div><pre id="diagJson" style="margin-top:10px;max-height:420px;overflow:auto;background:#faf9f7;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:11px;white-space:pre-wrap;word-break:break-word">${esc(json)}</pre>`;
+  }catch(e){
+    console.error(e);
+    h.innerHTML=`<p style="color:#c62828;font-size:13px;margin-top:12px">Failed to fetch diagnostic data: ${esc(e.message)}</p>`;
+  }
+}
+
+// ─── Load / Save Directory ─────────────────────────────────────────────────────
+async function reloadAll(){
+  $('statusBar').classList.remove('hidden');
+  setStatus('Dir','loading','Loading…');setStatus('Hist','loading','Loading…');
+  DIR=(await kvGet('instructor_directory',[]))||[];
+  setStatus('Dir','ok',`${DIR.length} instructors`);
+  await Promise.all([loadEvalData(),loadInstructorSurveyData()]);
+  const cohortCount=uq(groupEvalByCohort([...evalILT,...evalAsync]).map(g=>[g.instructor,g.program,g.module,g.cohort].join('|||'))).length;
+  setStatus('Hist','ok',`${cohortCount} cohorts`);
+  buildProgramSelect();
+  renderSummary();
+  $('main').classList.remove('hidden');
+  buildEvalSearchFilters();
+  renderDirList();
+  runFind();
+  runEvalSearch();
+  openFromQuery();
+}
+// Deep link from the instructor availability dashboard: ?instructor=Last, First&email=...
+function openFromQuery(){
+  const q=new URLSearchParams(location.search), name=q.get('instructor'), email=(q.get('email')||'').toLowerCase();
+  if(!name&&!email)return;
+  const d=DIR.find(x=>email&&String(x.email||'').toLowerCase()===email)||DIR.find(x=>name&&fuzzyEquals(x.name,name));
+  history.replaceState(null,'',location.pathname);
+  if(!d){alert(`${name||email} isn't in the instructor directory yet. Add them on the Directory tab to see their history here.`);return}
+  sw('dir');openProfile(d.id);
+  setTimeout(()=>{const h=[...document.querySelectorAll('#profileHolder .section-title')].find(x=>/Teaching History/.test(x.textContent));if(h)h.scrollIntoView({behavior:'smooth',block:'start'})},300);
+}
+async function saveDirectory(){await kvPut('instructor_directory',DIR);setStatus('Dir','ok',`${DIR.length} instructors`)}
+
+function setStatus(type,state,meta){
+  const dot=$('dot'+type),m=$('meta'+type);if(!dot)return;
+  dot.className='status-dot '+(state==='loading'?'loading':state==='ok'?'ok':'err');
+  m.textContent=meta;
+}
+function renderSummary(){
+  const s=$('dsum');s.classList.remove('hidden');
+  const avail=DIR.filter(d=>Object.values(d.availability||{}).some(m=>m.length));
+  const progCounts={};DIR.forEach(d=>Object.keys(d.availability||{}).forEach(p=>{if((d.availability[p]||[]).length)progCounts[p]=(progCounts[p]||0)+1}));
+  const topProg=Object.entries(progCounts).sort((a,b)=>b[1]-a[1])[0];
+  const cohortCount=uq(groupEvalByCohort([...evalILT,...evalAsync]).map(g=>[g.instructor,g.program,g.module,g.cohort].join('|||'))).length;
+  s.innerHTML=`
+    <div class="stat"><span class="stat-val">${DIR.length}</span><span class="stat-lbl">Instructors</span></div>
+    <div class="stat"><span class="stat-val">${avail.length}</span><span class="stat-lbl">With Availability</span></div>
+    <div class="stat"><span class="stat-val">${cohortCount}</span><span class="stat-lbl">Cohorts Taught</span></div>
+    <div class="stat"><span class="stat-val">${topProg?topProg[1]:0}</span><span class="stat-lbl">${topProg?esc(topProg[0]):'Top Program'}</span></div>`;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function $(id){return document.getElementById(id)}
+function esc(s){const d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
+function uid(){return 'id_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function uq(a){return[...new Set(a.filter(v=>v!=null&&v!==''))].sort()}
+function bdg(v){if(v==null)return'<span class="sb sn">N/A</span>';const d=v.toFixed(2);
+  if(v>=3.5)return`<span class="sb sh">${d}</span>`;if(v>=2.5)return`<span class="sb sm">${d}</span>`;return`<span class="sb sl">${d}</span>`}
+function methodClass(m){if(m==='Both In-Person and Virtual')return'mth-both';if(m==='In-Person Only')return'mth-ip';if(m==='Virtual Only')return'mth-v';return''}
+function fmtDate(s){if(!s)return'';const d=new Date(s+'T00:00:00');if(isNaN(d))return s;return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+function canDeliver(d,need){
+  if(!need)return true;
+  const m=d.method||'';
+  if(need==='Both In-Person and Virtual')return m==='Both In-Person and Virtual';
+  if(need==='In-Person')return m==='Both In-Person and Virtual'||m==='In-Person Only';
+  if(need==='Virtual')return m==='Both In-Person and Virtual'||m==='Virtual Only';
+  return true;
+}
+
+// ─── Multiselect widget (generic, shared across tabs) ─────────────────────────
+function bmo(k){const c=$(k+'_o');if(!c)return;const{av,sel}=MS[k];c.innerHTML='';
+  av.forEach((v,i)=>{const d=document.createElement('div');d.className='mso';d.setAttribute('data-s',v.toLowerCase());
+  const id=k+'_'+i;d.innerHTML=`<input type="checkbox" id="${id}" value="${esc(v)}" ${sel.has(v)?'checked':''}><label for="${id}">${esc(v)}</label>`;
+  d.querySelector('input').onchange=function(){if(this.checked)sel.add(v);else sel.delete(v);uml(k)};c.appendChild(d)})}
+function smt(k){const t=$(k+'_t'),d=$(k+'_d');if(!t||!d)return;
+  const nt=t.cloneNode(true);t.parentNode.replaceChild(nt,t);
+  nt.onclick=e=>{e.stopPropagation();
+  document.querySelectorAll('.msd.open').forEach(x=>{if(x!==d)x.classList.remove('open')});
+  document.querySelectorAll('.mst.open').forEach(x=>{if(x!==nt)x.classList.remove('open')});
+  d.classList.toggle('open');nt.classList.toggle('open');
+  if(d.classList.contains('open')){const s=d.querySelector('.mss');if(s){s.value='';msSr(k,'');s.focus()}}}}
+document.addEventListener('click',e=>{if(!e.target.closest('.ms')){
+  document.querySelectorAll('.msd.open').forEach(d=>d.classList.remove('open'));
+  document.querySelectorAll('.mst.open').forEach(t=>t.classList.remove('open'))}});
+function uml(k){const t=$(k+'_t');if(!t)return;const{sel,av}=MS[k];
+  if(!sel.size)t.innerHTML='<span class="ph">'+(av.length?'Select...':'None available')+'</span>';
+  else if(sel.size<=2)t.textContent=[...sel].sort().join(', ');
+  else t.textContent=sel.size+' selected'}
+function msSr(k,q){const ql=q.toLowerCase();
+  document.querySelectorAll('#'+k+'_o .mso').forEach(o=>o.classList.toggle('hid',ql&&!o.getAttribute('data-s').includes(ql)))}
+function msA(k,sa){const{sel,av}=MS[k];if(sa)av.forEach(v=>sel.add(v));else sel.clear();
+  document.querySelectorAll('#'+k+'_o input[type=checkbox]').forEach(c=>c.checked=!!sa);uml(k)}
+function initMS(fid,vals){if(!MS[fid])MS[fid]={sel:new Set(),av:[]};MS[fid].av=vals;
+  MS[fid].sel=new Set([...MS[fid].sel].filter(v=>vals.includes(v)));
+  bmo(fid);smt(fid);uml(fid)}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+function sw(v){document.querySelectorAll('.vtab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
+  const idx={find:0,dir:1,hist:2,imp:3}[v];
+  document.querySelectorAll('.vtab')[idx].classList.add('active');
+  $('v'+v).classList.add('active')}
+
+// ══════════════════════════════ FIND INSTRUCTORS ══════════════════════════════
+function buildProgramSelect(){
+  const sels=[$('fProgram')];
+  sels.forEach(sel=>{if(!sel)return;const cur=sel.value;
+    sel.innerHTML='<option value="">Any Program</option>'+PROGRAMS.map(p=>`<option value="${esc(p.name)}">${esc(p.name)}${p.inPersonOnly?' (in-person only)':''}</option>`).join('');
+    sel.value=cur});
+  onProgramChange();
+}
+function onProgramChange(){
+  const pname=$('fProgram').value;const prog=progByName(pname);
+  const mods=prog?prog.modules:[];
+  initMS('fMod',mods);
+  const t=$('fMod_t');if(t)t.innerHTML=mods.length?'<span class="ph">All</span>':'<span class="ph">Select a program first</span>';
+}
+function resetFind(){$('fProgram').value='';$('fMethod').value='';$('fName').value='';onProgramChange();$('frc').innerHTML='';$('ffs').textContent=''}
+
+function cmpVal(a,b){
+  if(a==null&&b==null)return 0;
+  if(a==null)return 1;
+  if(b==null)return -1;
+  if(a instanceof Date&&b instanceof Date)return a.getTime()-b.getTime();
+  if(typeof a==='number'&&typeof b==='number')return a-b;
+  return String(a).localeCompare(String(b));
+}
+function thSort(label,key,alignLeft){
+  const active=findSort.key===key;
+  const arrow=active?(findSort.dir===1?' ▲':' ▼'):'';
+  return `<th${alignLeft?' style="text-align:left;cursor:pointer;user-select:none"':' style="cursor:pointer;user-select:none"'} onclick="sortFind('${key}')">${label}${arrow}</th>`;
+}
+function sortFind(key){
+  if(findSort.key===key)findSort.dir*=-1;else{findSort.key=key;findSort.dir=1}
+  runFind();
+}
+function runFind(){
+  const pname=$('fProgram').value,method=$('fMethod').value,nameQ=$('fName').value.trim().toLowerCase();
+  const modSel=MS['fMod']?MS['fMod'].sel:new Set();
+  const results=DIR.filter(d=>{
+    if(nameQ){
+      const hay=[d.name,d.email,d.city,d.state,d.country].join(' ').toLowerCase();
+      if(!hay.includes(nameQ))return false;
+    }
+    if(!canDeliver(d,method))return false;
+    if(pname){
+      const have=(d.availability&&d.availability[pname])||[];
+      if(!have.length)return false;
+      if(modSel.size&&modSel.size<((progByName(pname)||{modules:[]}).modules.length)){
+        const hit=have.some(m=>modSel.has(m));
+        if(!hit)return false;
+      }
+    }
+    return true;
+  });
+  $('ffs').textContent=results.length+' instructor'+(results.length!==1?'s':'')+' match';
+  if(!results.length){$('frc').innerHTML=`<div class="card"><div class="card-body"><div class="empty"><div class="icon">🔍</div><h3>No instructors match</h3><p>Try adjusting filters.</p></div></div></div>`;return}
+
+  const decorated=results.map(d=>{
+    const loc=[d.city,d.state,d.country].filter(Boolean).join(', ');
+    let modCell='',modCount=0;
+    if(pname){
+      const have=(d.availability&&d.availability[pname])||[];
+      const show=modSel.size?have.filter(m=>modSel.has(m)):have;
+      modCount=show.length;
+      modCell=show.map(m=>`<span class="pill small">${esc(m.replace(/^Module \d+:\s*/,''))}</span>`).join('');
+    }else{
+      const progs=Object.keys(d.availability||{}).filter(p=>(d.availability[p]||[]).length);
+      modCount=progs.length;
+      modCell=progs.map(p=>`<span class="pill blue small">${esc(p)}</span>`).join('');
+    }
+    const rating=instructorOverallAvg(d.name);
+    const lastTaught=instructorLastTaught(d.name);
+    return{d,loc,modCell,modCount,rating,lastTaught,
+      name:d.name,contact:d.email||'',location:loc,methodVal:d.method||''};
+  });
+  decorated.sort((x,y)=>{
+    let xv,yv;
+    switch(findSort.key){
+      case'name':xv=x.name;yv=y.name;break;
+      case'contact':xv=x.contact;yv=y.contact;break;
+      case'location':xv=x.location;yv=y.location;break;
+      case'method':xv=x.methodVal;yv=y.methodVal;break;
+      case'modules':xv=x.modCount;yv=y.modCount;break;
+      case'lastTaught':xv=x.lastTaught;yv=y.lastTaught;break;
+      case'rating':xv=x.rating?x.rating.avg:null;yv=y.rating?y.rating.avg:null;break;
+      default:xv=x.name;yv=y.name;
+    }
+    return cmpVal(xv,yv)*findSort.dir;
+  });
+
+  let h=`<div class="card"><div class="card-hdr">🔎 Matching Instructors (${results.length})</div><div class="card-flush"><table><thead><tr>${thSort('Name','name',true)}${thSort('Contact','contact',true)}${thSort('Location','location',true)}${thSort('Method','method')}${thSort(pname?'Matched Modules':'Available Programs','modules',true)}${thSort('Last Taught','lastTaught')}${thSort('Avg Rating','rating')}<th></th></tr></thead><tbody>`;
+  decorated.forEach(({d,loc,modCell,rating,lastTaught})=>{
+    const ratingCell=rating?`${bdg(rating.avg)} <span style="font-size:10px;color:var(--text-light)">(${rating.n})</span>`:'<span class="sb sn">No data</span>';
+    const lastTaughtCell=lastTaught?lastTaught.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'<span style="color:var(--text-light)">—</span>';
+    h+=`<tr><td>${esc(d.name)}</td><td style="text-align:left;font-size:12px">${esc(d.email||'')}${d.phone?'<br>'+esc(d.phone):''}</td><td style="text-align:left;font-size:12px">${esc(loc)}</td><td class="${methodClass(d.method)}">${esc(d.method||'')}</td><td style="text-align:left">${modCell}</td><td style="white-space:nowrap">${lastTaughtCell}</td><td>${ratingCell}</td><td><button class="btn btn-s btn-sm" onclick="sw('dir');openProfile('${d.id}')">View</button></td></tr>`;
+  });
+  h+='</tbody></table></div></div>';
+  $('frc').innerHTML=h;
+}
+
+// ══════════════════════════════ DIRECTORY ══════════════════════════════
+function renderDirList(){
+  const q=($('dirSearch').value||'').trim().toLowerCase();
+  const rows=DIR.filter(d=>!q||[d.name,d.email,d.city,d.state].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
+  if(!rows.length){$('dirList').innerHTML=`<div class="card"><div class="card-body"><div class="empty"><div class="icon">📇</div><h3>No instructors yet</h3><p>Add one manually or import a roster.</p></div></div></div>`;return}
+  let h=`<div class="card"><div class="card-flush"><table><thead><tr><th style="text-align:left">Name</th><th style="text-align:left">Contact</th><th style="text-align:left">Location</th><th>Method</th><th>Programs</th><th>Last Updated</th></tr></thead><tbody>`;
+  rows.forEach(d=>{
+    const loc=[d.city,d.state].filter(Boolean).join(', ');
+    const progCount=Object.values(d.availability||{}).filter(m=>m.length).length;
+    h+=`<tr class="clk" onclick="openProfile('${d.id}')"><td>${esc(d.name)}</td><td style="text-align:left;font-size:12px">${esc(d.email||'')}</td><td style="text-align:left;font-size:12px">${esc(loc)}</td><td class="${methodClass(d.method)}">${esc(d.method||'')}</td><td>${progCount}</td><td style="font-size:12px;color:var(--text-light)">${d.lastUpdated?fmtDate(d.lastUpdated):''}</td></tr>`;
+  });
+  h+='</tbody></table></div></div>';
+  $('dirList').innerHTML=h;
+}
+
+function openProfile(id){
+  CUR_PROFILE_ID=id;
+  const d=id?DIR.find(x=>x.id===id):{id:uid(),name:'',firstName:'',lastName:'',title:'',email:'',phone:'',street:'',street2:'',city:'',state:'',zip:'',country:'',method:'Both In-Person and Virtual',availability:{},notes:'',source:'manual'};
+  const isNew=!id;
+  let pg=`<div class="pgrid">`;
+  PROGRAMS.forEach(p=>{
+    const sel=new Set((d.availability&&d.availability[p.name])||[]);
+    pg+=`<div class="pgroup"><h4>${esc(p.name)}${p.inPersonOnly?'<span class="tag">In-Person Only</span>':''}</h4>`;
+    p.modules.forEach((m,i)=>{
+      const cid='av_'+p.key+'_'+i;
+      pg+=`<div class="mrow"><input type="checkbox" class="avck" data-prog="${esc(p.name)}" data-mod="${esc(m)}" id="${cid}" ${sel.has(m)?'checked':''}><label for="${cid}">${esc(m)}</label></div>`;
+    });
+    pg+='</div>';
+  });
+  pg+='</div>';
+
+  let histHtml='';
+  if(!isNew){
+    const pool=[...evalILT,...evalAsync].filter(r=>fuzzyEquals(r._i,d.name));
+    const accs=buildAccordionGroups(groupEvalByCohort(pool));
+    histHtml=accs.length?renderCohortAccordions(accs):'<div class="empty" style="padding:20px"><p>No evaluation data found for this instructor yet.</p></div>';
+  }
+
+  $('profileHolder').innerHTML=`
+  <div class="profile-card">
+    <div class="profile-hd">
+      <div><h2>${isNew?'Add New Instructor':esc(d.name||'(Unnamed)')}</h2><div class="sub">${d.source?('Source: '+esc(d.source)):''}${d.lastUpdated?' &middot; Last updated '+fmtDate(d.lastUpdated):''}</div></div>
+      <div style="display:flex;gap:10px">
+        ${!isNew?'<button class="btn btn-d btn-sm" onclick="deleteInstructor(\''+d.id+'\')">Delete</button>':''}
+        <button class="btn btn-s btn-sm" onclick="closeProfile()">Close</button>
+      </div>
+    </div>
+    <div class="section-title">Contact Information</div>
+    <div class="fg">
+      <div><label class="fgl">First Name</label><input class="fgi" id="pFirst" value="${esc(d.firstName||'')}"></div>
+      <div><label class="fgl">Last Name</label><input class="fgi" id="pLast" value="${esc(d.lastName||'')}"></div>
+      <div><label class="fgl">Title</label><input class="fgi" id="pTitle" value="${esc(d.title||'')}"></div>
+      <div><label class="fgl">Email</label><input class="fgi" id="pEmail" value="${esc(d.email||'')}"></div>
+      <div><label class="fgl">Phone</label><input class="fgi" id="pPhone" value="${esc(d.phone||'')}"></div>
+      <div><label class="fgl">City</label><input class="fgi" id="pCity" value="${esc(d.city||'')}"></div>
+      <div><label class="fgl">State/Province</label><input class="fgi" id="pState" value="${esc(d.state||'')}"></div>
+      <div><label class="fgl">Country</label><input class="fgi" id="pCountry" value="${esc(d.country||'')}"></div>
+    </div>
+    <div class="section-title">Delivery Availability</div>
+    <div class="radio-row">
+      <label><input type="radio" name="pMethod" value="Both In-Person and Virtual" ${d.method==='Both In-Person and Virtual'?'checked':''}> Both In-Person and Virtual</label>
+      <label><input type="radio" name="pMethod" value="In-Person Only" ${d.method==='In-Person Only'?'checked':''}> In-Person Only</label>
+      <label><input type="radio" name="pMethod" value="Virtual Only" ${d.method==='Virtual Only'?'checked':''}> Virtual Only</label>
+    </div>
+    <div class="section-title">Programs &amp; Modules Willing to Teach</div>
+    ${pg}
+    <div class="section-title">Notes</div>
+    <textarea class="fgi" id="pNotes" rows="3">${esc(d.notes||'')}</textarea>
+    <div class="br"><button class="btn btn-p" onclick="saveProfile('${d.id}',${isNew})">Save Instructor</button><button class="btn btn-s" onclick="closeProfile()">Cancel</button></div>
+    ${!isNew?`<div class="section-title">Teaching History (from Evaluation Data)</div>${histHtml}`:''}
+  </div>`;
+  $('profileHolder').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeProfile(){CUR_PROFILE_ID=null;$('profileHolder').innerHTML=''}
+
+async function saveProfile(id,isNew){
+  const first=$('pFirst').value.trim(),last=$('pLast').value.trim();
+  const name=last&&first?`${last}, ${first}`:(last||first||'(Unnamed)');
+  const availability={};
+  document.querySelectorAll('.avck').forEach(cb=>{
+    const prog=cb.dataset.prog,mod=cb.dataset.mod;
+    if(!availability[prog])availability[prog]=[];
+    if(cb.checked)availability[prog].push(mod);
+  });
+  const rec={
+    id, name, firstName:first, lastName:last,
+    title:$('pTitle').value.trim(), email:$('pEmail').value.trim(), phone:$('pPhone').value.trim(),
+    city:$('pCity').value.trim(), state:$('pState').value.trim(), country:$('pCountry').value.trim(),
+    method:(document.querySelector('input[name=pMethod]:checked')||{}).value||'Both In-Person and Virtual',
+    availability, notes:$('pNotes').value.trim(),
+    source:isNew?'manual':(DIR.find(x=>x.id===id)||{}).source||'manual',
+    lastUpdated:new Date().toISOString().slice(0,10)
+  };
+  if(isNew)DIR.push(rec);else DIR=DIR.map(x=>x.id===id?rec:x);
+  await saveDirectory();
+  renderSummary();renderDirList();buildProgramSelect();runFind();
+  closeProfile();
+}
+async function deleteInstructor(id){
+  const d=DIR.find(x=>x.id===id);if(!d)return;
+  if(!confirm(`Delete ${d.name} from the directory?`))return;
+  DIR=DIR.filter(x=>x.id!==id);
+  await saveDirectory();
+  renderSummary();renderDirList();runFind();closeProfile();
+}
+
+// ══════════════════════════════ TEACHING HISTORY (from Evaluation Data) ══════════════════════════════
+const EFD=[
+  {k:'_i',l:'Instructor',id:'EI'},
+  {k:'_co',l:'Program (Course)',id:'EP'},
+  {k:'_m',l:'Method',id:'EM'},
+  {k:'_mod',l:'Module',id:'EMo'}
+];
+function buildEvalSearchFilters(){
+  const g=$('efg');if(!g)return;g.innerHTML='';
+  const pool=[...evalILT,...evalAsync];
+  EFD.forEach(d=>{
+    const fid=d.id;const div=document.createElement('div');div.className='filter-group';
+    div.innerHTML=`<label class="fgl">${d.l}</label>`;
+    const vals=uq(pool.map(r=>r[d.k]));
+    div.innerHTML+=`<div class="ms" id="${fid}_w"><button type="button" class="mst" id="${fid}_t"><span class="ph">All</span></button>
+    <div class="msd" id="${fid}_d"><input type="text" class="mss" placeholder="Search..." oninput="msSr('${fid}',this.value)">
+    <div id="${fid}_o"></div><div class="msa"><button type="button" onclick="msA('${fid}',1)">Select All</button><button type="button" onclick="msA('${fid}',0)">Clear All</button></div></div></div>`;
+    g.appendChild(div);
+    setTimeout(()=>initMS(fid,vals),0);
+  });
+}
+function resetEvalSearch(){EFD.forEach(d=>{const m=MS[d.id];if(m){m.sel.clear();bmo(d.id);uml(d.id)}});$('efs').textContent='';runEvalSearch()}
+
+// Group individual eval responses into one row per cohort — each cohort is a class taught
+function groupEvalByCohort(rows){
+  const groups={};
+  rows.forEach(r=>{
+    const instKey=r._i||(r._s==='Async'?'(No Instructor — Async)':'(Unknown Instructor)');
+    const key=[instKey,r._co,r._mod,r._ch,r._s].join('|||');
+    if(!groups[key])groups[key]={instructor:instKey,program:r._co,module:r._mod,method:r._m,cohort:r._ch,source:r._s,rows:[],minDate:null,maxDate:null};
+    const g=groups[key];g.rows.push(r);
+    if(r._d){if(!g.minDate||r._d<g.minDate)g.minDate=r._d;if(!g.maxDate||r._d>g.maxDate)g.maxDate=r._d}
+  });
+  return Object.values(groups).map(g=>{
+    const ks=g.source==='ILT'?RK:SK;
+    let s=0,c=0;g.rows.forEach(r=>ks.forEach(k=>{if(r[k]!=null){s+=r[k];c++}}));
+    return{...g,avg:c?s/c:null,n:g.rows.length,comments:g.rows.filter(r=>r._c&&!r._na).length};
+  });
+}
+// overall average rating for an instructor across every ILT evaluation on record
+function instructorOverallAvg(name){
+  if(!name||!evalILT.length)return null;
+  const rows=evalILT.filter(r=>fuzzyEquals(r._i,name));
+  if(!rows.length)return null;
+  let s=0,c=0;rows.forEach(r=>RK.forEach(k=>{if(r[k]!=null){s+=r[k];c++}}));
+  return c?{avg:s/c,n:rows.length}:null;
+}
+// most recent evaluation date on record for an instructor (their last taught cohort)
+function instructorLastTaught(name){
+  if(!name||!evalILT.length)return null;
+  let max=null;
+  evalILT.forEach(r=>{if(r._d&&fuzzyEquals(r._i,name)){if(!max||r._d>max)max=r._d}});
+  return max;
+}
+
+function fmtDateRange(min,max){
+  const f=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  if(!min&&!max)return'';
+  if(!min||!max||min.getTime()===max.getTime())return f(max||min);
+  return f(min)+' – '+f(max);
+}
+// collapse per-module cohort rows (from groupEvalByCohort) into one accordion per instructor+cohort,
+// so each class taught shows as a single line that expands to its individual modules
+function buildAccordionGroups(moduleGroups){
+  const acc={};
+  moduleGroups.forEach(g=>{
+    const key=[g.instructor,g.cohort].join('|||');
+    if(!acc[key])acc[key]={instructor:g.instructor,cohort:g.cohort,programs:new Set(),methods:new Set(),modules:[],allRows:[],minDate:null,maxDate:null};
+    const a=acc[key];
+    a.programs.add(g.program);a.methods.add(g.method);
+    a.modules.push(g);
+    a.allRows=a.allRows.concat(g.rows);
+    if(g.minDate&&(!a.minDate||g.minDate<a.minDate))a.minDate=g.minDate;
+    if(g.maxDate&&(!a.maxDate||g.maxDate>a.maxDate))a.maxDate=g.maxDate;
+  });
+  return Object.values(acc).map(a=>{
+    const hi=a.allRows.some(r=>r._s==='ILT');
+    const ks=hi?RK:SK;
+    let s=0,c=0;a.allRows.forEach(r=>ks.forEach(k=>{if(r[k]!=null){s+=r[k];c++}}));
+    return{
+      instructor:a.instructor,cohort:a.cohort,
+      programs:[...a.programs].filter(Boolean),methods:[...a.methods].filter(Boolean),
+      modules:a.modules.sort((x,y)=>(x.module||'').localeCompare(y.module||'')),
+      minDate:a.minDate,maxDate:a.maxDate,
+      n:a.allRows.length,avg:c?s/c:null,comments:a.allRows.filter(r=>r._c&&!r._na).length
+    };
+  }).sort((x,y)=>{const xm=x.maxDate?x.maxDate.getTime():0,ym=y.maxDate?y.maxDate.getTime():0;return ym-xm});
+}
+// one accordion line per cohort — expands to the individual modules within it
+function renderCohortAccordions(accs){
+  let h='';
+  accs.forEach(a=>{
+    h+=`<details class="acc acc-l2">
+      <summary>
+        <span class="acc-name">${esc(a.cohort||'(no cohort)')}</span>
+        <span class="pill blue small">${esc(a.programs.join(', ')||'—')}</span>
+        <span class="${methodClass(a.methods[0])}" style="font-size:12px">${esc(a.methods.join(' / ')||'—')}</span>
+        <span class="acc-meta">${fmtDateRange(a.minDate,a.maxDate)}</span>
+        <span class="acc-meta">${a.modules.length} module${a.modules.length!==1?'s':''}</span>
+        ${bdg(a.avg)}
+        <span class="acc-meta">(${a.n} resp${a.comments?', '+a.comments+' cmt':''})</span>
+        <span class="chev">▶</span>
+      </summary>
+      <div class="acc-body"><table><thead><tr><th style="text-align:left">Module</th><th>Method</th><th>Taught</th><th>N</th><th>Avg Score</th><th>Comments</th></tr></thead><tbody>`;
+    a.modules.forEach(g=>{
+      h+=`<tr><td style="text-align:left">${esc(g.module)}</td><td class="${methodClass(g.method)}">${esc(g.method||'—')}</td><td style="white-space:nowrap">${fmtDateRange(g.minDate,g.maxDate)}</td><td>${g.n}</td><td>${bdg(g.avg)}</td><td>${g.comments||0}</td></tr>`;
+    });
+    h+='</tbody></table></div></details>';
+  });
+  return h;
+}
+// group cohort-accordions further by instructor — one accordion line per instructor,
+// expanding to that instructor's cohorts, each of which expands to its modules
+function buildInstructorAccordions(moduleGroups){
+  const byInst={};
+  moduleGroups.forEach(g=>{(byInst[g.instructor]=byInst[g.instructor]||[]).push(g)});
+  return Object.entries(byInst).map(([instructor,groups])=>{
+    const cohorts=buildAccordionGroups(groups);
+    const allRows=cohorts.flatMap(c=>c.modules.flatMap(m=>m.rows));
+    const hi=allRows.some(r=>r._s==='ILT');
+    const ks=hi?RK:SK;
+    let s=0,c=0;allRows.forEach(r=>ks.forEach(k=>{if(r[k]!=null){s+=r[k];c++}}));
+    const programs=new Set(),methods=new Set();
+    let minDate=null,maxDate=null;
+    cohorts.forEach(ca=>{
+      ca.programs.forEach(p=>programs.add(p));ca.methods.forEach(m=>methods.add(m));
+      if(ca.minDate&&(!minDate||ca.minDate<minDate))minDate=ca.minDate;
+      if(ca.maxDate&&(!maxDate||ca.maxDate>maxDate))maxDate=ca.maxDate;
+    });
+    return{instructor,cohorts,programs:[...programs].filter(Boolean),methods:[...methods].filter(Boolean),
+      minDate,maxDate,n:allRows.length,avg:c?s/c:null,comments:allRows.filter(r=>r._c&&!r._na).length};
+  }).sort((x,y)=>{const xm=x.maxDate?x.maxDate.getTime():0,ym=y.maxDate?y.maxDate.getTime():0;return ym-xm});
+}
+function renderInstructorAccordions(instAccs){
+  let h='';
+  instAccs.forEach(inst=>{
+    h+=`<details class="acc acc-l1">
+      <summary>
+        <span class="acc-name">${esc(inst.instructor)}</span>
+        <span class="pill blue small">${esc(inst.programs.join(', ')||'—')}</span>
+        <span class="${methodClass(inst.methods[0])}" style="font-size:12px">${esc(inst.methods.join(' / ')||'—')}</span>
+        <span class="acc-meta">${fmtDateRange(inst.minDate,inst.maxDate)}</span>
+        <span class="acc-meta">${inst.cohorts.length} cohort${inst.cohorts.length!==1?'s':''}</span>
+        ${bdg(inst.avg)}
+        <span class="acc-meta">(${inst.n} resp${inst.comments?', '+inst.comments+' cmt':''})</span>
+        <span class="chev">▶</span>
+      </summary>
+      <div class="acc-body acc-nested">${renderCohortAccordions(inst.cohorts)}</div>
+    </details>`;
+  });
+  return h;
+}
+
+function runEvalSearch(){
+  const pool=[...evalILT,...evalAsync];
+  const filtered=pool.filter(r=>{
+    for(const d of EFD){
+      const m=MS[d.id];
+      if(m&&m.sel.size>0&&m.sel.size<m.av.length){if(!m.sel.has(r[d.k]||''))return false}
+    }
+    return true;
+  });
+  const groups=groupEvalByCohort(filtered);
+  const instAccs=buildInstructorAccordions(groups);
+  const cohortCount=instAccs.reduce((s,i)=>s+i.cohorts.length,0);
+  $('efs').textContent=instAccs.length+' instructor'+(instAccs.length!==1?'s':'')+' &middot; '+cohortCount+' cohort'+(cohortCount!==1?'s':'')+' &middot; '+filtered.length+' response'+(filtered.length!==1?'s':'');
+  if(!filtered.length){$('evalSearchResults').innerHTML=`<div class="card"><div class="card-body"><div class="empty"><div class="icon">🔍</div><h3>No evaluation data matches</h3><p>Try broadening your filters.</p></div></div></div>`;return}
+
+  let h=`<div class="card"><div class="card-hdr">📝 Teaching History (${instAccs.length} instructor${instAccs.length!==1?'s':''})</div><div class="card-body" style="padding:14px 18px">${renderInstructorAccordions(instAccs)}</div></div>`;
+
+  const hi=filtered.some(r=>r._s==='ILT');
+  const lb=hi?AL:SL,ks=hi?RK:SK;
+  const gt=ks.map(()=>({s:0,c:0}));
+  ks.forEach((k,i)=>filtered.forEach(r=>{if(r[k]!=null){gt[i].s+=r[k];gt[i].c++}}));
+  const avgs=gt.map(t=>t.c?t.s/t.c:null);
+  const va=avgs.filter(x=>x!=null);
+  const overall=va.length?va.reduce((a,b)=>a+b,0)/va.length:null;
+  h+=`<div class="card"><div class="card-hdr">📊 Overall Scores Across Matching Responses</div><div class="card-flush"><table><thead><tr>${lb.map(l=>`<th>${l}</th>`).join('')}<th>Overall</th><th>N</th></tr></thead><tbody><tr>${avgs.map(a=>`<td>${bdg(a)}</td>`).join('')}<td>${bdg(overall)}</td><td>${filtered.length}</td></tr></tbody></table></div></div>`;
+
+  const cmts=filtered.filter(r=>r._c&&!r._na).sort((a,b)=>(b._d?b._d.getTime():0)-(a._d?a._d.getTime():0));
+  h+=`<div class="card"><div class="card-hdr">💬 Comments (${cmts.length})</div>`;
+  if(cmts.length){
+    h+=`<div class="card-flush"><table class="ct"><thead><tr><th style="text-align:left">Instructor</th><th style="text-align:left">Module</th><th style="text-align:left">Cohort</th><th>Date</th><th style="text-align:left">Comment</th></tr></thead><tbody>`;
+    cmts.forEach(c=>{
+      h+=`<tr><td style="text-align:left">${esc(c._i||'—')}</td><td style="text-align:left">${esc(c._mod)}</td><td style="text-align:left">${esc(c._ch)}</td><td style="white-space:nowrap">${c._d?c._d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):''}</td><td style="text-align:left;font-style:italic">${esc(c._c)}</td></tr>`;
+    });
+    h+='</tbody></table></div>';
+  }else{
+    h+='<div class="card-body"><div class="empty" style="padding:20px"><p>No comments.</p></div></div>';
+  }
+  h+='</div>';
+  $('evalSearchResults').innerHTML=h;
+}
+
+// ══════════════════════════════ IMPORT ══════════════════════════════
+$('impDrop')?.addEventListener('dragover',e=>{e.preventDefault();$('impDrop').classList.add('drag')});
+$('impDrop')?.addEventListener('dragleave',()=>$('impDrop').classList.remove('drag'));
+$('impDrop')?.addEventListener('drop',e=>{e.preventDefault();$('impDrop').classList.remove('drag');if(e.dataTransfer.files[0])handleImportFile(e.dataTransfer.files[0])});
+
+function handleImportFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+      IMPORT_ROWS=parseInstructorForm(rows);
+      renderImportPreview();
+    }catch(err){console.error(err);alert('Could not parse this file. Make sure it is the raw SurveyMonkey .xlsx export.')}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseInstructorForm(rows){
+  const head0=rows[0]||[],head1=rows[1]||[];
+  // forward-fill row0 across merged/blank cells
+  const filled=[];let last='';
+  for(let i=0;i<head0.length;i++){if(head0[i]){last=head0[i]}filled.push(last)}
+  // identify columns by searching header text for known field names — tolerant of
+  // extra wording, punctuation, or markup around them, not exact position/phrasing
+  let methodCol=-1;const progColMap={}; // programName -> [{col, mod}]
+  const contactCols={};
+  for(let i=0;i<filled.length;i++){
+    const h0=cleanText(filled[i]);
+    const h1=cleanText(head1[i]);
+    if(!h0&&!h1)continue;
+    if(methodCol<0&&containsMatch(h0,'available to deliver')&&(containsMatch(h0,'in-person instruction')||containsMatch(h0,'in person instruction'))){methodCol=i;continue}
+    const knownProg=PROGRAMS.find(p=>containsMatch(h0,p.name));
+    let progName=null;
+    if(knownProg){progName=knownProg.name}
+    else{const m=h0.match(/Which (.+?) (?:modules|topics|topic areas) are you available/i);if(m)progName=m[1].trim()}
+    if(progName){
+      if(h1&&!containsMatch(h1,'none of the above')){
+        let modName=h1;
+        if(knownProg){const canonMod=knownProg.modules.find(m=>fuzzyEquals(m,h1));if(canonMod)modName=canonMod}
+        if(!progColMap[progName])progColMap[progName]=[];
+        progColMap[progName].push({col:i,mod:modName});
+      }
+      continue;
+    }
+    const field=CONTACT_FIELDS.find(f=>fuzzyEquals(f,h1));
+    if(field&&!(field in contactCols))contactCols[field]=i;
+  }
+  const out=[];
+  for(let r=2;r<rows.length;r++){
+    const row=rows[r];if(!row||!row.length)continue;
+    const first=(row[contactCols['First name']]||'').toString().trim().replace(/,+\s*$/,'');
+    const last=(row[contactCols['Last name']]||'').toString().trim().replace(/,+\s*$/,'');
+    if(!first&&!last)continue;
+    const name=last&&first?`${last}, ${first}`:(last||first);
+    const availability={};
+    Object.entries(progColMap).forEach(([progName,cols])=>{
+      availability[progName]=cols.filter(c=>row[c.col]).map(c=>c.mod);
+    });
+    const startDateRaw=row[2];
+    let submitted='';
+    if(startDateRaw instanceof Date)submitted=startDateRaw.toISOString().slice(0,10);
+    else if(typeof startDateRaw==='string')submitted=startDateRaw.slice(0,10);
+    out.push({
+      firstName:first,lastName:last,name,
+      title:(row[contactCols['Title']]||'').toString().trim(),
+      email:(row[contactCols['Email address']]||'').toString().trim(),
+      phone:(row[contactCols['Phone number']]||'').toString().trim(),
+      city:(row[contactCols['City']]||'').toString().trim(),
+      state:(row[contactCols['State/Province']]||'').toString().trim(),
+      country:(row[contactCols['Country']]||'').toString().trim(),
+      method:methodCol>=0?canonicalizeMethod(row[methodCol]):'',
+      availability,
+      submitted,
+      include:true
+    });
+  }
+  // if the same email submitted multiple times, keep only the most recent by 'submitted' date
+  const byEmail={};
+  out.forEach(o=>{
+    const key=(o.email||o.name).toLowerCase();
+    if(!byEmail[key]||(o.submitted||'')>(byEmail[key].submitted||''))byEmail[key]=o;
+  });
+  return Object.values(byEmail);
+}
+
+function renderImportPreview(){
+  if(!IMPORT_ROWS.length){$('impPreviewHolder').innerHTML='<p style="font-size:13px;color:var(--text-light);margin-top:16px">No instructor rows found in that file.</p>';return}
+  let newCount=0,updCount=0;
+  IMPORT_ROWS.forEach(r=>{
+    const match=DIR.find(d=>(r.email&&d.email&&d.email.toLowerCase()===r.email.toLowerCase())||d.name.toLowerCase()===r.name.toLowerCase());
+    r._match=match?match.id:null;
+    if(match)updCount++;else newCount++;
+  });
+  let h=`<div class="summary-line">Parsed ${IMPORT_ROWS.length} instructor${IMPORT_ROWS.length!==1?'s':''} &mdash; ${newCount} new, ${updCount} will update existing directory entries. Deselect any rows you don't want to import.</div>
+  <div class="card-flush"><table><thead><tr><th class="cbc"><input type="checkbox" id="impTa" checked onchange="impToggleAll(this.checked)"></th><th style="text-align:left">Name</th><th style="text-align:left">Email</th><th>Method</th><th>Programs w/ Modules</th><th>Status</th></tr></thead><tbody>`;
+  IMPORT_ROWS.forEach((r,i)=>{
+    const progs=Object.entries(r.availability).filter(([,m])=>m.length).map(([p])=>p);
+    h+=`<tr class="importPrevRow" id="impRow${i}"><td class="cbc"><input type="checkbox" class="impCk" data-i="${i}" checked onchange="document.getElementById('impRow${i}').classList.toggle('excl',!this.checked)"></td><td style="text-align:left">${esc(r.name)}</td><td style="text-align:left;font-size:12px">${esc(r.email)}</td><td class="${methodClass(r.method)}">${esc(r.method)}</td><td style="text-align:left">${progs.map(p=>`<span class="pill blue small">${esc(p)}</span>`).join('')||'<span style="color:var(--text-light);font-size:12px">none selected</span>'}</td><td>${r._match?'<span class="sb sm">Update</span>':'<span class="sb sh">New</span>'}</td></tr>`;
+  });
+  h+=`</tbody></table></div><div class="br" style="padding:16px 4px 4px"><button class="btn btn-p" onclick="importSelected()">Import Selected</button><button class="btn btn-s" onclick="IMPORT_ROWS=[];$('impPreviewHolder').innerHTML='';$('impFile').value=''">Cancel</button></div>`;
+  $('impPreviewHolder').innerHTML=h;
+}
+function impToggleAll(v){document.querySelectorAll('.impCk').forEach(cb=>{cb.checked=v;$('impRow'+cb.dataset.i).classList.toggle('excl',!v)})}
+
+async function importSelected(){
+  const checks=document.querySelectorAll('.impCk');
+  let added=0,updated=0;
+  checks.forEach(cb=>{
+    if(!cb.checked)return;
+    const r=IMPORT_ROWS[parseInt(cb.dataset.i)];
+    if(r._match){
+      const idx=DIR.findIndex(d=>d.id===r._match);
+      if(idx>=0){
+        const existing=DIR[idx];
+        DIR[idx]={...existing,firstName:r.firstName,lastName:r.lastName,name:r.name,title:r.title||existing.title,
+          email:r.email||existing.email,phone:r.phone||existing.phone,city:r.city||existing.city,state:r.state||existing.state,
+          country:r.country||existing.country,method:r.method||existing.method,availability:r.availability,
+          source:'import',lastUpdated:new Date().toISOString().slice(0,10)};
+        updated++;
+      }
+    }else{
+      DIR.push({id:uid(),firstName:r.firstName,lastName:r.lastName,name:r.name,title:r.title,email:r.email,phone:r.phone,
+        street:'',street2:'',city:r.city,state:r.state,zip:'',country:r.country,method:r.method,availability:r.availability,
+        notes:'',source:'import',lastUpdated:new Date().toISOString().slice(0,10)});
+      added++;
+    }
+  });
+  await saveDirectory();
+  renderSummary();renderDirList();buildProgramSelect();runFind();
+  IMPORT_ROWS=[];$('impFile').value='';
+  $('impPreviewHolder').innerHTML=`<div class="summary-line">✅ Import complete &mdash; ${added} added, ${updated} updated. <a href="#" onclick="sw('dir');return false" style="color:var(--blue);font-weight:600">View Directory</a></div>`;
+}
+
+// ─── Exports ──────────────────────────────────────────────────────────────────
+function exportDirXLSX(){
+  if(!DIR.length){alert('No instructors to export.');return}
+  const rows=[['Name','Email','Phone','City','State','Country','Method','Programs & Modules','Notes','Last Updated']];
+  DIR.forEach(d=>{
+    const avail=Object.entries(d.availability||{}).filter(([,m])=>m.length).map(([p,m])=>`${p}: ${m.join('; ')}`).join(' | ');
+    rows.push([d.name,d.email,d.phone,d.city,d.state,d.country,d.method,avail,d.notes,d.lastUpdated]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:22},{wch:26},{wch:16},{wch:14},{wch:10},{wch:10},{wch:22},{wch:60},{wch:30},{wch:12}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Instructor Directory');
+  XLSX.writeFile(wb,'Instructor_Directory.xlsx');
+}
+function exportHistXLSX(){
+  const groups=groupEvalByCohort([...evalILT,...evalAsync]).sort((a,b)=>{const am=a.maxDate?a.maxDate.getTime():0,bm=b.maxDate?b.maxDate.getTime():0;return bm-am});
+  if(!groups.length){alert('No evaluation-derived teaching history to export.');return}
+  const rows=[['Instructor','Program','Module','Method','Cohort','Last Taught','Eval Avg','Eval Responses','Comments']];
+  groups.forEach(g=>{
+    rows.push([g.instructor,g.program,g.module,g.method,g.cohort,g.maxDate?g.maxDate.toISOString().slice(0,10):'',g.avg!=null?g.avg.toFixed(2):'',g.n,g.comments]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:22},{wch:28},{wch:34},{wch:16},{wch:20},{wch:12},{wch:10},{wch:10},{wch:10}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Teaching History');
+  XLSX.writeFile(wb,'Teaching_History.xlsx');
+}
+</script>
+</body>
+</html>
