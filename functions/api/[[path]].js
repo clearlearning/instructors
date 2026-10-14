@@ -529,9 +529,17 @@ async function importPackage(env, body, me) {
   const created = [], updated = [], warnings = [];
   const now = new Date().toISOString();
 
+  const adopted = new Set();
   for (const raw of list) {
     const key = String(raw.externalKey || '').slice(0, 200);
-    const ex = key ? byKey.get(key) : null;
+    let ex = key ? byKey.get(key) : null;
+    if (!ex) {
+      // A program added earlier by spreadsheet or by hand has no link to TeamGantt. Adopt it when exactly one
+      // unlinked program has the same start date, delivery format and course, so re-sending updates it instead of duplicating it.
+      const fam = courseFamily(raw.title), ip = /person/i.test(raw.format || ''), sd = cleanDate(raw.startDate);
+      const hits = existing.filter(p => !p.externalKey && !adopted.has(p.id) && p.startDate === sd && /person/i.test(p.format || '') === ip && fam && courseFamily(p.title) === fam);
+      if (hits.length === 1) { ex = hits[0]; adopted.add(ex.id); warnings.push(`${raw.title}${raw.cohort ? ' (' + raw.cohort + ')' : ''} was matched to the existing program "${ex.title}" and updated in place. Instructors' answers were kept.`); }
+    }
     let p;
     if (ex) {
       const sessions = matchSessions(ex.sessions, raw.sessions);
@@ -962,6 +970,14 @@ function json(obj, status = 200) {
 }
 function httpErr(status, message) { const e = new Error(message); e.status = status; return e; }
 function rid(prefix) { return (prefix ? prefix + '_' : '') + crypto.randomUUID().replace(/-/g, '').slice(0, 10); }
+function courseFamily(title) {
+  const t = String(title || '');
+  const rules = [[/Applied Investigative|\bAIT\b/i, 'ait'], [/Workshop Series/i, 'ws'], [/Specialized/i, 'spec'], [/Canadian|\bCAN\b/i, 'bcan'], [/NCIT.*Basic|Basic.*NCIT|NCIT B\b/i, 'bus'],
+    [/Advanced Concepts|\bACRG\b/i, 'acrg'], [/Executive Leadership|\bELPR\b/i, 'elpr'], [/Staffing a Board|\bSRA\b/i, 'sra'], [/Getting the Most|Board Chair/i, 'chair'],
+    [/Drug Diversion/i, 'ddi'], [/Sexual Misconduct/i, 'irsm'], [/Ethics/i, 'ethics'], [/Persuasion|Communications/i, 'comm']];
+  const hit = rules.find(r => r[0].test(t));
+  return hit ? hit[1] : '';
+}
 function keep0(o, k) { return o ? o[k] : undefined; }
 function pick(o, keys) { const r = {}; for (const k of keys) if (o[k] !== undefined && o[k] !== '') r[k] = o[k]; return r; }
 function label(p) { return p.title + (p.cohort ? ` (${p.cohort})` : ''); }
