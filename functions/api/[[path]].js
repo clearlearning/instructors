@@ -52,16 +52,16 @@ const LOGO_DIR = '/images/';
 const LOGO_BY_COURSE = {
   '126': 'NCITB', '128': 'NCITB', 'ip-ncit-b-us': 'NCITB', 'ip-ncit-b-can': 'NCITB',
   '129': 'NCITS', 'ip-ncit-s': 'NCITS', 'ip-ncit-ait': 'NCITAIT',
-  '169': 'NCITWDDI', '143': 'NCITWIRSM', '146': 'NCITWCSAP', '157': 'NCITWERI',
+  'ncit-workshop-series': 'NCITWS', '169': 'NCITWDDI', '143': 'NCITWIRSM', '146': 'NCITWCSAP', '157': 'NCITWERI',
   '147': 'SRASAB', '142': 'ACRG', '138': 'ELPR', '165': 'BCT'
 };
 const LOGO_BY_TITLE = [
-  [/Applied Investigative|\bAIT\b/i, 'NCITAIT'], [/Drug Diversion/i, 'NCITWDDI'], [/Sexual Misconduct/i, 'NCITWIRSM'],
+  [/Applied Investigative|\bAIT\b/i, 'NCITAIT'], [/Workshop Series/i, 'NCITWS'], [/Drug Diversion/i, 'NCITWDDI'], [/Sexual Misconduct/i, 'NCITWIRSM'],
   [/Art of Persuasion|Communications/i, 'NCITWCSAP'], [/Ethics/i, 'NCITWERI'], [/Specialized/i, 'NCITS'], [/NCIT.*Basic|Basic.*NCIT/i, 'NCITB'],
   [/Staffing a Board|\bSRA\b/i, 'SRASAB'], [/Advanced Concepts|\bACRG\b/i, 'ACRG'], [/Executive Leadership|\bELPR\b/i, 'ELPR'],
   [/Getting the Most|Board Chair/i, 'BCT'], [/Introduction to Regulatory Governance|\bIRG\b/i, 'IRG']
 ];
-const LOGO_NAMES = ['NCITB', 'NCITS', 'NCITAIT', 'NCITWDDI', 'NCITWIRSM', 'NCITWCSAP', 'NCITWERI', 'SRASAB', 'ACRG', 'ELPR', 'BCT', 'IRG'];
+const LOGO_NAMES = ['NCITB', 'NCITS', 'NCITAIT', 'NCITWS', 'NCITWDDI', 'NCITWIRSM', 'NCITWCSAP', 'NCITWERI', 'SRASAB', 'ACRG', 'ELPR', 'BCT', 'IRG'];
 function logoOf(p) {
   const name = (LOGO_NAMES.includes(p.logoSet) && p.logoSet) || LOGO_BY_COURSE[String(p.courseId || '')] || (LOGO_BY_TITLE.find(r => r[0].test(String(p.title || ''))) || [])[1] || '';
   return name ? LOGO_DIR + name + '.svg' : '';
