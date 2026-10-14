@@ -1879,7 +1879,7 @@ function portalProgramFromEditor(c,round){
   const course=selectedCourse; if(!course) throw new Error('Choose a program first.');
   const isIP=course.isInPerson, live=icsRows();
   let sessions=[],startDate='',endDate='';
-  if(isIP){ const ds=rows.filter(r=>!r.isDayHeader&&r.date).map(r=>r.date).sort(); startDate=ds[0]||val('ipStartDate'); endDate=ds[ds.length-1]||startDate; }
+  if(isIP){ const ds=rows.filter(r=>!r.isDayHeader&&r.date).map(r=>r.date).sort(); startDate=ds[0]||val('ipStartDate'); endDate=ds[ds.length-1]||startDate; sessions=inPersonModules(live); }
   else { sessions=live.map((r,idx)=>({title:r.title||r.displayName,date:r.date,start:fmtTime(r.startTime),end:fmtTime(r.endTime),zoomLink:r.zoomLink||'',icsUid:icsUidFor(r,idx)}));
     const ds=sessions.map(s=>s.date).sort(); startDate=ds[0]||''; endDate=ds[ds.length-1]||''; }
   if(!startDate) throw new Error('No dated sessions yet.');
@@ -1887,6 +1887,23 @@ function portalProgramFromEditor(c,round){
   return { externalKey:c?'teamgantt:'+c.key:'agenda:'+course.id+':'+startDate, courseId:String(course.id), title:course.name, cohort:val('cohortName'),
     quarter:round||quarterOf(startDate), format:isIP?'In-Person':'Virtual (Zoom)', location:isIP?val('ipLocation'):'Virtual', timezone:val('timezone')||'ET',
     startDate, endDate, deadline:isoAdd(startDate,-DEADLINE_DAYS), sessions, ics:ics||'', icsName:ics?icsFileName():'' };
+}
+// In-person agendas list blocks; instructors are selected by module. Blocks with the same module name
+// (including "(continued)") become one selectable module, which may run across two days.
+const NON_MODULE=/^(registration|introduction|program introduction|program overview|welcome( & introductions)?|welcome back.*|lunch|break|question & answer.*|program review.*|final exam.*)$/i;
+function inPersonModules(live){
+  const mods=[];
+  live.forEach((r,idx)=>{
+    if(r.isBreak) return;
+    const name=String(r.displayName||'').replace(/\s*\(continued\)\s*$/i,'').trim();
+    if(!name||NON_MODULE.test(name)) return;
+    let m=mods.find(x=>x.title===name);
+    if(!m){ m={title:name,date:r.date,start:fmtTime(r.startTime),endDate:'',end:fmtTime(r.endTime),zoomLink:'',icsUid:icsUidFor(r,idx),icsUids:[],_last:r.date+' '+r.endTime}; mods.push(m); }
+    const k=r.date+' '+r.endTime;
+    if(k>m._last){ m._last=k; m.end=fmtTime(r.endTime); m.endDate=r.date!==m.date?r.date:''; }
+    m.icsUids.push(icsUidFor(r,idx));
+  });
+  return mods.map(({_last,...m})=>m);
 }
 function packageFile(programs,name){
   const pkg={format:'clear-availability-package',version:1,source:'Program Agenda Generator',generatedAt:new Date().toISOString(),programs};
