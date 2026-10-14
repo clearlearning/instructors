@@ -1845,14 +1845,16 @@ function cohortIcs(i){ const r=withEachCohort([BATCH.cohorts[i]],()=>({ics:build
 
 /* ---------- Bulk outputs ---------- */
 function scopeCss(css,scope){
-  css=css.replace(/@import[^;]+;/g,'').replace(/@page\s*\{[^}]*\}/g,'').replace(/@media\s+print\s*\{(?:[^{}]*\{[^}]*\})*\s*\}/g,'');
+  // Remove @import lines whole: the Google Fonts URL contains semicolons, so stopping at the first ';' leaves a stray quote that voids every rule after it.
+  css=css.replace(/@import\s+url\((?:"[^"]*"|'[^']*'|[^)]*)\)\s*;?/g,'').replace(/@import\s+(?:"[^"]*"|'[^']*')\s*;?/g,'')
+    .replace(/@page\s*\{[^}]*\}/g,'').replace(/@media\s+print\s*\{(?:[^{}]*\{[^}]*\})*\s*\}/g,'');
   return css.replace(/([^{}]+)\{([^}]*)\}/g,(m,sel,decl)=>{ sel=sel.trim(); if(!sel||sel.startsWith('@')) return m;
     return sel.split(',').map(s=>{ s=s.trim(); if(s==='body'||s==='html') return scope; if(s==='*') return scope+' *,'+scope; return scope+' '+s; }).join(',')+'{'+decl+'}'; });
 }
 function combineAgendas(list){
   let css='',body='';
-  list.forEach((html,i)=>{ const st=(html.match(/<style>([\s\S]*?)<\/style>/)||[])[1]||''; const bd=(html.match(/<body>([\s\S]*?)<script>/)||[])[1]||''; css+=scopeCss(st,'.ag'+i); body+=`<section class="ag ag${i}">${bd}</section>`; });
-  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>CLEAR Learning program agendas</title><style>@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap");@page{size:portrait;margin:0.45in 0.55in;}body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}.ag{break-after:page;page-break-after:always;}.ag:last-child{break-after:auto;page-break-after:auto;}'+css+'</style></head><body>'+body+'<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script></body></html>';
+  list.forEach((html,i)=>{ const st=(html.match(/<style>([\s\S]*?)<\/style>/)||[])[1]||''; const bd=(html.match(/<body>([\s\S]*?)<script>/)||[])[1]||''; css+='<style>'+scopeCss(st,'.ag'+i)+'</style>'; body+=`<section class="ag ag${i}">${bd}</section>`; });
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>CLEAR Learning program agendas</title><link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap"><style>@page{size:portrait;margin:0.45in 0.55in;}body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}.ag{break-after:page;page-break-after:always;}.ag:last-child{break-after:auto;page-break-after:auto;}</style>'+css+'</head><body>'+body+'<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script></body></html>';
 }
 function needPicked(){ const l=pickedCohorts(); if(!l.length){ batchMsg('error','Tick at least one cohort that has a program template.'); return null; } return l; }
 function batchPrintAgendas(){
