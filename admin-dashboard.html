@@ -139,13 +139,13 @@ dialog::backdrop{background:rgba(40,20,28,.45)}
 .log-row .t{color:var(--muted)}
 .ph{margin:-18px -20px 14px;padding:14px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;background:#FAF7F8;border-bottom:1px solid var(--line)}
 .ph h3{color:var(--burgundy);margin:0}.ph .facts{color:var(--muted)}
-/* NCIT burgundy shaded by program: Basic 100%, Specialized 80%, AIT 60%, Workshops 40% */
-.tr-ncit{background:var(--burgundy)!important;color:#fff}.tr-ncit-s{background:#833A56!important;color:#fff}.tr-ncit-ait{background:#A26B80!important;color:#fff}.tr-ncit-ws{background:#C19DAB!important;color:var(--burgundy-dk)}
-.tr-blue{background:var(--blue)!important;color:#fff}.tr-gold{background:var(--gold)!important;color:var(--burgundy-dk)}
-.tr-ncit h3,.tr-ncit-s h3,.tr-ncit-ait h3,.tr-blue h3,.tr-ncit .facts,.tr-ncit-s .facts,.tr-ncit-ait .facts,.tr-blue .facts,.tr-ncit strong,.tr-ncit-s strong,.tr-ncit-ait strong,.tr-blue strong{color:#fff!important}
-.tr-gold h3,.tr-gold .facts,.tr-gold strong,.tr-ncit-ws h3,.tr-ncit-ws .facts,.tr-ncit-ws strong{color:var(--burgundy-dk)!important}
-[class*="tr-"] .pill{box-shadow:0 0 0 1px rgba(255,255,255,.6)}
-.trk{border-left:6px solid transparent}.trk.k-ncit{border-left-color:var(--burgundy)}.trk.k-ncit-s{border-left-color:#833A56}.trk.k-ncit-ait{border-left-color:#A26B80}.trk.k-ncit-ws{border-left-color:#C19DAB}.trk.k-blue{border-left-color:var(--blue)}.trk.k-gold{border-left-color:var(--gold)}
+.tr-ncit{--tc:var(--burgundy);--tt:var(--burgundy)}.tr-blue{--tc:var(--blue);--tt:var(--blue)}.tr-gold{--tc:var(--gold);--tt:var(--burgundy-dk)}
+.ph,.mx-band{border-top:6px solid var(--tc,var(--line));background:#FAF7F8}
+.ph h3,.mx-band h3{color:var(--tt,var(--burgundy))!important}
+.ttl{display:flex;gap:12px;align-items:center;min-width:0}
+.plogo{width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid var(--line);object-fit:contain;padding:4px;flex:none}
+.plogo.sm{width:28px;height:28px;padding:3px}
+.trk{border-left:6px solid transparent}.trk.k-ncit{border-left-color:var(--burgundy)}.trk.k-blue{border-left-color:var(--blue)}.trk.k-gold{border-left-color:var(--gold)}
 .mx-band{padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:10px}
 .mx-band h3{margin:0}
 .allrow td{background:#F4F8FB!important;color:var(--blue)}
@@ -214,8 +214,9 @@ const stamp=iso=>iso?new Date(iso).toLocaleString(undefined,{month:'short',day:'
 const clone=o=>JSON.parse(JSON.stringify(o));
 const daysBetween=(a,b)=>Math.round((parseD(b)-parseD(a))/86400000);
 const titleOf=p=>p.title+(p.cohort?` (${p.cohort})`:'');
-const trk=p=>['ncit','ncit-s','ncit-ait','ncit-ws','blue','gold'].includes(p.track)?'tr-'+p.track:'';
-const trkL=p=>['ncit','ncit-s','ncit-ait','ncit-ws','blue','gold'].includes(p.track)?'trk k-'+p.track:'trk';
+const trk=p=>['ncit','blue','gold'].includes(p.track)?'tr-'+p.track:'';
+const logoImg=(p,sm)=>p.logo?`<img class="plogo${sm?' sm':''}" src="${esc(p.logo)}" alt="" onerror="this.remove()">`:'';
+const trkL=p=>['ncit','blue','gold'].includes(p.track)?'trk k-'+p.track:'trk';
 const isIP=p=>/person/i.test(p.format||'');
 function sTime(p,s){ if(!s.start) return fmtD(s.date)+(s.endDate?' – '+fmtD(s.endDate):'');
   return s.endDate?`${fmtD(s.date)}, ${s.start} – ${fmtD(s.endDate)}, ${s.end} ${p.timezone||''}`:`${fmtD(s.date)}, ${s.start} – ${s.end} ${p.timezone||''}`; }
@@ -314,7 +315,7 @@ function vOverview(){
     const n=units(p).length, staffed=staffedCount(p);
     const next={draft:['open','Open for responses'],open:['closed','Close responses'],closed:['open','Reopen']}[p.status];
     return `<div class="card"><div class="ph ${trk(p)}" style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
-      <div><h3>${esc(p.title)}</h3>${p.cohort?`<strong style="font-size:13px">${esc(p.cohort)}</strong>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))}${p.format?' · '+esc(p.format):''} · ${answerable(p).length?answerable(p).length+(isIP(p)?' modules':' sessions'):'whole program'}<br>${esc(dueText(p))}</div></div>
+      <div class="ttl">${logoImg(p)}<div><h3>${esc(p.title)}</h3>${p.cohort?`<strong style="font-size:13px">${esc(p.cohort)}</strong>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))}${p.format?' · '+esc(p.format):''} · ${answerable(p).length?answerable(p).length+(isIP(p)?' modules':' sessions'):'whole program'}<br>${esc(dueText(p))}</div></div></div>
       <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end"><span class="pill ${p.status}">${p.status}</span>${p.status==='open'&&p.pastDeadline?'<span class="pill locked">Answers locked</span>':''}</div></div>
       <div class="stat-row">
         <div class="stat"><b>${responded}</b><span>${responded===1?'response':'responses'} received</span></div>
@@ -356,7 +357,7 @@ function vResponses(){
   const rows=[];
   if(answerable(p).length) rows.push({key:PS,label:'Whole program',whole:true});
   for(const u of units(p)) rows.push(u.s?{key:u.key,label:u.s.title,when:sTime(p,u.s)}:{key:PS,label:'Entire program',whole:false});
-  h+=`<div class="mx-band ${trk(p)||'ph'}" style="margin:0 0 10px"><h3>${esc(p.title)}</h3><div class="facts">${p.cohort?esc(p.cohort)+' · ':''}${esc(fmtRange(p.startDate,p.endDate))} · ${esc(p.format||'')} · ${esc(dueText(p))}</div></div>`;
+  h+=`<div class="mx-band ${trk(p)}" style="margin:0 0 10px"><div class="ttl">${logoImg(p)}<div><h3>${esc(p.title)}</h3><div class="facts">${p.cohort?esc(p.cohort)+' · ':''}${esc(fmtRange(p.startDate,p.endDate))} · ${esc(p.format||'')} · ${esc(dueText(p))}</div></div></div></div>`;
   const allAtt=p.sessions.filter(s=>s.allInstructors);
   if(allAtt.length) h+=`<p class="facts">${allAtt.map(s=>esc(s.title)).join(', ')}: all instructors assigned to this cohort attend, so ${allAtt.length>1?'they are':'it is'} not listed for answers.</p>`;
   h+=`<div class="tbl-wrap"><table class="mx"><thead><tr><th class="first">Session</th>${insts.map(r=>`<th class="inst" title="${esc(r.name)}: click for their answers across programs"><a href="#" onclick="U.rview='instructor';U.iid='${r.id}';render();return false">${esc(r.name)}</a></th>`).join('')}<th>Avail.</th><th>Not answered</th></tr></thead><tbody>`;
@@ -394,7 +395,7 @@ function vByInstructor(){
     const rs=resp(r.id,p.id), us=units(p), done=us.filter(u=>eff(r.id,p,u.key)).length;
     const s=(D.assignments[p.id]||{}).slots||{};
     const sel=us.filter(u=>(s[u.key]||[]).some(e=>e.iid===r.id)).map(u=>{const e=s[u.key].find(e=>e.iid===r.id);return `${u.s?esc(u.s.title):'Entire program'} <span class="facts">(${esc(e.role)}, ${esc(e.status)})</span>`;});
-    return `<tr><td class="${trkL(p)}"><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))} · ${esc(dueText(p))}</div></td>
+    return `<tr><td class="${trkL(p)}"><div class="ttl">${logoImg(p,1)}<div><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))} · ${esc(dueText(p))}</div></div></div></td>
       <td class="num">${done}/${us.length}</td>
       <td style="min-width:260px">${us.map(u=>{const v=eff(r.id,p,u.key);return `<span class="ans ${v}" title="${esc(u.s?u.s.title+', '+fmtD(u.s.date):'Entire program')}">${u.s?esc(fmtD(u.s.date,false)):'Program'}: ${v?LBL[v]:'—'}</span>`;}).join('')}</td>
       <td style="font-size:13px">${sel.join('<br>')||'<span class="facts">—</span>'}</td>
@@ -451,7 +452,7 @@ function vSelection(){
   const s=slots(p.id), dirty=U.assignDirty.has(p.id), a=D.assignments[p.id]||{};
   const confirmed=[...new Set(Object.values((a.slots||{})).flat().filter(e=>e.status==='Confirmed').map(e=>e.iid))];
   const toEmail=confirmed.filter(iid=>mailState(p.id,iid).code!=='sent').length;
-  h+=`<div class="card"><div class="ph ${trk(p)}"><h3>${esc(p.title)}</h3>${p.cohort?`<strong style="font-size:13px">${esc(p.cohort)}</strong>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))} · ${esc(p.format||'')}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''} · ${answerable(p).length?answerable(p).length+(isIP(p)?' modules':' sessions'):'whole program'} · ${esc(dueText(p))}</div></div>
+  h+=`<div class="card"><div class="ph ${trk(p)}"><div class="ttl">${logoImg(p)}<div><h3>${esc(p.title)}</h3>${p.cohort?`<strong style="font-size:13px">${esc(p.cohort)}</strong>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))} · ${esc(p.format||'')}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''} · ${answerable(p).length?answerable(p).length+(isIP(p)?' modules':' sessions'):'whole program'} · ${esc(dueText(p))}</div></div></div></div>
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
     <div class="facts">${a.updatedAt?`Selections last saved ${stamp(a.updatedAt)} by ${esc(a.updatedBy)}`:'No selections saved yet'}</div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -591,7 +592,7 @@ function vPrograms(){
   const list=D.programs.filter(inQuarter);
   if(!list.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Open the Program Agenda Generator, use Quarter batch to load the TeamGantt export, then choose Send to availability portal.</p></div>`;
   h+=`<div class="tbl-wrap"><table><thead><tr><th>Program</th><th>Quarter</th><th>Dates</th><th>Format</th><th>Sessions</th><th>Respond by</th><th>Calendar</th><th>Announced</th><th>Status</th><th></th></tr></thead><tbody>`+
-    list.map(p=>`<tr><td class="${trkL(p)}"><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}${p.source==='agenda-generator'?'<span class="pill src">Agenda Generator</span>':''}</td><td>${esc(p.quarter)}</td><td style="white-space:nowrap">${esc(fmtRange(p.startDate,p.endDate))}</td><td>${esc(p.format)}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''}</td><td>${answerable(p).length?answerable(p).length+(isIP(p)?' modules':''):'Whole program'}</td>
+    list.map(p=>`<tr><td class="${trkL(p)}"><div class="ttl">${logoImg(p,1)}<div><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}${p.source==='agenda-generator'?'<span class="pill src">Agenda Generator</span>':''}</div></div></td><td>${esc(p.quarter)}</td><td style="white-space:nowrap">${esc(fmtRange(p.startDate,p.endDate))}</td><td>${esc(p.format)}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''}</td><td>${answerable(p).length?answerable(p).length+(isIP(p)?' modules':''):'Whole program'}</td>
       <td style="white-space:nowrap">${fmtD(p.deadline)}${p.deadline?`<div class="facts">${p.deadlineMode==='auto'?'automatic':'set by hand'}${p.pastDeadline?', passed':''}</div>`:''}</td>
       <td>${p.hasIcs?'<span class="okc" title="'+esc(p.icsName)+'">✓ .ics</span>':'<span class="facts">—</span>'}</td>
       <td style="font-size:12px">${p.announcedAt?esc(fmtD(p.announcedAt.slice(0,10))):'<span class="facts">—</span>'}</td>
@@ -612,7 +613,8 @@ function editProgram(pid){
     ${f('startDate','Start date',p.startDate,'date')}${f('endDate','End date',p.endDate,'date')}
     <div class="f span2"><label for="e-deadline">Respond by</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input id="e-deadline" type="date" value="${esc(p.deadlineMode==='auto'?autoDeadline(p):p.deadline)}" ${p.deadlineMode==='auto'?'disabled':''}>
       <label style="font-weight:400;font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="e-dlauto" ${p.deadlineMode==='auto'?'checked':''} onchange="dlToggle()"> Automatic: ${(D.config||{}).deadlineDays||30} days before the first live session</label></div></div>
-    <div class="f"><label for="e-track">Program track (header colour)</label><select id="e-track"><option value="" ${!p.trackSet?'selected':''}>Automatic from the course name</option><option value="ncit" ${p.trackSet==='ncit'?'selected':''}>NCIT Basic (burgundy)</option><option value="ncit-s" ${p.trackSet==='ncit-s'?'selected':''}>NCIT Specialized (burgundy 80%)</option><option value="ncit-ait" ${p.trackSet==='ncit-ait'?'selected':''}>NCIT AIT (burgundy 60%)</option><option value="ncit-ws" ${p.trackSet==='ncit-ws'?'selected':''}>NCIT Workshops (burgundy 40%)</option><option value="blue" ${p.trackSet==='blue'?'selected':''}>ELPR and SRA (blue)</option><option value="gold" ${p.trackSet==='gold'?'selected':''}>ACRG and Board Chair (gold)</option><option value="none" ${p.trackSet==='none'?'selected':''}>None</option></select></div>
+    <div class="f"><label for="e-track">Program track (header colour)</label><select id="e-track"><option value="" ${!p.trackSet?'selected':''}>Automatic from the course name</option><option value="ncit" ${/^ncit/.test(p.trackSet||'')?'selected':''}>NCIT (burgundy)</option><option value="blue" ${p.trackSet==='blue'?'selected':''}>ELPR and SRA (blue)</option><option value="gold" ${p.trackSet==='gold'?'selected':''}>ACRG, IRG and Board Chair (gold)</option><option value="none" ${p.trackSet==='none'?'selected':''}>None</option></select></div>
+    <div class="f"><label for="e-logo">Program logo</label><select id="e-logo"><option value="">Automatic from the course name</option>${[['NCITB','NCIT Basic'],['NCITS','NCIT Specialized'],['NCITAIT','NCIT AIT'],['NCITWDDI','Workshop: Drug Diversion'],['NCITWIRSM','Workshop: Sexual Misconduct'],['NCITWCSAP','Workshop: Communications'],['NCITWERI','Workshop: Ethics'],['SRASAB','SRA: Staffing a Board'],['ACRG','ACRG'],['ELPR','ELPR'],['BCT','Board Chair Training'],['IRG','Introduction to Regulatory Governance']].map(([v,l])=>`<option value="${v}" ${p.logoSet===v?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="f"><label for="e-status">Status</label><select id="e-status">${['draft','open','closed','archived'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="f span4"><label for="e-description">Description for instructors (optional)</label><textarea id="e-description" rows="3">${esc(p.description)}</textarea></div></div>
     <datalist id="dl-titles">${titles.map(x=>`<option value="${esc(x)}">`).join('')}</datalist><datalist id="dl-format"><option value="Virtual (Zoom)"><option value="In-Person"><option value="Hybrid"></datalist>`;
@@ -639,6 +641,7 @@ async function saveProgram(pid){
   ['title','cohort','quarter','format','location','timezone','startDate','endDate','deadline','status','description'].forEach(k=>p[k]=g(k));
   p.deadlineMode=document.getElementById('e-dlauto')&&document.getElementById('e-dlauto').checked?'auto':'manual';
   p.trackSet=document.getElementById('e-track').value;
+  p.logoSet=document.getElementById('e-logo').value;
   if(pid&&p.sessions.length<prog(pid).sessions.length&&!confirm('You removed sessions. Instructor answers for those sessions will no longer show. Save anyway?')) return;
   const id=pid||'p_'+crypto.randomUUID().replace(/-/g,'').slice(0,10);
   try{ const r=await api('admin/program/'+id,{method:'PUT',body:JSON.stringify({program:p,baseUpdatedAt:pid?prog(pid).updatedAt:undefined})});
