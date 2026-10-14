@@ -15,6 +15,10 @@
      NOTIFY_MAILBOX         the shared mailbox the flow sends from, e.g. clearlearning@clearhq.org
      PORTAL_URL             link put in emails, e.g. https://availability.clearhq.org (defaults to this site)
 
+   Automatic reminders (optional; called once a day by the instructor-availability-cron Worker)
+     CRON_SECRET            (Secret) shared with the cron Worker; must match its CRON_SECRET
+     REMINDER_DAYS          days before the response date to remind non-responders (default 7,2)
+
    Instructor Staffing Dashboard link (optional)
      STAFFING_DASHBOARD_URL full URL of instructor-staffing.html
 
@@ -62,9 +66,19 @@ const LOGO_BY_TITLE = [
   [/Getting the Most|Board Chair/i, 'BCT'], [/Introduction to Regulatory Governance|\bIRG\b/i, 'IRG']
 ];
 const LOGO_NAMES = ['NCITB', 'NCITS', 'NCITAIT', 'NCITWS', 'NCITWDDI', 'NCITWIRSM', 'NCITWCSAP', 'NCITWERI', 'SRASAB', 'ACRG', 'ELPR', 'BCT', 'IRG'];
-function logoOf(p) {
-  const name = (LOGO_NAMES.includes(p.logoSet) && p.logoSet) || LOGO_BY_COURSE[String(p.courseId || '')] || (LOGO_BY_TITLE.find(r => r[0].test(String(p.title || ''))) || [])[1] || '';
-  return name ? LOGO_DIR + name + '.svg' : '';
+// The course a program belongs to (also its logo file name). Teaching approvals are kept per course.
+function courseKeyOf(p) {
+  return (LOGO_NAMES.includes(p.logoSet) && p.logoSet) || LOGO_BY_COURSE[String(p.courseId || '')] || (LOGO_BY_TITLE.find(r => r[0].test(String(p.title || ''))) || [])[1] || '';
+}
+function logoOf(p) { const name = courseKeyOf(p); return name ? LOGO_DIR + name + '.svg' : ''; }
+// Is this instructor approved to teach this program? No approvals recorded = approved for everything.
+// A program with no recognised course is open to everyone. The Workshop Series is open to anyone approved for any workshop.
+function eligible(inst, prog) {
+  const q = (inst && inst.quals) || [];
+  if (!q.length) return true;
+  const key = courseKeyOf(prog);
+  if (!key || q.includes(key)) return true;
+  return key === 'NCITWS' && q.some(k => /^NCITW/.test(k));
 }
 // Instructors attend the Welcome session only in ACRG, ELPR and SRA: Staffing a Board. Everywhere else it is removed.
 function keepsWelcome(p) {
@@ -83,8 +97,15 @@ export async function onRequest({ request, env }) {
     if (!env.IA_KV) throw httpErr(500, 'The KV binding IA_KV is missing on this Pages project. Add it under Settings > Bindings, then redeploy.');
     if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) throw httpErr(500, 'Access verification isn\'t configured. Add ACCESS_TEAM_DOMAIN and ACCESS_AUD, then redeploy.');
 
-    const email = await verifyAccess(request, env);
-    if (!email) return json({ error: 'Your sign-in expired or is missing. Reload the page to sign in again.' }, 401);
+    const ident = await verifyAccess(request, env);
+    if (!ident) return json({ error: 'Your sign-in expired or is missing. Reload the page to sign in again.' }, 401);
+    if (typeof ident === 'object') {
+      // An Access service token (the daily cron Worker). It may only run the reminder job, and must also present CRON_SECRET.
+      const ok = parts[0] === 'cron' && parts[1] === 'reminders' && env.CRON_SECRET && safeEq(request.headers.get('X-Cron-Secret') || '', env.CRON_SECRET);
+      if (!ok) return json({ error: 'Not allowed.' }, 403);
+      return json(await runReminders(env, url));
+    }
+    const email = ident;
 
     const me = await whoAmI(email, env);
     if (!me.isStaff && !me.instructor) {
@@ -164,6 +185,8 @@ export async function onRequest({ request, env }) {
       if (b === 'notify' && c === 'announce' && method === 'POST') return json(await notifyAnnounce(env, body, me));
       if (b === 'notify' && c === 'remind' && method === 'POST') return json(await notifyRemind(env, body, me));
       if (b === 'notify' && c === 'selection' && d && method === 'POST') return json(await notifySelection(env, d, body, me));
+      if (b === 'notify' && c === 'change' && d && method === 'POST') return json(await notifyChange(env, d, body, me));
+      if (b === 'notify' && c === 'custom' && method === 'POST') return json(await notifyCustom(env, body, me));
 
       if (b === 'log' && method === 'GET') return json(await readLog(env));
     }
@@ -206,7 +229,10 @@ async function verifyAccess(request, env) {
   const tokenAud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
   if (!tokenAud.some(x => allowed.includes(x))) return null;
 
-  return String(payload.email || '').trim().toLowerCase() || null;
+  const email = String(payload.email || '').trim().toLowerCase();
+  if (email) return email;
+  if (payload.common_name) return { service: String(payload.common_name) }; // service token: no email in the token
+  return null;
 }
 
 function teamDomain(env) {
@@ -262,7 +288,7 @@ const answerable = p => (p.sessions || []).filter(s => !s.allInstructors);
 function pastDeadline(p, today) { return !!(p.deadline && (today || todayET()) > p.deadline); }
 function isLocked(p, today) { return p.status !== 'open' || pastDeadline(p, today); }
 function withState(p, today) {
-  return { ...p, track: trackOf(p), logo: logoOf(p), pastDeadline: pastDeadline(p, today), locked: isLocked(p, today) };
+  return { ...p, track: trackOf(p), logo: logoOf(p), courseKey: courseKeyOf(p), pastDeadline: pastDeadline(p, today), locked: isLocked(p, today) };
 }
 // Programs saved before tracks existed have no stored track, so work it out on every read.
 function trackOf(p) { return (p.trackSet && TRACKS.includes(p.trackSet) && p.trackSet) || autoTrack(p); }
@@ -278,7 +304,7 @@ async function portal(env, me, asId) {
   }
   const today = todayET();
   const all = await listPrograms(env);
-  const programs = all.filter(p => p.status === 'open' || p.status === 'closed').map(p => withState(p, today));
+  const programs = all.filter(p => (p.status === 'open' || p.status === 'closed') && (!inst || eligible(inst, p))).map(p => withState(p, today));
   if (!inst) return { me: publicMe(me), instructor: null, viewingAs, today, programs, responses: {}, assignments: [] };
 
   const rec = await getJSON(env, 'resp:' + inst.id, { programs: {} });
@@ -325,6 +351,9 @@ async function saveResponse(env, inst, pid, body, by, staffEntry) {
   if (!staffEntry && prog.status !== 'open') {
     throw httpErr(409, 'Responses for this program are closed. Contact CLEAR Learning staff to make a change.');
   }
+  if (!staffEntry && !eligible(inst, prog)) {
+    throw httpErr(403, 'This program isn\'t on your list of approved programs. Contact CLEAR Learning staff if you would like to teach it.');
+  }
   if (!staffEntry && pastDeadline(prog)) {
     throw httpErr(409, `The response deadline for this program (${longDate(prog.deadline)}) has passed. Contact CLEAR Learning staff to make a change.`);
   }
@@ -369,7 +398,11 @@ async function adminData(env, me) {
   });
   const assigns = await Promise.all(programs.map(p => getJSON(env, 'assign:' + p.id, null)));
   const assignments = {};
-  programs.forEach((p, i) => { assignments[p.id] = assigns[i] || { slots: {}, notes: [], history: [], notified: {} }; });
+  programs.forEach((p, i) => {
+    const a = assigns[i] || { slots: {}, notes: [], history: [], notified: {} };
+    a.changes = scheduleChanges(p, a);
+    assignments[p.id] = a;
+  });
   return {
     me: publicMe(me), today,
     programs, roster: me.roster, responses, assignments,
@@ -380,7 +413,9 @@ async function adminData(env, me) {
       mailbox: env.NOTIFY_MAILBOX || '',
       portalUrl: me.origin,
       staffingUrl: env.STAFFING_DASHBOARD_URL || '',
-      deadlineDays: DEADLINE_DAYS
+      deadlineDays: DEADLINE_DAYS,
+      autoReminders: !!env.CRON_SECRET,
+      reminderDays: reminderDays(env)
     }
   };
 }
@@ -721,7 +756,7 @@ function b64utf8(s) {
 const H = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function emailShell(title, inner, origin) {
   return `<div style="font-family:'Open Sans',Arial,sans-serif;color:#2B2B2B;max-width:640px;margin:0 auto">
-<div style="background:#64092C;color:#fff;padding:18px 22px;border-radius:8px 8px 0 0"><div style="font-size:12px;opacity:.85;font-weight:600">CLEAR Learning</div><div style="font-size:20px;font-weight:800;margin-top:2px">${H(title)}</div></div>
+<div style="background:#64092C;color:#fff;padding:18px 22px;border-radius:8px 8px 0 0"><img src="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png" alt="CLEAR" width="40" height="40" style="float:right;width:40px;height:40px;background:#fff;border-radius:6px;padding:3px"><div style="font-size:12px;opacity:.85;font-weight:600">CLEAR Learning</div><div style="font-size:20px;font-weight:800;margin-top:2px">${H(title)}</div></div>
 <div style="border:1px solid #DEDCE0;border-top:0;padding:20px 22px;border-radius:0 0 8px 8px;font-size:14px;line-height:1.55">${inner}
 <p style="margin:22px 0 6px"><a href="${H(origin)}" style="background:#64092C;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:700;display:inline-block">Open the instructor availability portal</a></p>
 <p style="font-size:12px;color:#6E6B70;margin-top:16px">Sign in with this email address; you'll get a one-time code by email. Questions: reply to this message or write to clearlearning@clearhq.org.</p></div></div>`;
@@ -750,25 +785,37 @@ async function notifyAnnounce(env, body, me) {
   if (!progs.length) throw httpErr(400, 'Choose at least one program to announce.');
   if (!body.test && progs.some(p => p.status !== 'open')) throw httpErr(400, 'Only open programs can be announced. Open them first.');
   progs.sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
-  const subject = (body.test ? '[TEST] ' : '') + (progs.length === 1 ? `New CLEAR Learning program open for instructors: ${progs[0].title}` : `${progs.length} new CLEAR Learning programs are open for instructor availability`);
-  const html = emailShell('New programs are open for availability', `<p>Hello,</p>
-<p>CLEAR Learning has posted ${progs.length === 1 ? 'a new program' : progs.length + ' new programs'}. Please mark the sessions you could teach, and the ones you can't, by each program's response date.</p>
+  const build = list => ({
+    subject: (body.test ? '[TEST] ' : '') + (list.length === 1 ? `New CLEAR Learning program open for instructors: ${list[0].title}` : `${list.length} new CLEAR Learning programs are open for instructor availability`),
+    html: emailShell('New programs are open for availability', `<p>Hello,</p>
+<p>CLEAR Learning has posted ${list.length === 1 ? 'a new program' : list.length + ' new programs'} you are approved to teach. Please mark the sessions you are able to teach, and those you are not, by each program's response date.</p>
 ${noteBlock(body.note)}
-<table style="width:100%;border-collapse:collapse">${progs.map(programLine).join('')}</table>
-<p style="font-size:13px;color:#6E6B70">All session times are listed in Eastern Time. The portal can show them in your own time zone. You can change your answers at any time until the response date.</p>`, me.origin);
-  const recips = activeRecipients(me.roster);
-  if (body.preview) return { ok: true, preview: { subject, html, count: body.test ? 1 : recips.length, to: body.test ? me.email : `${env.NOTIFY_MAILBOX || '(mailbox)'}, with instructors in BCC` } };
-  if (body.test) await sendMail(env, { to: [me.email], subject, html });
-  else {
-    if (!recips.length) throw httpErr(400, 'No active instructors have an email address yet.');
-    for (let i = 0; i < recips.length; i += 400) {
-      await sendMail(env, { to: [env.NOTIFY_MAILBOX], bcc: recips.slice(i, i + 400).map(x => x.email), subject, html });
-    }
-    const at = new Date().toISOString();
-    for (const p of progs) { p.announcedAt = at; p.announcedBy = me.email; await putJSON(env, 'program:' + p.id, p); }
-    await log(env, me.email, 'Announced programs by email', `${progs.map(p => p.title).join('; ')} to ${recips.length} instructors`);
+<table style="width:100%;border-collapse:collapse">${list.map(programLine).join('')}</table>
+<p style="font-size:13px;color:#6E6B70">All session times are listed in Eastern Time. The portal can show them in your own time zone. You can change your answers at any time until the response date.</p>`, me.origin)
+  });
+  // Each instructor hears only about programs they are approved to teach. People with the same list share one BCC email.
+  const groups = new Map();
+  for (const x of activeRecipients(me.roster)) {
+    const list = progs.filter(p => eligible(x.r, p));
+    if (!list.length) continue;
+    const k = list.map(p => p.id).join('|');
+    if (!groups.has(k)) groups.set(k, { list, emails: [] });
+    groups.get(k).emails.push(x.email);
   }
-  return { ok: true, sent: body.test ? 1 : recips.length, announcedAt: body.test ? null : new Date().toISOString() };
+  const total = [...groups.values()].reduce((n, g) => n + g.emails.length, 0);
+  if (body.preview) {
+    const first = [...groups.values()][0];
+    return { ok: true, preview: { ...build(first ? first.list : progs), count: body.test ? 1 : total, to: body.test ? me.email : (total ? `${total} approved instructor${total > 1 ? 's' : ''} in ${groups.size} email${groups.size > 1 ? 's' : ''}, BCC from ${env.NOTIFY_MAILBOX || '(mailbox)'}${groups.size > 1 ? '. Each email lists only the programs its recipients are approved for; this preview shows the first.' : ''}` : 'Nobody is approved for these programs') } };
+  }
+  if (body.test) { await sendMail(env, { to: [me.email], ...build(progs) }); return { ok: true, sent: 1, announcedAt: null }; }
+  if (!total) throw httpErr(400, 'No active instructors with an email address are approved for these programs.');
+  for (const g of groups.values()) {
+    for (let i = 0; i < g.emails.length; i += 400) await sendMail(env, { to: [env.NOTIFY_MAILBOX], bcc: g.emails.slice(i, i + 400), ...build(g.list) });
+  }
+  const at = new Date().toISOString();
+  for (const p of progs) { p.announcedAt = at; p.announcedBy = me.email; await putJSON(env, 'program:' + p.id, p); }
+  await log(env, me.email, 'Announced programs by email', `${progs.map(p => p.title).join('; ')} to ${total} approved instructors`);
+  return { ok: true, sent: total, announcedAt: at };
 }
 
 async function notifyRemind(env, body, me) {
@@ -778,21 +825,9 @@ async function notifyRemind(env, body, me) {
   if (!progs.length) throw httpErr(400, 'Choose at least one open program that is still taking answers.');
   const recips = activeRecipients(me.roster);
   const recs = await Promise.all(recips.map(x => getJSON(env, 'resp:' + x.r.id, { programs: {} })));
-  const units = p => answerable(p).length ? answerable(p).map(s => s.id) : [PROGRAM_SLOT];
-  const missing = recips.map((x, i) => {
-    const list = progs.filter(p => {
-      const r = (recs[i].programs || {})[p.id];
-      if (!r) return true;
-      return units(p).some(u => u === PROGRAM_SLOT ? !r.program : !((r.sessions || {})[u] || r.program));
-    });
-    return { ...x, list };
-  }).filter(x => x.list.length);
-  const build = x => ({
-    subject: (body.test ? '[TEST] ' : '') + 'Reminder: please share your availability for CLEAR Learning programs',
-    html: emailShell('Your availability is still needed', `<p>Hello ${H(firstName(x.r.name))},</p>
-<p>We don't have your full answers yet for the program${x.list.length > 1 ? 's' : ''} below. Even a "not available" helps us plan.</p>${noteBlock(body.note)}
-<table style="width:100%;border-collapse:collapse">${x.list.map(programLine).join('')}</table>`, me.origin)
-  });
+  // Only instructors who have not responded to a program at all are reminded about it.
+  const missing = recips.map((x, i) => ({ ...x, list: progs.filter(p => eligible(x.r, p) && !(recs[i].programs || {})[p.id]) })).filter(x => x.list.length);
+  const build = x => reminderEmail(x, body.note, me.origin, body.test, null);
   if (body.preview) {
     const sample = missing[0] || { r: { name: 'Instructor, Sample' }, list: progs };
     return { ok: true, preview: { ...build(sample), count: missing.length, to: missing.length ? `${missing.length} instructors, one email each` : 'Nobody: everyone has answered' } };
@@ -841,7 +876,7 @@ async function notifySelection(env, pid, body, me) {
     results.push({ iid, ok: true });
     if (!body.test) {
       assign.notified = assign.notified || {};
-      assign.notified[iid] = { at: new Date().toISOString(), by: me.email, sig: slotSig(mine) };
+      assign.notified[iid] = { at: new Date().toISOString(), by: me.email, sig: slotSig(mine), snap: snapFor(prog, mine), kind: 'selection' };
     }
   }
   if (body.preview) return { ok: true, preview: previewOut || { subject: '', html: '<p>Nothing to preview.</p>', to: '', count: 0, error: (results[0] || {}).error } };
@@ -850,9 +885,208 @@ async function notifySelection(env, pid, body, me) {
     cur.notified = { ...(cur.notified || {}), ...assign.notified };
     await putJSON(env, key, cur); // updatedAt untouched, like notes
     await log(env, me.email, 'Emailed selection notices', `${prog.title}: ${results.filter(r => r.ok).length} sent`);
-    return { ok: true, results, notified: cur.notified };
+    return { ok: true, results, notified: cur.notified, changes: scheduleChanges(prog, cur) };
   }
   return { ok: true, results, notified: assign.notified || {} };
+}
+
+function reminderEmail(x, note, origin, test, daysLeft) {
+  const many = x.list.length > 1;
+  const lead = daysLeft == null
+    ? `We haven't received your availability yet for the program${many ? 's' : ''} below.`
+    : `The response date for the program${many ? 's' : ''} below is ${daysLeft === 1 ? 'tomorrow' : 'in ' + daysLeft + ' days'}, and we haven't received your availability yet.`;
+  return {
+    subject: (test ? '[TEST] ' : '') + 'Reminder: please share your availability for CLEAR Learning programs',
+    html: emailShell('Your availability is still needed', `<p>Hello${x.r.name ? ' ' + H(firstName(x.r.name)) : ''},</p>
+<p>${lead} Marking sessions "Not available" is just as helpful to our planning as marking them available.</p>${noteBlock(note)}
+<table style="width:100%;border-collapse:collapse">${x.list.map(programLine).join('')}</table>`, origin)
+  };
+}
+
+/* ---------- Automatic reminders (daily cron) ---------- */
+function reminderDays(env) { return String(env.REMINDER_DAYS || '7,2').split(',').map(n => parseInt(n, 10)).filter(n => n >= 0 && n < 120); }
+function daysBetween(a, b) { return Math.round((Date.parse(b + 'T12:00:00Z') - Date.parse(a + 'T12:00:00Z')) / 86400000); }
+function safeEq(a, b) { a = String(a); b = String(b); if (a.length !== b.length) return false; let r = 0; for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i); return r === 0; }
+
+async function runReminders(env, url) {
+  const today = todayET(), days = reminderDays(env), dry = url.searchParams.get('dry') === '1';
+  const origin = String(env.PORTAL_URL || url.origin).replace(/\/+$/, '');
+  const progs = (await listPrograms(env)).filter(p => p.status === 'open' && p.deadline && !pastDeadline(p, today));
+  const todo = [];
+  for (const p of progs) {
+    const n = daysBetween(today, p.deadline);
+    if (!days.includes(n)) continue;
+    const key = `reminded:${p.id}:${p.deadline}:${n}`;
+    if (await env.IA_KV.get(key)) continue; // already ran today
+    todo.push({ p, n, key });
+  }
+  if (!todo.length) return { ok: true, today, days, programs: [], sent: 0, message: 'No programs reach a reminder day today.' };
+  const roster = await getJSON(env, 'roster', []);
+  const recips = activeRecipients(roster);
+  const recs = await Promise.all(recips.map(x => getJSON(env, 'resp:' + x.r.id, { programs: {} })));
+  const missing = recips.map((x, i) => {
+    const mine = todo.filter(t => eligible(x.r, t.p) && !(recs[i].programs || {})[t.p.id]);
+    return { ...x, list: mine.map(t => t.p), daysLeft: Math.min(...mine.map(t => t.n)) };
+  }).filter(x => x.list.length);
+  const summary = todo.map(t => ({ program: label(t.p), daysBefore: t.n, nonResponders: missing.filter(m => m.list.includes(t.p)).length }));
+  if (dry) return { ok: true, today, days, dryRun: true, programs: summary, wouldSend: missing.length };
+  if (missing.length > 40) {
+    const m = reminderEmail({ r: { name: '' }, list: todo.map(t => t.p) }, '', origin, false, Math.min(...todo.map(t => t.n)));
+    await sendMail(env, { to: [env.NOTIFY_MAILBOX], bcc: missing.map(x => x.email), ...m });
+  } else {
+    for (const x of missing) await sendMail(env, { to: [x.email], ...reminderEmail(x, '', origin, false, x.daysLeft) });
+  }
+  const at = new Date().toISOString();
+  for (const t of todo) {
+    await env.IA_KV.put(t.key, at, { expirationTtl: 60 * 60 * 24 * 90 });
+    const cur = await getJSON(env, 'program:' + t.p.id, null);
+    if (cur) {
+      cur.reminders = [...(cur.reminders || []), { at, daysBefore: t.n, count: missing.filter(m => m.list.includes(t.p)).length }].slice(-10);
+      await putJSON(env, 'program:' + t.p.id, cur); // updatedAt untouched so an open editor isn't blocked
+    }
+  }
+  await log(env, 'automatic reminders', 'Sent availability reminders', summary.map(s => `${s.program}: ${s.nonResponders} (${s.daysBefore} days before)`).join('; '));
+  return { ok: true, today, days, programs: summary, sent: missing.length };
+}
+
+/* ---------- Schedule change tracking ---------- */
+function sessionsFor(prog, mine) {
+  const whole = mine.some(m => m.slot === PROGRAM_SLOT);
+  return whole ? (prog.sessions || []) : (prog.sessions || []).filter(s => s.allInstructors || mine.some(m => m.slot === s.id));
+}
+// What an instructor was told: their sessions' titles, dates, times and Zoom links (or the program dates if staffed whole).
+function snapFor(prog, mine) {
+  const ss = sessionsFor(prog, mine);
+  if (!ss.length) return [{ id: PROGRAM_SLOT, title: 'Entire program', date: prog.startDate || '', endDate: prog.endDate || '', start: '', end: '', zoomLink: '', location: prog.location || '' }];
+  return ss.map(s => ({ id: s.id, title: s.title, date: s.date, endDate: s.endDate || '', start: s.start, end: s.end, zoomLink: s.zoomLink || '', location: prog.location || '' }));
+}
+function diffSnap(prog, before, after) {
+  const out = [];
+  const old = new Map((before || []).map(s => [s.id, s]));
+  for (const s of after) {
+    const o = old.get(s.id);
+    if (!o) { out.push({ id: s.id, kind: 'added', title: s.title }); continue; }
+    old.delete(s.id);
+    const what = [];
+    if (o.date !== s.date || o.endDate !== s.endDate || o.start !== s.start || o.end !== s.end) what.push('date or time');
+    if (o.zoomLink !== s.zoomLink) what.push('Zoom link');
+    if (o.title !== s.title) what.push('title');
+    if (o.location !== s.location && s.id === PROGRAM_SLOT) what.push('location');
+    if (what.length) out.push({ id: s.id, kind: 'changed', title: s.title, what, was: o });
+  }
+  for (const o of old.values()) out.push({ id: o.id, kind: 'removed', title: o.title, was: o });
+  return out;
+}
+// For the dashboard: confirmed instructors whose schedule changed after their last email.
+function scheduleChanges(prog, assign) {
+  const out = {};
+  for (const [iid, n] of Object.entries((assign && assign.notified) || {})) {
+    if (!n || !n.snap) continue;
+    const mine = confirmedFor(assign, iid);
+    if (!mine.length || slotSig(mine) !== n.sig) continue; // assignment itself changed: a new selection notice covers it
+    const d = diffSnap(prog, n.snap, snapFor(prog, mine));
+    if (d.length) out[iid] = d.map(x => x.kind === 'changed' ? `${x.title}: ${x.what.join(', ')}` : `${x.title}: ${x.kind}`);
+  }
+  return out;
+}
+
+async function notifyChange(env, pid, body, me) {
+  const prog = await getJSON(env, 'program:' + pid, null);
+  if (!prog) throw httpErr(404, 'That program doesn\'t exist.');
+  const key = 'assign:' + pid;
+  const assign = await getJSON(env, key, { slots: {}, notes: [], history: [], notified: {} });
+  const ids = Array.isArray(body.iids) ? body.iids : [];
+  if (!ids.length) throw httpErr(400, 'Choose at least one instructor to email.');
+  const results = [], updates = {};
+  let previewOut = null;
+  for (const iid of ids) {
+    const inst = me.roster.find(r => r.id === iid);
+    const n = (assign.notified || {})[iid];
+    const mine = confirmedFor(assign, iid);
+    if (!inst || !(inst.emails || []).length) { results.push({ iid, ok: false, error: `${inst ? inst.name : 'Instructor'} has no email address` }); continue; }
+    if (!n || !n.snap) { results.push({ iid, ok: false, error: `${inst.name} hasn't been sent a selection notice yet; send that instead` }); continue; }
+    if (!mine.length || slotSig(mine) !== n.sig) { results.push({ iid, ok: false, error: `${inst.name}'s assignment changed; send a new selection notice instead` }); continue; }
+    const cur = snapFor(prog, mine), diffs = diffSnap(prog, n.snap, cur);
+    if (!diffs.length) { results.push({ iid, ok: false, error: `Nothing has changed for ${inst.name} since their last email` }); continue; }
+    const byId = new Map(diffs.map(x => [x.id, x]));
+    const cell = 'padding:8px 0;border-bottom:1px solid #EEECEF';
+    const rows = cur.map(s => {
+      const dx = byId.get(s.id);
+      const flag = dx ? `<span style="background:#F8EDD3;color:#7A5410;font-size:11px;font-weight:700;padding:1px 7px;border-radius:9px;margin-left:6px">${dx.kind === 'added' ? 'New' : 'Updated'}</span>` : '';
+      const when = s.id === PROGRAM_SLOT ? rangeText(s.date, s.endDate) + (s.location && s.location !== 'Virtual' ? ', ' + s.location : '') : whenText(prog, s);
+      let was = '';
+      if (dx && dx.kind === 'changed') {
+        const w = dx.was, bits = [];
+        if (dx.what.includes('date or time')) bits.push('Previously ' + (s.id === PROGRAM_SLOT ? rangeText(w.date, w.endDate) : whenText(prog, w)));
+        if (dx.what.includes('location')) bits.push('Previously at ' + (w.location || 'no location'));
+        if (dx.what.includes('Zoom link')) bits.push(w.zoomLink ? 'Zoom link replaced' : 'Zoom link added');
+        if (dx.what.includes('title')) bits.push('Previously titled ' + w.title);
+        was = `<br><span style="color:#9B1C1C;font-size:12px">${H(bits.join('. '))}</span>`;
+      }
+      return `<tr><td style="${cell}"><strong>${H(s.title)}</strong>${flag}<br>${H(when)}${s.zoomLink ? `<br><a href="${H(s.zoomLink)}">${H(s.zoomLink)}</a>` : ''}${was}</td></tr>`;
+    }).join('') + diffs.filter(x => x.kind === 'removed').map(x => `<tr><td style="${cell};color:#6E6B70"><s>${H(x.title)}</s> <span style="font-size:11px;font-weight:700">Removed</span><br>${H(x.was.id === PROGRAM_SLOT ? rangeText(x.was.date, x.was.endDate) : whenText(prog, x.was))}</td></tr>`).join('');
+    const cal = await instructorIcs(env, pid, inst, true);
+    const subject = (body.test ? '[TEST] ' : '') + `Schedule update: ${prog.title}${prog.cohort ? ' (' + prog.cohort + ')' : ''}`;
+    const html = emailShell('Your teaching schedule has changed', `<p>Hello ${H(firstName(inst.name))},</p>
+<p>There has been a change to your schedule for <strong>${H(prog.title)}</strong>${prog.cohort ? `, ${H(prog.cohort)}` : ''}. Your current schedule is below, with the changes marked.</p>${noteBlock(body.note)}
+<table style="width:100%;border-collapse:collapse">${rows}</table>
+<p>An updated calendar file is attached. If your calendar still shows an earlier date, time or link after you open it, delete the old entry.</p>`, me.origin);
+    if (body.preview) { previewOut = { subject, html, to: inst.emails[0], attachment: cal.name, count: ids.length }; break; }
+    await sendMail(env, { to: body.test ? [me.email] : [inst.emails[0]], subject, html, attachments: [{ name: cal.name, base64: b64utf8(cal.ics) }] });
+    results.push({ iid, ok: true });
+    if (!body.test) updates[iid] = { ...n, at: new Date().toISOString(), by: me.email, snap: cur, kind: 'change' };
+  }
+  if (body.preview) return { ok: true, preview: previewOut || { subject: '', html: '<p>Nothing to preview.</p>', to: '', count: 0, error: (results[0] || {}).error } };
+  const fresh = await getJSON(env, key, { slots: {}, notes: [], history: [] });
+  if (Object.keys(updates).length) {
+    fresh.notified = { ...(fresh.notified || {}), ...updates };
+    await putJSON(env, key, fresh);
+    await log(env, me.email, 'Emailed schedule change notices', `${prog.title}: ${Object.keys(updates).length} sent`);
+  }
+  return { ok: true, results, notified: fresh.notified || {}, changes: scheduleChanges(prog, fresh) };
+}
+
+/* ---------- Custom email ---------- */
+function textToHtml(s) {
+  return String(s || '').trim().split(/\n\s*\n/).map(par => `<p>${H(par).replace(/\n/g, '<br>').replace(/(https:\/\/[^\s<]+)/g, '<a href="$1">$1</a>')}</p>`).join('');
+}
+async function customRecipients(env, body, me) {
+  const aud = String(body.audience || '');
+  const act = me.roster.filter(r => r.active !== false);
+  if (aud === 'all') return act;
+  if (aud === 'pick') { const ids = new Set(body.iids || []); return me.roster.filter(r => ids.has(r.id)); }
+  const prog = await getJSON(env, 'program:' + body.pid, null);
+  if (!prog) throw httpErr(400, 'Choose a program for these recipients.');
+  if (aud === 'program-confirmed') {
+    const a = await getJSON(env, 'assign:' + prog.id, { slots: {} });
+    return act.filter(r => confirmedFor(a, r.id).length);
+  }
+  const recs = await Promise.all(act.map(r => getJSON(env, 'resp:' + r.id, { programs: {} })));
+  const rOf = i => (recs[i].programs || {})[prog.id];
+  if (aud === 'program-responded') return act.filter((r, i) => rOf(i));
+  if (aud === 'program-not-responded') return act.filter((r, i) => !rOf(i) && eligible(r, prog));
+  if (aud === 'program-available') return act.filter((r, i) => { const x = rOf(i); return x && (x.program === 'A' || Object.values(x.sessions || {}).includes('A')); });
+  throw httpErr(400, 'Choose who should receive this email.');
+}
+async function notifyCustom(env, body, me) {
+  const subject = String(body.subject || '').trim().slice(0, 200), text = String(body.body || '').slice(0, 20000);
+  if (!subject) throw httpErr(400, 'Add a subject.');
+  if (!text.trim()) throw httpErr(400, 'Write a message.');
+  const people = (await customRecipients(env, body, me)).filter(r => (r.emails || []).length);
+  const greet = body.greet !== false;
+  const build = name => ({
+    subject: (body.test ? '[TEST] ' : '') + subject,
+    html: emailShell(subject, `${greet ? `<p>Hello${name ? ' ' + H(firstName(name)) : ''},</p>` : ''}${textToHtml(text)}`, me.origin)
+  });
+  const individual = people.length <= 40;
+  if (body.preview) return { ok: true, preview: { ...build(individual && people[0] ? people[0].name : ''), count: people.length,
+    to: people.length ? (individual ? `${people.length} recipient${people.length > 1 ? 's' : ''}, one email each: ${people.slice(0, 12).map(r => r.name).join('; ')}${people.length > 12 ? '…' : ''}` : `${env.NOTIFY_MAILBOX || '(mailbox)'}, with ${people.length} instructors in BCC`) : 'Nobody matches these recipients' } };
+  if (body.test) { await sendMail(env, { to: [me.email], ...build(people[0] ? people[0].name : '') }); return { ok: true, sent: 1 }; }
+  if (!people.length) throw httpErr(400, 'Nobody matches these recipients.');
+  if (individual) for (const r of people) await sendMail(env, { to: [r.emails[0]], ...build(r.name) });
+  else await sendMail(env, { to: [env.NOTIFY_MAILBOX], bcc: people.map(r => r.emails[0]), ...build('') });
+  await log(env, me.email, 'Sent a custom email', `"${subject}" to ${people.length} instructors`);
+  return { ok: true, sent: people.length };
 }
 
 function slotSig(mine) { return mine.map(m => m.slot + ':' + m.role).sort().join('|'); }
@@ -873,7 +1107,8 @@ async function saveRoster(env, body, me) {
       if (seen.has(e)) throw httpErr(400, `${e} is listed for both ${seen.get(e)} and ${name}. Each email can belong to one instructor.`);
       seen.set(e, name);
     }
-    return { id: r.id || rid('i'), name, emails, active: r.active !== false, notes: String(r.notes || '').slice(0, 500) };
+    const quals = [...new Set((Array.isArray(r.quals) ? r.quals : []).filter(k => LOGO_NAMES.includes(k)))];
+    return { id: r.id || rid('i'), name, emails, active: r.active !== false, notes: String(r.notes || '').slice(0, 500), quals };
   });
   roster.sort((x, y) => x.name.localeCompare(y.name));
   await putJSON(env, 'roster', roster);
@@ -949,7 +1184,7 @@ async function saveAssignment(env, pid, body, me) {
   const next = { slots, notes: cur.notes || [], history, notified: cur.notified || {}, updatedAt: new Date().toISOString(), updatedBy: me.email };
   await putJSON(env, key, next);
   await log(env, me.email, 'Updated selections', prog.title);
-  return { ok: true, assignment: next };
+  return { ok: true, assignment: { ...next, changes: scheduleChanges(prog, next) } };
 }
 
 async function addNote(env, pid, body, by) {
