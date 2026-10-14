@@ -166,6 +166,7 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .a-prog{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);margin-bottom:16px;overflow:hidden}
 .a-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--line);background:#FAF7F8}
 .a-head h2{margin:0;font-size:17px;color:var(--burgundy)}
+.a-head.tr-ncit{background:var(--burgundy);border-bottom-color:var(--burgundy)}.a-head.tr-blue{background:var(--blue);border-bottom-color:var(--blue)}.a-head.tr-gold{background:var(--gold);border-bottom-color:var(--gold)}
 .a-head.tr-ncit h2,.a-head.tr-blue h2{color:#fff}.a-head.tr-gold h2{color:var(--burgundy-dk)}
 .a-head.tr-ncit div div,.a-head.tr-blue div div{color:#fff!important}
 .a-head.tr-ncit .btn.ghost,.a-head.tr-blue .btn.ghost{border-color:#fff}
@@ -301,7 +302,7 @@ function tzOptions(){
   return h;
 }
 function tzBar(){
-  if(S.tz===ET) return `<div class="tzbar"><span class="ic" aria-hidden="true">🕒</span><div class="txt"><strong>All times are shown in Eastern Time (ET).</strong><span>That's the time zone CLEAR schedules in. In-person programs show the venue's local time.</span></div>
+  if(S.tz===ET) return `<div class="tzbar"><span class="ic" aria-hidden="true">🕒</span><div class="txt"><strong>All VIRTUAL PROGRAM times are shown in Eastern Time (ET).</strong><span>That's the time zone CLEAR schedules in. IN-PERSON programs show the venue's LOCAL TIME.</span></div>
     <button class="btn blue small" onclick="setTz('${browserTz===ET?'':browserTz}')">${browserTz===ET?'Show times in another time zone':'Show times in my time zone ('+esc(zoneName(browserTz))+')'}</button></div>`;
   return `<div class="tzbar conv"><span class="ic" aria-hidden="true">🕒</span><div class="txt"><strong>Times are converted to ${esc(zoneName(S.tz))}.</strong><span>The original Eastern Time is in brackets after each time. Only the display changes; your answers are the same either way.</span></div>
     <label for="tzsel" class="et" style="font-weight:600">Time zone</label><select id="tzsel" onchange="setTz(this.value)">${tzOptions()}</select>
