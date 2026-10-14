@@ -71,11 +71,11 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:16px}
 .card{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);text-decoration:none;color:inherit;overflow:hidden;transition:border-color .15s,box-shadow .15s}
 .card:hover{border-color:#C9B4BC;box-shadow:0 4px 16px rgba(100,9,44,.08)}
-.card-top{display:grid;grid-template-columns:62px 1fr;gap:14px;padding:16px 18px 12px}
+.card-top{display:grid;grid-template-columns:56px 1fr;gap:14px;align-items:center;padding:16px 18px 12px}
 .card h2{margin:0 0 2px;font-size:17px;line-height:1.3;color:var(--burgundy)}
 .card .cohort{font-size:13px;font-weight:600;color:var(--charcoal)}
 .card .meta{font-size:13px;color:var(--muted)}
-.card .slist{list-style:none;margin:0;padding:0 18px 12px 94px;font-size:13px}
+.card .slist{list-style:none;margin:0;padding:0 18px 12px 88px;font-size:13px}
 .card.responded .slist{background:var(--avail-lt);padding-top:10px}
 .card .slist .all{color:var(--blue);font-size:12px;font-weight:600}
 .card .slist li{padding:2px 0;display:flex;gap:8px;flex-wrap:wrap}
@@ -100,13 +100,14 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .card-top,.p-head,.a-head{border-top:6px solid var(--tc,#DEDCE0);background:#FAF7F8}
 .card-top h2,.p-head h2,.a-head h2{color:var(--tt,var(--burgundy))!important}
 .ttl{display:flex;gap:12px;align-items:center;min-width:0}
-.plogo{width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--line);object-fit:contain;padding:4px;flex:none}
+.plogo{width:44px;height:44px;border-radius:8px;background:#fff;border:1px solid var(--line);object-fit:contain;padding:4px;flex:none}
+.plogo.lg{width:56px;height:56px;border-radius:10px;padding:5px}
 .a-head .plogo{width:40px;height:40px}
 .allattend{font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-lt);padding:3px 10px;border-radius:12px;white-space:nowrap}
 /* Detail */
 .back{display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;font-weight:600;text-decoration:none}
 .program{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden}
-.p-head{padding:18px 22px 14px;display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:start;border-bottom:1px solid var(--line)}
+.p-head{padding:18px 22px 14px;display:grid;grid-template-columns:56px 1fr auto;gap:16px;align-items:center;border-bottom:1px solid var(--line)}
 .p-head h2{margin:0 0 2px;font-size:21px;line-height:1.3;color:var(--burgundy)}
 .facts{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--charcoal);margin-top:4px}
 .p-actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
@@ -126,18 +127,13 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .whole .lbl{font-weight:700;min-width:140px}
 .whole .hint{font-size:13px;color:var(--muted);flex:1;min-width:200px}
 .sessions{list-style:none;margin:0;padding:0}
-.session{display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid #EEECEF}
+.session{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid #EEECEF}
 .session:last-child{border-bottom:0}
 .s-title{font-weight:600}
 .s-time{font-size:13px;color:var(--charcoal)}
 .inherit{font-size:12px;color:var(--muted);text-align:right;margin-top:3px}
 
 /* Calendar tile */
-.tile{width:56px;border:1px solid var(--line);border-radius:6px;overflow:hidden;text-align:center;background:#fff;line-height:1.1}
-.tile .m{background:var(--burgundy);color:#fff;font-size:11px;font-weight:700;padding:3px 0;letter-spacing:.04em}
-.tile .d{font-size:22px;font-weight:800;color:var(--ink);padding:4px 0 0}
-.tile .w{font-size:11px;color:var(--muted);padding:0 0 4px}
-.tile.range .d{font-size:15px;padding:6px 0 2px}
 
 /* Answer control */
 .answer{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:#fff}
@@ -165,7 +161,7 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .a-prog{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);margin-bottom:16px;overflow:hidden}
 .a-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--line);background:#FAF7F8}
 .a-head h2{margin:0;font-size:17px;color:var(--burgundy)}
-.assign{display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid #EEECEF}
+.assign{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid #EEECEF}
 .assign:last-child{border-bottom:0}
 .role{font-size:12px;font-weight:700;color:var(--burgundy);background:var(--gold-lt);padding:2px 9px;border-radius:12px}
 .zoom{font-size:13px;word-break:break-all}
@@ -182,7 +178,7 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
   .cards{grid-template-columns:1fr}
   .card .slist{padding-left:18px}
   .p-head{grid-template-columns:56px 1fr;padding:16px}.p-actions{grid-column:1 / -1;align-items:flex-start}
-  .session,.assign{grid-template-columns:56px 1fr;padding:12px 16px}
+  .session,.assign{grid-template-columns:1fr;padding:12px 16px}
   .session .ans-wrap,.assign .ans-wrap{grid-column:1 / -1}
   .inherit{text-align:left}
   .whole,.comment,.deadline-box{padding-left:16px;padding-right:16px}
@@ -224,15 +220,6 @@ function fmtRange(a,b){ if(!a) return ''; if(!b||a===b) return fmtD(a); const A=
   return A.getFullYear()===B.getFullYear() ? `${fmtD(a,false)} – ${fmtD(b)}` : `${fmtD(a)} – ${fmtD(b)}`; }
 function fmtStamp(iso){ if(!iso) return ''; return new Date(iso).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
 function daysBetween(a,b){ return Math.round((parseD(b)-parseD(a))/86400000); }
-function tile(date, end){
-  const d=parseD(date); if(!d) return '<div class="tile"><div class="m">TBD</div><div class="d">–</div><div class="w">&nbsp;</div></div>';
-  const e=parseD(end);
-  if(e && end!==date){
-    const same=e.getMonth()===d.getMonth();
-    return `<div class="tile range" aria-hidden="true"><div class="m">${MONTHS[d.getMonth()].toUpperCase()}${same?'':'–'+MONTHS[e.getMonth()].toUpperCase()}</div><div class="d">${d.getDate()}–${e.getDate()}</div><div class="w">${d.getFullYear()}</div></div>`;
-  }
-  return `<div class="tile" aria-hidden="true"><div class="m">${MONTHS[d.getMonth()].toUpperCase()}</div><div class="d">${d.getDate()}</div><div class="w">${DAYS[d.getDay()]}</div></div>`;
-}
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3000); }
 
 async function api(path, opts={}){
@@ -330,6 +317,9 @@ function eff(p, sid){ const d=S.drafts[p.id]; return (d.sessions[sid]) || d.prog
 const answerable = p => p.sessions.filter(s=>!s.allInstructors);
 const isIP = p => /person/i.test(p.format||'');
 const trk = p => ['ncit','blue','gold'].includes(p.track) ? 'tr-'+p.track : '';
+const CLEAR_LOGO='https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png';
+// Large program logo in the header; falls back to the CLEAR logo so every header lines up.
+const logoBig = p => `<img class="plogo lg" src="${esc(p.logo||CLEAR_LOGO)}" alt="" onerror="this.onerror=null;this.src='${CLEAR_LOGO}'">`;
 const logoImg = p => p.logo ? `<img class="plogo" src="${esc(p.logo)}" alt="" onerror="this.remove()">` : '';
 function units(p){ const a=answerable(p); return a.length ? a.map(s=>s.id) : [null]; }
 function answeredDraft(p){ const d=S.drafts[p.id]; return units(p).filter(u => u ? eff(p,u) : d.program).length; }
@@ -445,7 +435,7 @@ function card(p){
   }
   const s0=savedState(p), done=s0.n&&s0.done>=s0.n;
   return `<a class="card${done?' responded':''}" href="#/program/${p.id}">
-    <div class="card-top ${trk(p)}">${tile(p.startDate,p.endDate)}<div class="ttl">${logoImg(p)}<div><h2>${esc(p.title)}</h2>${p.cohort?`<div class="cohort">${esc(p.cohort)}</div>`:''}<div class="meta">${esc(fmtRange(p.startDate,p.endDate))}${meta?' · '+esc(meta):''}</div></div></div></div>
+    <div class="card-top ${trk(p)}">${logoBig(p)}<div class="ttl"><div><h2>${esc(p.title)}</h2>${p.cohort?`<div class="cohort">${esc(p.cohort)}</div>`:''}<div class="meta">${esc(fmtRange(p.startDate,p.endDate))}${meta?' · '+esc(meta):''}</div></div></div></div>
     ${sl}
     <div class="card-foot">${dueHtml(p)}${badge(p)}</div></a>`;
 }
@@ -466,7 +456,7 @@ function renderDetail(p){
   const editable=!p.locked && !S.data.viewingAs;
   let h=`<a class="back" href="#/">← All programs</a>
   <section class="program" id="prog-${p.id}">
-    <div class="p-head ${trk(p)}">${tile(p.startDate,p.endDate)}<div class="ttl">${logoImg(p)}<div>
+    <div class="p-head ${trk(p)}">${logoBig(p)}<div class="ttl"><div>
       <h2>${esc(p.title)}</h2>${p.cohort?`<div style="font-weight:600;color:var(--charcoal)">${esc(p.cohort)}</div>`:''}
       <div class="facts">${facts.map(f=>`<span>${esc(f)}</span>`).join('')}</div>
     </div></div>
@@ -482,12 +472,12 @@ function renderDetail(p){
     for (const s of p.sessions){
       const t=timeHtml(p,s.date,s.start,s.end,s.endDate);
       if (s.allInstructors){
-        h+=`<li class="session">${tile(s.date)}<div><div class="s-title">${esc(s.title)}</div><div class="s-time">${esc(fmtDay(s.date))}${t?', '+t:''}</div></div>
+        h+=`<li class="session"><div><div class="s-title">${esc(s.title)}</div><div class="s-time">${esc(fmtDay(s.date))}${t?', '+t:''}</div></div>
           <div class="ans-wrap"><span class="allattend">All instructors assigned to this cohort attend</span></div></li>`;
         continue;
       }
       const own=d.sessions[s.id]||'', v=own||d.program||'', inh=!own && !!d.program;
-      h+=`<li class="session">${tile(s.date)}<div><div class="s-title">${esc(s.title)}</div><div class="s-time">${esc(fmtDay(s.date))}${t?', '+t:''}</div></div>
+      h+=`<li class="session"><div><div class="s-title">${esc(s.title)}</div><div class="s-time">${esc(fmtDay(s.date))}${t?', '+t:''}</div></div>
         <div class="ans-wrap">${answerCtl(p,s.id,v,inh)}${inh?'<div class="inherit">From whole program</div>':''}</div></li>`;
     }
     h+=`</ol>`;
@@ -511,7 +501,7 @@ function renderMine(){
       g.items.map(x=>{
         const whole=x.sessionId==='__program';
         const t=whole?esc(fmtRange(x.date,x.endDate)):`${esc(fmtDay(x.date))}${x.start?', '+timeHtml(p,x.date,x.start,x.end,x.endDate):''}`;
-        return `<div class="assign">${tile(x.date, whole?x.endDate:null)}
+        return `<div class="assign">
           <div><div class="s-title">${esc(x.sessionTitle)}</div><div class="s-time">${t}${x.location&&x.location!=='Virtual'?', '+esc(x.location):''}</div>
           ${x.zoomLink?`<div class="zoom">Zoom: <a href="${esc(x.zoomLink)}" target="_blank" rel="noopener">${esc(x.zoomLink)}</a></div>`:''}</div>
           <div class="ans-wrap"><span class="role">${esc(x.role)}</span></div></div>`;
