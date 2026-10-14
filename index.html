@@ -92,23 +92,16 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .badge.none{background:#ECEAEE;color:var(--muted)}
 .badge small{font-weight:600;opacity:.85}
 
-/* Program track colours. NCIT burgundy shaded by program: Basic 100%, Specialized 80%, AIT 60%, Workshops 40%.
-   ELPR & SRA = blue, ACRG & Board Chair = gold. Workshops and gold use dark text for contrast. */
-.tr-ncit{background:var(--burgundy);color:#fff}
-.tr-ncit-s{background:#833A56;color:#fff}
-.tr-ncit-ait{background:#A26B80;color:#fff}
-.tr-ncit-ws{background:#C19DAB;color:var(--burgundy-dk)}
-.tr-blue{background:var(--blue);color:#fff}
-.tr-gold{background:var(--gold);color:var(--burgundy-dk)}
-.tr-ncit h2,.tr-ncit-s h2,.tr-ncit-ait h2,.tr-blue h2,.tr-ncit .cohort,.tr-ncit-s .cohort,.tr-ncit-ait .cohort,.tr-blue .cohort{color:#fff!important}
-.tr-ncit-ws h2,.tr-ncit-ws .cohort{color:var(--burgundy-dk)!important}
-.tr-gold h2,.tr-gold .cohort{color:var(--burgundy-dk)!important}
-.tr-ncit .meta,.tr-ncit-s .meta,.tr-ncit-ait .meta,.tr-blue .meta,.tr-ncit .facts,.tr-ncit-s .facts,.tr-ncit-ait .facts,.tr-blue .facts{color:#fff!important}
-.tr-ncit-ws .meta,.tr-ncit-ws .facts{color:var(--burgundy-dk)!important}
-.tr-gold .meta,.tr-gold .facts{color:var(--burgundy-dk)!important}
-.tr-ncit .tile,.tr-ncit-s .tile,.tr-ncit-ait .tile,.tr-ncit-ws .tile,.tr-blue .tile,.tr-gold .tile{border-color:transparent}
-.card-top[class*="tr-"]{margin-bottom:10px}
-.tr-ncit .badge.need,.tr-ncit-s .badge.need,.tr-ncit-ait .badge.need,.tr-blue .badge.need{border-color:#fff;color:var(--burgundy)}
+/* Program track = coloured band across the top (NCIT burgundy, ELPR & SRA blue, ACRG, IRG & Board Chair gold).
+   The program logo beside the title tells individual programs apart. */
+.tr-ncit{--tc:var(--burgundy);--tt:var(--burgundy)}
+.tr-blue{--tc:var(--blue);--tt:var(--blue)}
+.tr-gold{--tc:var(--gold);--tt:var(--burgundy-dk)}
+.card-top,.p-head,.a-head{border-top:6px solid var(--tc,#DEDCE0);background:#FAF7F8}
+.card-top h2,.p-head h2,.a-head h2{color:var(--tt,var(--burgundy))!important}
+.ttl{display:flex;gap:12px;align-items:center;min-width:0}
+.plogo{width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--line);object-fit:contain;padding:4px;flex:none}
+.a-head .plogo{width:40px;height:40px}
 .allattend{font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-lt);padding:3px 10px;border-radius:12px;white-space:nowrap}
 /* Detail */
 .back{display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;font-weight:600;text-decoration:none}
@@ -172,11 +165,6 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .a-prog{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);margin-bottom:16px;overflow:hidden}
 .a-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--line);background:#FAF7F8}
 .a-head h2{margin:0;font-size:17px;color:var(--burgundy)}
-.a-head.tr-ncit{background:var(--burgundy);border-bottom-color:var(--burgundy)}.a-head.tr-ncit-s{background:#833A56;border-bottom-color:#833A56}.a-head.tr-ncit-ait{background:#A26B80;border-bottom-color:#A26B80}.a-head.tr-ncit-ws{background:#C19DAB;border-bottom-color:#C19DAB}.a-head.tr-blue{background:var(--blue);border-bottom-color:var(--blue)}.a-head.tr-gold{background:var(--gold);border-bottom-color:var(--gold)}
-.a-head.tr-ncit h2,.a-head.tr-ncit-s h2,.a-head.tr-ncit-ait h2,.a-head.tr-blue h2{color:#fff}.a-head.tr-gold h2,.a-head.tr-ncit-ws h2{color:var(--burgundy-dk)}
-.a-head.tr-ncit div div,.a-head.tr-ncit-s div div,.a-head.tr-ncit-ait div div,.a-head.tr-blue div div{color:#fff!important}
-.a-head.tr-ncit-ws div div{color:var(--burgundy-dk)!important}
-.a-head.tr-ncit .btn.ghost,.a-head.tr-ncit-s .btn.ghost,.a-head.tr-ncit-ait .btn.ghost,.a-head.tr-blue .btn.ghost{border-color:#fff}
 .assign{display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid #EEECEF}
 .assign:last-child{border-bottom:0}
 .role{font-size:12px;font-weight:700;color:var(--burgundy);background:var(--gold-lt);padding:2px 9px;border-radius:12px}
@@ -341,7 +329,8 @@ function resetDraft(pid){ const r=S.data.responses[pid]||{}; S.drafts[pid]={ pro
 function eff(p, sid){ const d=S.drafts[p.id]; return (d.sessions[sid]) || d.program || ''; }
 const answerable = p => p.sessions.filter(s=>!s.allInstructors);
 const isIP = p => /person/i.test(p.format||'');
-const trk = p => ['ncit','ncit-s','ncit-ait','ncit-ws','blue','gold'].includes(p.track) ? 'tr-'+p.track : '';
+const trk = p => ['ncit','blue','gold'].includes(p.track) ? 'tr-'+p.track : '';
+const logoImg = p => p.logo ? `<img class="plogo" src="${esc(p.logo)}" alt="" onerror="this.remove()">` : '';
 function units(p){ const a=answerable(p); return a.length ? a.map(s=>s.id) : [null]; }
 function answeredDraft(p){ const d=S.drafts[p.id]; return units(p).filter(u => u ? eff(p,u) : d.program).length; }
 function savedState(p){ // what's actually saved, for the badge
@@ -456,7 +445,7 @@ function card(p){
   }
   const s0=savedState(p), done=s0.n&&s0.done>=s0.n;
   return `<a class="card${done?' responded':''}" href="#/program/${p.id}">
-    <div class="card-top ${trk(p)}">${tile(p.startDate,p.endDate)}<div><h2>${esc(p.title)}</h2>${p.cohort?`<div class="cohort">${esc(p.cohort)}</div>`:''}<div class="meta">${esc(fmtRange(p.startDate,p.endDate))}${meta?' · '+esc(meta):''}</div></div></div>
+    <div class="card-top ${trk(p)}">${tile(p.startDate,p.endDate)}<div class="ttl">${logoImg(p)}<div><h2>${esc(p.title)}</h2>${p.cohort?`<div class="cohort">${esc(p.cohort)}</div>`:''}<div class="meta">${esc(fmtRange(p.startDate,p.endDate))}${meta?' · '+esc(meta):''}</div></div></div></div>
     ${sl}
     <div class="card-foot">${dueHtml(p)}${badge(p)}</div></a>`;
 }
@@ -477,10 +466,10 @@ function renderDetail(p){
   const editable=!p.locked && !S.data.viewingAs;
   let h=`<a class="back" href="#/">← All programs</a>
   <section class="program" id="prog-${p.id}">
-    <div class="p-head ${trk(p)}">${tile(p.startDate,p.endDate)}<div>
+    <div class="p-head ${trk(p)}">${tile(p.startDate,p.endDate)}<div class="ttl">${logoImg(p)}<div>
       <h2>${esc(p.title)}</h2>${p.cohort?`<div style="font-weight:600;color:var(--charcoal)">${esc(p.cohort)}</div>`:''}
       <div class="facts">${facts.map(f=>`<span>${esc(f)}</span>`).join('')}</div>
-    </div>
+    </div></div>
     <div class="p-actions">${badge(p)}${dirty?'<span class="badge part">Unsaved changes</span>':''}</div></div>`;
   if (p.locked) h+=`<div class="deadline-box locked">${p.pastDeadline?`The response date (${fmtLong(p.deadline)}) has passed, so answers are locked.`:'Responses for this program are closed.'} To change something, email <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</div>`;
   else if (p.deadline) h+=`<div class="deadline-box"><strong>Respond by ${fmtLong(p.deadline)}</strong> (11:59 PM Eastern). ${r?'You can change your answers until then.':'You can save now and change your answers any time until then.'}</div>`;
@@ -517,7 +506,7 @@ function renderMine(){
   const groups=[]; for(const x of a){ let g=groups.find(g=>g.pid===x.programId); if(!g){ g={pid:x.programId,items:[]}; groups.push(g); } g.items.push(x); }
   return groups.map(g=>{
     const f=g.items[0], p=S.data.programs.find(x=>x.id===g.pid)||{format:f.format,timezone:f.timezone,location:f.location};
-    return `<div class="a-prog"><div class="a-head ${trk(f)}"><div><h2>${esc(f.programTitle)}</h2>${f.cohort?`<div style="font-size:13px;font-weight:600;color:var(--charcoal)">${esc(f.cohort)}</div>`:''}</div>
+    return `<div class="a-prog"><div class="a-head ${trk(f)}"><div class="ttl">${logoImg(f)}<div><h2>${esc(f.programTitle)}</h2>${f.cohort?`<div style="font-size:13px;font-weight:600;color:var(--charcoal)">${esc(f.cohort)}</div>`:''}</div></div>
       <button class="btn ghost small" onclick="getIcs('${g.pid}')">Add to calendar (.ics)</button></div>` +
       g.items.map(x=>{
         const whole=x.sessionId==='__program';
