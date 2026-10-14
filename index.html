@@ -92,17 +92,23 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .badge.none{background:#ECEAEE;color:var(--muted)}
 .badge small{font-weight:600;opacity:.85}
 
-/* Program track colours: NCIT = burgundy, ELPR & SRA = blue, ACRG & Board Chair = gold */
+/* Program track colours. NCIT burgundy shaded by program: Basic 100%, Specialized 80%, AIT 60%, Workshops 40%.
+   ELPR & SRA = blue, ACRG & Board Chair = gold. Workshops and gold use dark text for contrast. */
 .tr-ncit{background:var(--burgundy);color:#fff}
+.tr-ncit-s{background:#833A56;color:#fff}
+.tr-ncit-ait{background:#A26B80;color:#fff}
+.tr-ncit-ws{background:#C19DAB;color:var(--burgundy-dk)}
 .tr-blue{background:var(--blue);color:#fff}
 .tr-gold{background:var(--gold);color:var(--burgundy-dk)}
-.tr-ncit h2,.tr-blue h2,.tr-ncit .cohort,.tr-blue .cohort{color:#fff!important}
+.tr-ncit h2,.tr-ncit-s h2,.tr-ncit-ait h2,.tr-blue h2,.tr-ncit .cohort,.tr-ncit-s .cohort,.tr-ncit-ait .cohort,.tr-blue .cohort{color:#fff!important}
+.tr-ncit-ws h2,.tr-ncit-ws .cohort{color:var(--burgundy-dk)!important}
 .tr-gold h2,.tr-gold .cohort{color:var(--burgundy-dk)!important}
-.tr-ncit .meta,.tr-blue .meta,.tr-ncit .facts,.tr-blue .facts{color:rgba(255,255,255,.88)!important}
+.tr-ncit .meta,.tr-ncit-s .meta,.tr-ncit-ait .meta,.tr-blue .meta,.tr-ncit .facts,.tr-ncit-s .facts,.tr-ncit-ait .facts,.tr-blue .facts{color:#fff!important}
+.tr-ncit-ws .meta,.tr-ncit-ws .facts{color:var(--burgundy-dk)!important}
 .tr-gold .meta,.tr-gold .facts{color:var(--burgundy-dk)!important}
-.tr-ncit .tile,.tr-blue .tile,.tr-gold .tile{border-color:transparent}
-.card-top.tr-ncit,.card-top.tr-blue,.card-top.tr-gold{margin-bottom:10px}
-.tr-ncit .badge.need,.tr-blue .badge.need{border-color:#fff;color:var(--burgundy)}
+.tr-ncit .tile,.tr-ncit-s .tile,.tr-ncit-ait .tile,.tr-ncit-ws .tile,.tr-blue .tile,.tr-gold .tile{border-color:transparent}
+.card-top[class*="tr-"]{margin-bottom:10px}
+.tr-ncit .badge.need,.tr-ncit-s .badge.need,.tr-ncit-ait .badge.need,.tr-blue .badge.need{border-color:#fff;color:var(--burgundy)}
 .allattend{font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-lt);padding:3px 10px;border-radius:12px;white-space:nowrap}
 /* Detail */
 .back{display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;font-weight:600;text-decoration:none}
@@ -166,10 +172,11 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .a-prog{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);margin-bottom:16px;overflow:hidden}
 .a-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--line);background:#FAF7F8}
 .a-head h2{margin:0;font-size:17px;color:var(--burgundy)}
-.a-head.tr-ncit{background:var(--burgundy);border-bottom-color:var(--burgundy)}.a-head.tr-blue{background:var(--blue);border-bottom-color:var(--blue)}.a-head.tr-gold{background:var(--gold);border-bottom-color:var(--gold)}
-.a-head.tr-ncit h2,.a-head.tr-blue h2{color:#fff}.a-head.tr-gold h2{color:var(--burgundy-dk)}
-.a-head.tr-ncit div div,.a-head.tr-blue div div{color:#fff!important}
-.a-head.tr-ncit .btn.ghost,.a-head.tr-blue .btn.ghost{border-color:#fff}
+.a-head.tr-ncit{background:var(--burgundy);border-bottom-color:var(--burgundy)}.a-head.tr-ncit-s{background:#833A56;border-bottom-color:#833A56}.a-head.tr-ncit-ait{background:#A26B80;border-bottom-color:#A26B80}.a-head.tr-ncit-ws{background:#C19DAB;border-bottom-color:#C19DAB}.a-head.tr-blue{background:var(--blue);border-bottom-color:var(--blue)}.a-head.tr-gold{background:var(--gold);border-bottom-color:var(--gold)}
+.a-head.tr-ncit h2,.a-head.tr-ncit-s h2,.a-head.tr-ncit-ait h2,.a-head.tr-blue h2{color:#fff}.a-head.tr-gold h2,.a-head.tr-ncit-ws h2{color:var(--burgundy-dk)}
+.a-head.tr-ncit div div,.a-head.tr-ncit-s div div,.a-head.tr-ncit-ait div div,.a-head.tr-blue div div{color:#fff!important}
+.a-head.tr-ncit-ws div div{color:var(--burgundy-dk)!important}
+.a-head.tr-ncit .btn.ghost,.a-head.tr-ncit-s .btn.ghost,.a-head.tr-ncit-ait .btn.ghost,.a-head.tr-blue .btn.ghost{border-color:#fff}
 .assign{display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid #EEECEF}
 .assign:last-child{border-bottom:0}
 .role{font-size:12px;font-weight:700;color:var(--burgundy);background:var(--gold-lt);padding:2px 9px;border-radius:12px}
@@ -302,7 +309,7 @@ function tzOptions(){
   return h;
 }
 function tzBar(){
-  if(S.tz===ET) return `<div class="tzbar"><span class="ic" aria-hidden="true">🕒</span><div class="txt"><strong>All VIRTUAL PROGRAM times are shown in Eastern Time (ET).</strong><span>That's the time zone CLEAR schedules in. IN-PERSON programs show the venue's LOCAL TIME.</span></div>
+  if(S.tz===ET) return `<div class="tzbar"><span class="ic" aria-hidden="true">🕒</span><div class="txt"><strong>All times are shown in Eastern Time (ET).</strong><span>That's the time zone CLEAR schedules in. In-person programs show the venue's local time.</span></div>
     <button class="btn blue small" onclick="setTz('${browserTz===ET?'':browserTz}')">${browserTz===ET?'Show times in another time zone':'Show times in my time zone ('+esc(zoneName(browserTz))+')'}</button></div>`;
   return `<div class="tzbar conv"><span class="ic" aria-hidden="true">🕒</span><div class="txt"><strong>Times are converted to ${esc(zoneName(S.tz))}.</strong><span>The original Eastern Time is in brackets after each time. Only the display changes; your answers are the same either way.</span></div>
     <label for="tzsel" class="et" style="font-weight:600">Time zone</label><select id="tzsel" onchange="setTz(this.value)">${tzOptions()}</select>
@@ -334,7 +341,7 @@ function resetDraft(pid){ const r=S.data.responses[pid]||{}; S.drafts[pid]={ pro
 function eff(p, sid){ const d=S.drafts[p.id]; return (d.sessions[sid]) || d.program || ''; }
 const answerable = p => p.sessions.filter(s=>!s.allInstructors);
 const isIP = p => /person/i.test(p.format||'');
-const trk = p => ['ncit','blue','gold'].includes(p.track) ? 'tr-'+p.track : '';
+const trk = p => ['ncit','ncit-s','ncit-ait','ncit-ws','blue','gold'].includes(p.track) ? 'tr-'+p.track : '';
 function units(p){ const a=answerable(p); return a.length ? a.map(s=>s.id) : [null]; }
 function answeredDraft(p){ const d=S.drafts[p.id]; return units(p).filter(u => u ? eff(p,u) : d.program).length; }
 function savedState(p){ // what's actually saved, for the badge
