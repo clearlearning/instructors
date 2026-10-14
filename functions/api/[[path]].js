@@ -31,6 +31,28 @@ const PROGRAM_SLOT = '__program';
 const ET = 'America/New_York';
 const DEADLINE_DAYS = 30;
 const MAX_ICS = 900_000;
+const TRACKS = ['ncit', 'blue', 'gold', 'none'];
+// Program track sets the header colour on both dashboards: NCIT = burgundy, ELPR & SRA = blue, ACRG & Board Chair = gold.
+const TRACK_BY_COURSE = {
+  '126': 'ncit', '128': 'ncit', '129': 'ncit', 'ip-ncit-b-us': 'ncit', 'ip-ncit-b-can': 'ncit', 'ip-ncit-s': 'ncit', 'ip-ncit-ait': 'ncit',
+  'ncit-workshop-series': 'ncit', '146': 'ncit', '157': 'ncit', '169': 'ncit', '143': 'ncit',
+  '138': 'blue', '147': 'blue', '142': 'gold', '165': 'gold'
+};
+function autoTrack(p) {
+  const byId = TRACK_BY_COURSE[String(p.courseId || '')];
+  if (byId) return byId;
+  const t = String(p.title || '');
+  if (/NCIT|Investigat|Drug Diversion|Sexual Misconduct|Ethics for the Regulatory|Art of Persuasion|Applied Investigative/i.test(t)) return 'ncit';
+  if (/Executive Leadership|\bELPR\b|Staffing a Board|\bSRA\b/i.test(t)) return 'blue';
+  if (/Advanced Concepts|\bACRG\b|Getting the Most|Board Chair|Chairing/i.test(t)) return 'gold';
+  return 'none';
+}
+// Instructors attend the Welcome session only in ACRG, ELPR and SRA: Staffing a Board. Everywhere else it is removed.
+function keepsWelcome(p) {
+  if (['142', '138', '147'].includes(String(p.courseId || ''))) return true;
+  return /Advanced Concepts|\bACRG\b|Executive Leadership|\bELPR\b|Staffing a Board|\bSRA\b/i.test(String(p.title || ''));
+}
+const isWelcome = s => /^\s*welcome\b/i.test(String(s.title || ''));
 let certCache = { keys: null, at: 0 };
 
 export async function onRequest({ request, env }) {
@@ -215,9 +237,9 @@ function addDays(iso, n) {
   return d.toISOString().slice(0, 10);
 }
 function firstLive(p) {
-  const ds = (p.sessions || []).map(s => s.date).filter(Boolean).sort();
-  return ds[0] || p.startDate || '';
+  return [...(p.sessions || []).map(s => s.date), p.startDate].filter(Boolean).sort()[0] || '';
 }
+const answerable = p => (p.sessions || []).filter(s => !s.allInstructors);
 function pastDeadline(p, today) { return !!(p.deadline && (today || todayET()) > p.deadline); }
 function isLocked(p, today) { return p.status !== 'open' || pastDeadline(p, today); }
 function withState(p, today) {
@@ -255,18 +277,25 @@ async function portal(env, me, asId) {
         if (e.iid !== inst.id || e.status !== 'Confirmed') continue;
         const s = slot === PROGRAM_SLOT ? null : (p.sessions || []).find(x => x.id === slot);
         if (slot !== PROGRAM_SLOT && !s) continue;
-        assignments.push({
-          programId: p.id, programTitle: p.title, cohort: p.cohort || '', kind: p.kind, format: p.format, location: p.location, timezone: p.timezone,
-          sessionId: slot, sessionTitle: s ? s.title : (p.kind === 'call' ? p.title : 'Entire program'),
-          date: s ? s.date : p.startDate, endDate: s ? s.date : p.endDate, start: s ? s.start : '', end: s ? s.end : '',
-          zoomLink: s ? s.zoomLink || '' : '', role: e.role, hasIcs: !!p.hasIcs
-        });
+        assignments.push(assignRow(p, slot, s, e.role));
       }
+    }
+    if (assignments.some(x => x.programId === p.id)) {
+      for (const s of (p.sessions || []).filter(x => x.allInstructors)) assignments.push(assignRow(p, s.id, s, 'All instructors attend'));
     }
   });
   assignments.sort((x, y) => String(x.date).localeCompare(String(y.date)) || toMin(x.start) - toMin(y.start));
 
   return { me: publicMe(me), instructor: { id: inst.id, name: inst.name }, viewingAs, today, programs, responses, assignments };
+}
+
+function assignRow(p, slot, s, role) {
+  return {
+    programId: p.id, programTitle: p.title, cohort: p.cohort || '', track: p.track || 'none', format: p.format, location: p.location, timezone: p.timezone,
+    sessionId: slot, sessionTitle: s ? s.title : 'Entire program',
+    date: s ? s.date : p.startDate, endDate: s ? (s.endDate || s.date) : p.endDate, start: s ? s.start : '', end: s ? s.end : '',
+    zoomLink: s ? s.zoomLink || '' : '', role, hasIcs: !!p.hasIcs
+  };
 }
 
 async function saveResponse(env, inst, pid, body, by, staffEntry) {
@@ -281,7 +310,7 @@ async function saveResponse(env, inst, pid, body, by, staffEntry) {
   body = body || {};
   const program = cleanVal(body.program);
   const sessions = {};
-  for (const s of prog.sessions || []) {
+  for (const s of answerable(prog)) {
     const v = cleanVal(body.sessions && body.sessions[s.id]);
     if (v) sessions[s.id] = v;
   }
@@ -354,33 +383,43 @@ function normalizeProgram(id, p, existing) {
   p = p || {};
   const title = String(p.title || '').trim().slice(0, 200);
   if (!title) throw httpErr(400, 'A program needs a title.');
-  const kind = p.kind === 'call' ? 'call' : 'program';
-  const sessions = (Array.isArray(p.sessions) ? p.sessions : []).map(s => ({
-    id: String(s.id || rid('s')).slice(0, 40),
-    title: String(s.title || '').trim().slice(0, 200),
-    date: cleanDate(s.date),
-    start: normTime(s.start),
-    end: normTime(s.end),
-    zoomLink: cleanUrl(s.zoomLink),
-    icsUid: String(s.icsUid || '').slice(0, 200)
-  })).filter(s => s.title);
+  const courseId = String(p.courseId || keep0(existing, 'courseId') || '').slice(0, 60);
+  const ctx = { courseId, title };
+  let sessions = (Array.isArray(p.sessions) ? p.sessions : []).map(s => {
+    const date = cleanDate(s.date), endDate = cleanDate(s.endDate);
+    return {
+      id: String(s.id || rid('s')).slice(0, 40),
+      title: String(s.title || '').trim().slice(0, 200),
+      date, endDate: endDate && endDate > date ? endDate : '',
+      start: normTime(s.start),
+      end: normTime(s.end),
+      zoomLink: cleanUrl(s.zoomLink),
+      icsUid: String(s.icsUid || '').slice(0, 200),
+      icsUids: (Array.isArray(s.icsUids) ? s.icsUids : []).map(u => String(u).slice(0, 200)).slice(0, 40),
+      allInstructors: !!s.allInstructors
+    };
+  }).filter(s => s.title);
+  // Dates come from every session sent, including a Welcome session removed below, so the cohort start and deadline stay right.
+  const allDates = sessions.flatMap(s => [s.date, s.endDate]).filter(Boolean).sort();
+  const welcomeKept = keepsWelcome(ctx);
+  sessions = sessions.filter(s => !isWelcome(s) || welcomeKept).map(s => isWelcome(s) ? { ...s, allInstructors: true } : s);
   sessions.sort((a, b) => a.date.localeCompare(b.date) || toMin(a.start) - toMin(b.start));
-  const dates = sessions.map(s => s.date).filter(Boolean).sort();
-  const startDate = cleanDate(p.startDate) || dates[0] || '';
-  const endDate = cleanDate(p.endDate) || dates[dates.length - 1] || startDate;
+  const startDate = cleanDate(p.startDate) || allDates[0] || '';
+  const endDate = cleanDate(p.endDate) || allDates[allDates.length - 1] || startDate;
+  const trackSet = TRACKS.includes(p.trackSet) ? p.trackSet : '';
 
   // Deadline: automatic = 30 days before the first live session, unless staff set one by hand.
   let deadlineMode = p.deadlineMode === 'manual' || p.deadlineMode === 'auto' ? p.deadlineMode
-    : (existing && existing.deadlineMode) || (cleanDate(p.deadline) ? 'manual' : (kind === 'call' ? 'manual' : 'auto'));
+    : (existing && existing.deadlineMode) || (cleanDate(p.deadline) ? 'manual' : 'auto');
   let deadline = cleanDate(p.deadline);
   if (deadlineMode === 'auto') {
-    const first = firstLive({ sessions, startDate });
+    const first = [allDates[0], startDate].filter(Boolean).sort()[0] || '';
     deadline = first ? addDays(first, -DEADLINE_DAYS) : '';
   }
 
   const keep = k => existing ? existing[k] : undefined;
   return {
-    id, kind, title,
+    id, kind: 'program', title, track: trackSet || autoTrack(ctx), trackSet,
     cohort: String(p.cohort || '').trim().slice(0, 120),
     quarter: String(p.quarter || '').slice(0, 40),
     format: String(p.format || '').slice(0, 60),
@@ -391,7 +430,7 @@ function normalizeProgram(id, p, existing) {
     description: String(p.description || '').slice(0, 4000),
     sessions,
     externalKey: String(p.externalKey || keep('externalKey') || '').slice(0, 200),
-    courseId: String(p.courseId || keep('courseId') || '').slice(0, 60),
+    courseId,
     source: String(p.source || keep('source') || 'manual').slice(0, 40),
     hasIcs: !!keep('hasIcs'), icsName: keep('icsName') || '', icsUpdatedAt: keep('icsUpdatedAt') || '', icsSource: keep('icsSource') || '',
     announcedAt: keep('announcedAt') || '', announcedBy: keep('announcedBy') || '',
@@ -411,7 +450,7 @@ async function saveProgram(env, id, body, by) {
   p.updatedBy = by;
   await putJSON(env, 'program:' + id, p);
   const what = !existing ? 'Created' : (existing.status !== p.status ? `Changed status to ${p.status} on` : 'Edited');
-  await log(env, by, `${what} ${p.kind === 'call' ? 'opportunity' : 'program'}`, p.title);
+  await log(env, by, `${what} program`, p.title);
   return { ok: true, program: withState(p) };
 }
 
@@ -566,7 +605,7 @@ async function instructorIcs(env, pid, inst, require) {
   const mine = confirmedFor(await getJSON(env, 'assign:' + pid, null), inst.id);
   if (require && !mine.length) throw httpErr(404, 'There are no confirmed assignments for this program.');
   const whole = mine.some(m => m.slot === PROGRAM_SLOT);
-  const sessions = whole ? (prog.sessions || []) : (prog.sessions || []).filter(s => mine.some(m => m.slot === s.id));
+  const sessions = whole ? (prog.sessions || []) : (prog.sessions || []).filter(s => s.allInstructors || mine.some(m => m.slot === s.id));
   const stored = await env.IA_KV.get('ics:' + pid);
   let ics = stored ? (whole ? stored : filterIcs(stored, sessions)) : null;
   const fromFile = !!ics;
@@ -582,10 +621,10 @@ function filterIcs(text, sessions) {
   const tailAt = src.lastIndexOf('END:VCALENDAR');
   const events = src.slice(start, tailAt < 0 ? undefined : tailAt).split(/(?=BEGIN:VEVENT)/).filter(e => e.startsWith('BEGIN:VEVENT'));
   const unfold = e => e.replace(/\r\n[ \t]/g, '');
-  const uids = new Set(sessions.map(s => s.icsUid).filter(Boolean));
+  const uids = new Set(sessions.flatMap(s => [s.icsUid, ...(s.icsUids || [])]).filter(Boolean));
   let kept = events.filter(e => { const m = unfold(e).match(/\r\nUID:([^\r\n]+)/); return m && uids.has(m[1].trim()); });
   if (!kept.length) {
-    const dates = new Set(sessions.map(s => s.date.replace(/-/g, '')));
+    const dates = new Set(sessions.flatMap(s => [s.date, s.endDate]).filter(Boolean).map(d => d.replace(/-/g, '')));
     kept = events.filter(e => { const m = unfold(e).match(/\r\nDTSTART[^:\r\n]*:(\d{8})T/); return m && dates.has(m[1]); });
   }
   if (!kept.length) return null;
@@ -607,9 +646,9 @@ function buildIcs(prog, sessions) {
     for (const s of timed) {
       const d = s.date.replace(/-/g, '');
       ev(`${prog.id}-${s.id}@clearhq.org`,
-        [`DTSTART;TZID=${tzid}:${d}T${hhmm(toMin(s.start))}00`, `DTEND;TZID=${tzid}:${d}T${hhmm(toMin(s.end))}00`],
+        [`DTSTART;TZID=${tzid}:${d}T${hhmm(toMin(s.start))}00`, `DTEND;TZID=${tzid}:${(s.endDate || s.date).replace(/-/g, '')}T${hhmm(toMin(s.end))}00`],
         s.title + (prog.cohort ? ' — ' + prog.cohort : ''),
-        `${label}\n${s.title}: ${s.start} – ${s.end} ${prog.timezone || 'ET'}${s.zoomLink ? '\nZoom Link: ' + s.zoomLink : ''}\n\nQuestions: clearlearning@clearhq.org`,
+        `${label}\n${s.title}: ${whenText(prog, s)}${s.zoomLink ? '\nZoom Link: ' + s.zoomLink : ''}\n\nQuestions: clearlearning@clearhq.org`,
         s.zoomLink || (prog.location && prog.location !== 'Virtual' ? prog.location : ''));
     }
   } else if (prog.startDate) {
@@ -658,10 +697,15 @@ function emailShell(title, inner, origin) {
 <p style="font-size:12px;color:#6E6B70;margin-top:16px">Sign in with this email address; you'll get a one-time code by email. Questions: reply to this message or write to clearlearning@clearhq.org.</p></div></div>`;
 }
 function noteBlock(note) { return note ? `<p style="background:#F8EDD3;border-left:4px solid #DDA838;padding:10px 14px;border-radius:4px;white-space:pre-wrap">${H(note)}</p>` : ''; }
+function whenText(p, s) {
+  if (!s.start) return s.endDate ? `${longDate(s.date)} – ${longDate(s.endDate)}` : longDate(s.date);
+  if (s.endDate) return `${longDate(s.date)}, ${s.start} – ${longDate(s.endDate)}, ${s.end} ${tz(p)}`;
+  return `${longDate(s.date)}, ${s.start} – ${s.end} ${tz(p)}`;
+}
 function programLine(p) {
-  const n = (p.sessions || []).length;
+  const n = answerable(p).length, ip = /person/i.test(p.format || '');
   return `<tr><td style="padding:10px 0;border-bottom:1px solid #EEECEF"><strong style="color:#64092C">${H(p.title)}</strong>${p.cohort ? `<br><span style="color:#6E6B70">${H(p.cohort)}</span>` : ''}
-    <br>${H(rangeText(p.startDate, p.endDate))} · ${H(p.format || '')}${p.location && p.location !== 'Virtual' ? ', ' + H(p.location) : ''} · ${n ? n + ' live session' + (n > 1 ? 's' : '') : 'staffed as a whole program'}
+    <br>${H(rangeText(p.startDate, p.endDate))} · ${H(p.format || '')}${p.location && p.location !== 'Virtual' ? ', ' + H(p.location) : ''} · ${n ? n + (ip ? ' module' : ' live session') + (n > 1 ? 's' : '') : 'staffed as a whole program'}
     ${p.deadline ? `<br><strong>Respond by ${H(longDate(p.deadline))}</strong>` : ''}</td></tr>`;
 }
 const tz = p => p.timezone || 'ET';
@@ -704,7 +748,7 @@ async function notifyRemind(env, body, me) {
   if (!progs.length) throw httpErr(400, 'Choose at least one open program that is still taking answers.');
   const recips = activeRecipients(me.roster);
   const recs = await Promise.all(recips.map(x => getJSON(env, 'resp:' + x.r.id, { programs: {} })));
-  const units = p => (p.kind !== 'call' && (p.sessions || []).length) ? p.sessions.map(s => s.id) : [PROGRAM_SLOT];
+  const units = p => answerable(p).length ? answerable(p).map(s => s.id) : [PROGRAM_SLOT];
   const missing = recips.map((x, i) => {
     const list = progs.filter(p => {
       const r = (recs[i].programs || {})[p.id];
@@ -756,7 +800,7 @@ async function notifySelection(env, pid, body, me) {
     const roleOf = slot => (mine.find(m => m.slot === slot) || {}).role || '';
     const rows = cal.whole && !(prog.sessions || []).length
       ? `<tr><td style="padding:8px 0;border-bottom:1px solid #EEECEF"><strong>Entire program</strong><br>${H(rangeText(prog.startDate, prog.endDate))}${prog.location && prog.location !== 'Virtual' ? ', ' + H(prog.location) : ''}</td><td style="padding:8px 0;border-bottom:1px solid #EEECEF;text-align:right">${H(roleOf(PROGRAM_SLOT))}</td></tr>`
-      : cal.sessions.map(s => `<tr><td style="padding:8px 0;border-bottom:1px solid #EEECEF"><strong>${H(s.title)}</strong><br>${H(longDate(s.date))}${s.start ? `, ${H(s.start)} – ${H(s.end)} ${H(tz(prog))}` : ''}${s.zoomLink ? `<br><a href="${H(s.zoomLink)}">${H(s.zoomLink)}</a>` : ''}</td><td style="padding:8px 0;border-bottom:1px solid #EEECEF;text-align:right;white-space:nowrap">${H(roleOf(s.id) || roleOf(PROGRAM_SLOT))}</td></tr>`).join('');
+      : cal.sessions.map(s => `<tr><td style="padding:8px 0;border-bottom:1px solid #EEECEF"><strong>${H(s.title)}</strong><br>${H(whenText(prog, s))}${s.zoomLink ? `<br><a href="${H(s.zoomLink)}">${H(s.zoomLink)}</a>` : ''}</td><td style="padding:8px 0;border-bottom:1px solid #EEECEF;text-align:right;white-space:nowrap">${H(roleOf(s.id) || roleOf(PROGRAM_SLOT) || (s.allInstructors ? 'All instructors attend' : ''))}</td></tr>`).join('');
     const subject = (body.test ? '[TEST] ' : '') + `You're confirmed to teach: ${prog.title}${prog.cohort ? ' (' + prog.cohort + ')' : ''}`;
     const html = emailShell("You've been selected to teach", `<p>Hello ${H(firstName(inst.name))},</p>
 <p>Thank you for sharing your availability. You're confirmed for the following in <strong>${H(prog.title)}</strong>${prog.cohort ? `, ${H(prog.cohort)}` : ''}:</p>${noteBlock(body.note)}
@@ -857,7 +901,7 @@ async function saveAssignment(env, pid, body, me) {
   if (body.baseUpdatedAt !== undefined && (cur.updatedAt || null) !== (body.baseUpdatedAt || null)) {
     throw httpErr(409, `${cur.updatedBy} changed the selections for this program at ${cur.updatedAt}. Reload to see their changes.`);
   }
-  const valid = new Set([PROGRAM_SLOT, ...(prog.sessions || []).map(s => s.id)]);
+  const valid = new Set([PROGRAM_SLOT, ...answerable(prog).map(s => s.id)]);
   const ids = new Set(me.roster.map(r => r.id));
   const slots = {};
   for (const [k, arr] of Object.entries(body.slots || {})) {
@@ -916,6 +960,7 @@ function json(obj, status = 200) {
 }
 function httpErr(status, message) { const e = new Error(message); e.status = status; return e; }
 function rid(prefix) { return (prefix ? prefix + '_' : '') + crypto.randomUUID().replace(/-/g, '').slice(0, 10); }
+function keep0(o, k) { return o ? o[k] : undefined; }
 function pick(o, keys) { const r = {}; for (const k of keys) if (o[k] !== undefined && o[k] !== '') r[k] = o[k]; return r; }
 function label(p) { return p.title + (p.cohort ? ` (${p.cohort})` : ''); }
 // Minutes after midnight from "1:30 PM" or "13:30"; 0 if unreadable.
