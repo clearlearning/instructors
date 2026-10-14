@@ -139,12 +139,13 @@ dialog::backdrop{background:rgba(40,20,28,.45)}
 .log-row .t{color:var(--muted)}
 .ph{margin:-18px -20px 14px;padding:14px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;background:#FAF7F8;border-bottom:1px solid var(--line)}
 .ph h3{color:var(--burgundy);margin:0}.ph .facts{color:var(--muted)}
-.tr-ncit{background:var(--burgundy)!important;color:#fff}.tr-blue{background:var(--blue)!important;color:#fff}.tr-gold{background:var(--gold)!important;color:var(--burgundy-dk)}
-.tr-ncit h3,.tr-blue h3,.tr-ncit .facts,.tr-blue .facts,.tr-ncit strong,.tr-blue strong{color:#fff!important}
-.tr-ncit .facts,.tr-blue .facts{opacity:.9}
-.tr-gold h3,.tr-gold .facts,.tr-gold strong{color:var(--burgundy-dk)!important}
-.tr-ncit .pill,.tr-blue .pill,.tr-gold .pill{box-shadow:0 0 0 1px rgba(255,255,255,.6)}
-.trk{border-left:6px solid transparent}.trk.k-ncit{border-left-color:var(--burgundy)}.trk.k-blue{border-left-color:var(--blue)}.trk.k-gold{border-left-color:var(--gold)}
+/* NCIT burgundy shaded by program: Basic 100%, Specialized 80%, AIT 60%, Workshops 40% */
+.tr-ncit{background:var(--burgundy)!important;color:#fff}.tr-ncit-s{background:#833A56!important;color:#fff}.tr-ncit-ait{background:#A26B80!important;color:#fff}.tr-ncit-ws{background:#C19DAB!important;color:var(--burgundy-dk)}
+.tr-blue{background:var(--blue)!important;color:#fff}.tr-gold{background:var(--gold)!important;color:var(--burgundy-dk)}
+.tr-ncit h3,.tr-ncit-s h3,.tr-ncit-ait h3,.tr-blue h3,.tr-ncit .facts,.tr-ncit-s .facts,.tr-ncit-ait .facts,.tr-blue .facts,.tr-ncit strong,.tr-ncit-s strong,.tr-ncit-ait strong,.tr-blue strong{color:#fff!important}
+.tr-gold h3,.tr-gold .facts,.tr-gold strong,.tr-ncit-ws h3,.tr-ncit-ws .facts,.tr-ncit-ws strong{color:var(--burgundy-dk)!important}
+[class*="tr-"] .pill{box-shadow:0 0 0 1px rgba(255,255,255,.6)}
+.trk{border-left:6px solid transparent}.trk.k-ncit{border-left-color:var(--burgundy)}.trk.k-ncit-s{border-left-color:#833A56}.trk.k-ncit-ait{border-left-color:#A26B80}.trk.k-ncit-ws{border-left-color:#C19DAB}.trk.k-blue{border-left-color:var(--blue)}.trk.k-gold{border-left-color:var(--gold)}
 .mx-band{padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:10px}
 .mx-band h3{margin:0}
 .allrow td{background:#F4F8FB!important;color:var(--blue)}
@@ -213,8 +214,8 @@ const stamp=iso=>iso?new Date(iso).toLocaleString(undefined,{month:'short',day:'
 const clone=o=>JSON.parse(JSON.stringify(o));
 const daysBetween=(a,b)=>Math.round((parseD(b)-parseD(a))/86400000);
 const titleOf=p=>p.title+(p.cohort?` (${p.cohort})`:'');
-const trk=p=>['ncit','blue','gold'].includes(p.track)?'tr-'+p.track:'';
-const trkL=p=>['ncit','blue','gold'].includes(p.track)?'trk k-'+p.track:'trk';
+const trk=p=>['ncit','ncit-s','ncit-ait','ncit-ws','blue','gold'].includes(p.track)?'tr-'+p.track:'';
+const trkL=p=>['ncit','ncit-s','ncit-ait','ncit-ws','blue','gold'].includes(p.track)?'trk k-'+p.track:'trk';
 const isIP=p=>/person/i.test(p.format||'');
 function sTime(p,s){ if(!s.start) return fmtD(s.date)+(s.endDate?' – '+fmtD(s.endDate):'');
   return s.endDate?`${fmtD(s.date)}, ${s.start} – ${fmtD(s.endDate)}, ${s.end} ${p.timezone||''}`:`${fmtD(s.date)}, ${s.start} – ${s.end} ${p.timezone||''}`; }
@@ -611,7 +612,7 @@ function editProgram(pid){
     ${f('startDate','Start date',p.startDate,'date')}${f('endDate','End date',p.endDate,'date')}
     <div class="f span2"><label for="e-deadline">Respond by</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input id="e-deadline" type="date" value="${esc(p.deadlineMode==='auto'?autoDeadline(p):p.deadline)}" ${p.deadlineMode==='auto'?'disabled':''}>
       <label style="font-weight:400;font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="e-dlauto" ${p.deadlineMode==='auto'?'checked':''} onchange="dlToggle()"> Automatic: ${(D.config||{}).deadlineDays||30} days before the first live session</label></div></div>
-    <div class="f"><label for="e-track">Program track (header colour)</label><select id="e-track"><option value="" ${!p.trackSet?'selected':''}>Automatic from the course name</option><option value="ncit" ${p.trackSet==='ncit'?'selected':''}>NCIT (burgundy)</option><option value="blue" ${p.trackSet==='blue'?'selected':''}>ELPR and SRA (blue)</option><option value="gold" ${p.trackSet==='gold'?'selected':''}>ACRG and Board Chair (gold)</option><option value="none" ${p.trackSet==='none'?'selected':''}>None</option></select></div>
+    <div class="f"><label for="e-track">Program track (header colour)</label><select id="e-track"><option value="" ${!p.trackSet?'selected':''}>Automatic from the course name</option><option value="ncit" ${p.trackSet==='ncit'?'selected':''}>NCIT Basic (burgundy)</option><option value="ncit-s" ${p.trackSet==='ncit-s'?'selected':''}>NCIT Specialized (burgundy 80%)</option><option value="ncit-ait" ${p.trackSet==='ncit-ait'?'selected':''}>NCIT AIT (burgundy 60%)</option><option value="ncit-ws" ${p.trackSet==='ncit-ws'?'selected':''}>NCIT Workshops (burgundy 40%)</option><option value="blue" ${p.trackSet==='blue'?'selected':''}>ELPR and SRA (blue)</option><option value="gold" ${p.trackSet==='gold'?'selected':''}>ACRG and Board Chair (gold)</option><option value="none" ${p.trackSet==='none'?'selected':''}>None</option></select></div>
     <div class="f"><label for="e-status">Status</label><select id="e-status">${['draft','open','closed','archived'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="f span4"><label for="e-description">Description for instructors (optional)</label><textarea id="e-description" rows="3">${esc(p.description)}</textarea></div></div>
     <datalist id="dl-titles">${titles.map(x=>`<option value="${esc(x)}">`).join('')}</datalist><datalist id="dl-format"><option value="Virtual (Zoom)"><option value="In-Person"><option value="Hybrid"></datalist>`;
