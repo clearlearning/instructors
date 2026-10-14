@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Instructor Availability Dashboard | CLEAR Learning</title>
+<link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -63,7 +64,6 @@ textarea{width:100%;resize:vertical}
 .pill.draft{background:var(--gold-lt);color:#7A5410}
 .pill.closed{background:#ECEAEE}
 .pill.archived{background:#F4F4F4;color:var(--muted)}
-.pill.call{background:var(--blue-lt);color:var(--blue);text-transform:none}
 .facts{font-size:12px;color:var(--muted)}
 .stat-row{display:flex;gap:22px;margin:12px 0}
 .stat b{display:block;font-size:22px;line-height:1.1;color:var(--ink)}
@@ -137,6 +137,17 @@ dialog::backdrop{background:rgba(40,20,28,.45)}
 .toast.show{opacity:1}
 .log-row{display:grid;grid-template-columns:150px 220px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid #EEECEF;font-size:13px}
 .log-row .t{color:var(--muted)}
+.ph{margin:-18px -20px 14px;padding:14px 20px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;background:#FAF7F8;border-bottom:1px solid var(--line)}
+.ph h3{color:var(--burgundy);margin:0}.ph .facts{color:var(--muted)}
+.tr-ncit{background:var(--burgundy)!important;color:#fff}.tr-blue{background:var(--blue)!important;color:#fff}.tr-gold{background:var(--gold)!important;color:var(--burgundy-dk)}
+.tr-ncit h3,.tr-blue h3,.tr-ncit .facts,.tr-blue .facts,.tr-ncit strong,.tr-blue strong{color:#fff!important}
+.tr-ncit .facts,.tr-blue .facts{opacity:.9}
+.tr-gold h3,.tr-gold .facts,.tr-gold strong{color:var(--burgundy-dk)!important}
+.tr-ncit .pill,.tr-blue .pill,.tr-gold .pill{box-shadow:0 0 0 1px rgba(255,255,255,.6)}
+.trk{border-left:6px solid transparent}.trk.k-ncit{border-left-color:var(--burgundy)}.trk.k-blue{border-left-color:var(--blue)}.trk.k-gold{border-left-color:var(--gold)}
+.mx-band{padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:10px}
+.mx-band h3{margin:0}
+.allrow td{background:#F4F8FB!important;color:var(--blue)}
 .pill.locked{background:#FBE9EC;color:#9B1C1C;text-transform:none}
 .pill.src{background:#F4F1F5;color:var(--muted);text-transform:none;font-weight:600}
 .okc{color:var(--avail);font-weight:700}
@@ -202,6 +213,11 @@ const stamp=iso=>iso?new Date(iso).toLocaleString(undefined,{month:'short',day:'
 const clone=o=>JSON.parse(JSON.stringify(o));
 const daysBetween=(a,b)=>Math.round((parseD(b)-parseD(a))/86400000);
 const titleOf=p=>p.title+(p.cohort?` (${p.cohort})`:'');
+const trk=p=>['ncit','blue','gold'].includes(p.track)?'tr-'+p.track:'';
+const trkL=p=>['ncit','blue','gold'].includes(p.track)?'trk k-'+p.track:'trk';
+const isIP=p=>/person/i.test(p.format||'');
+function sTime(p,s){ if(!s.start) return fmtD(s.date)+(s.endDate?' – '+fmtD(s.endDate):'');
+  return s.endDate?`${fmtD(s.date)}, ${s.start} – ${fmtD(s.endDate)}, ${s.end} ${p.timezone||''}`:`${fmtD(s.date)}, ${s.start} – ${s.end} ${p.timezone||''}`; }
 function dueText(p){
   if(!p.deadline) return 'no response date';
   if(p.pastDeadline) return `responses closed ${fmtD(p.deadline)}`;
@@ -233,7 +249,8 @@ const prog=id=>D.programs.find(p=>p.id===id);
 const inst=id=>D.roster.find(r=>r.id===id);
 const active=()=>D.roster.filter(r=>r.active!==false);
 const resp=(iid,pid)=>(D.responses[iid]||{})[pid]||null;
-function units(p){ return (p.kind!=='call'&&p.sessions.length)?p.sessions.map(s=>({key:s.id,s})):[{key:PS,s:null}]; }
+const answerable=p=>p.sessions.filter(s=>!s.allInstructors);
+function units(p){ const a=answerable(p); return a.length?a.map(s=>({key:s.id,s})):[{key:PS,s:null}]; }
 function eff(iid,p,key){ const r=resp(iid,p.id); if(!r) return ''; if(key===PS) return r.program||''; return (r.sessions||{})[key]||r.program||''; }
 function inherited(iid,p,key){ const r=resp(iid,p.id); return !!(r&&key!==PS&&!(r.sessions||{})[key]&&r.program); }
 function answeredAll(iid,p){ return units(p).every(u=>eff(iid,p,u.key)); }
@@ -292,15 +309,15 @@ function vOverview(){
     ${openP.length?`<button class="btn ghost" onclick="announceDlg()">Announce programs</button><button class="btn ghost" onclick="remindDlg()">Send reminders</button>
     <button class="btn ghost" onclick="copyText('${waiting.flatMap(r=>r.emails.slice(0,1)).join('; ')}','Copied ${waiting.length} emails')">Copy emails of the ${waiting.length} still answering</button>`:''}</div>`;
   h+=`<div class="grid">`+live.map(p=>{
-    const responded=act.filter(r=>answeredAny(r.id,p)).length, full=act.filter(r=>answeredAll(r.id,p)).length;
+    const responded=act.filter(r=>answeredAny(r.id,p)).length;
     const n=units(p).length, staffed=staffedCount(p);
     const next={draft:['open','Open for responses'],open:['closed','Close responses'],closed:['open','Reopen']}[p.status];
-    return `<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
-      <div><h3 style="color:var(--burgundy);margin-bottom:0">${esc(p.title)}</h3>${p.cohort?`<div style="font-size:13px;font-weight:600">${esc(p.cohort)}</div>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))}${p.format?', '+esc(p.format):''}<br>${esc(dueText(p))}</div></div>
-      <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end">${p.kind==='call'?'<span class="pill call">Opportunity</span>':''}<span class="pill ${p.status}">${p.status}</span>${p.status==='open'&&p.pastDeadline?'<span class="pill locked">Answers locked</span>':''}</div></div>
+    return `<div class="card"><div class="ph ${trk(p)}" style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+      <div><h3>${esc(p.title)}</h3>${p.cohort?`<strong style="font-size:13px">${esc(p.cohort)}</strong>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))}${p.format?' · '+esc(p.format):''} · ${answerable(p).length?answerable(p).length+(isIP(p)?' modules':' sessions'):'whole program'}<br>${esc(dueText(p))}</div></div>
+      <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end"><span class="pill ${p.status}">${p.status}</span>${p.status==='open'&&p.pastDeadline?'<span class="pill locked">Answers locked</span>':''}</div></div>
       <div class="stat-row">
-        <div class="stat"><b>${responded}<small style="font-size:13px;color:var(--muted)">/${act.length}</small></b><span>responded (${full} complete)</span><div class="meter"><span style="width:${act.length?responded/act.length*100:0}%"></span></div></div>
-        <div class="stat"><b>${staffed}<small style="font-size:13px;color:var(--muted)">/${n}</small></b><span>${n===1?'confirmed':'sessions confirmed'}</span><div class="meter gold"><span style="width:${n?staffed/n*100:0}%"></span></div></div>
+        <div class="stat"><b>${responded}</b><span>${responded===1?'response':'responses'} received</span></div>
+        <div class="stat"><b>${staffed}<small style="font-size:13px;color:var(--muted)">/${n}</small></b><span>${n===1?'confirmed':(isIP(p)?'modules':'sessions')+' confirmed'}</span><div class="meter gold"><span style="width:${n?staffed/n*100:0}%"></span></div></div>
       </div>
       ${p.status==='open'?`<p class="facts" style="margin:-4px 0 10px">${p.announcedAt?`Announced ${esc(stamp(p.announcedAt))}`:'<span class="warn">Not announced yet</span>'}</p>`:''}
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -336,8 +353,11 @@ function vResponses(){
   const p=prog(U.pid); if(!p) return h;
   const insts=active().filter(r=>!U.filter||r.name.toLowerCase().includes(U.filter.toLowerCase()));
   const rows=[];
-  if(p.kind!=='call'&&p.sessions.length) rows.push({key:PS,label:'Whole program',whole:true});
-  for(const u of units(p)) rows.push(u.s?{key:u.key,label:u.s.title,date:u.s.date,time:u.s.start?`${u.s.start} – ${u.s.end} ${p.timezone||''}`:''}:{key:PS,label:p.kind==='call'?'Volunteer':'Entire program',whole:false});
+  if(answerable(p).length) rows.push({key:PS,label:'Whole program',whole:true});
+  for(const u of units(p)) rows.push(u.s?{key:u.key,label:u.s.title,when:sTime(p,u.s)}:{key:PS,label:'Entire program',whole:false});
+  h+=`<div class="mx-band ${trk(p)||'ph'}" style="margin:0 0 10px"><h3>${esc(p.title)}</h3><div class="facts">${p.cohort?esc(p.cohort)+' · ':''}${esc(fmtRange(p.startDate,p.endDate))} · ${esc(p.format||'')} · ${esc(dueText(p))}</div></div>`;
+  const allAtt=p.sessions.filter(s=>s.allInstructors);
+  if(allAtt.length) h+=`<p class="facts">${allAtt.map(s=>esc(s.title)).join(', ')}: all instructors assigned to this cohort attend, so ${allAtt.length>1?'they are':'it is'} not listed for answers.</p>`;
   h+=`<div class="tbl-wrap"><table class="mx"><thead><tr><th class="first">Session</th>${insts.map(r=>`<th class="inst" title="${esc(r.name)}: click for their answers across programs"><a href="#" onclick="U.rview='instructor';U.iid='${r.id}';render();return false">${esc(r.name)}</a></th>`).join('')}<th>Avail.</th><th>Not answered</th></tr></thead><tbody>`;
   for(const row of rows){
     let nA=0,nBlank=0;
@@ -346,10 +366,10 @@ function vResponses(){
       const v=isWholeHeader?(resp(r.id,p.id)||{}).program||'':eff(r.id,p,row.key);
       const inh=!isWholeHeader&&inherited(r.id,p,row.key);
       if(v==='A')nA++; if(!v)nBlank++;
-      const label=p.kind==='call'&&v==='A'?'V':(SHORT[v]||'');
+      const label=SHORT[v]||'';
       return `<td style="padding:3px 2px;text-align:center"><button class="cell ${v} ${inh?'inh':''}" title="${esc(r.name)}: ${v?LBL[v]:'Not answered'}${inh?' (from whole program)':''}" onclick="cellMenu(event,'${r.id}','${p.id}','${row.whole?PS:row.key}',${row.whole})">${label}</button></td>`;
     }).join('');
-    h+=`<tr class="${row.whole?'whole':''}"><td class="first">${esc(row.label)}${row.date?`<div class="s-date">${fmtD(row.date)}${row.time?', '+esc(row.time):''}</div>`:''}</td>${cells}<td class="num">${nA}</td><td class="num">${nBlank}</td></tr>`;
+    h+=`<tr class="${row.whole?'whole':''}"><td class="first">${esc(row.label)}${row.when?`<div class="s-date">${esc(row.when)}</div>`:''}</td>${cells}<td class="num">${nA}</td><td class="num">${nBlank}</td></tr>`;
   }
   h+=`</tbody></table></div>`;
   const comments=insts.map(r=>({r,c:(resp(r.id,p.id)||{}).comment,at:(resp(r.id,p.id)||{}).updatedAt,by:(resp(r.id,p.id)||{}).updatedBy})).filter(x=>x.c);
@@ -373,7 +393,7 @@ function vByInstructor(){
     const rs=resp(r.id,p.id), us=units(p), done=us.filter(u=>eff(r.id,p,u.key)).length;
     const s=(D.assignments[p.id]||{}).slots||{};
     const sel=us.filter(u=>(s[u.key]||[]).some(e=>e.iid===r.id)).map(u=>{const e=s[u.key].find(e=>e.iid===r.id);return `${u.s?esc(u.s.title):'Entire program'} <span class="facts">(${esc(e.role)}, ${esc(e.status)})</span>`;});
-    return `<tr><td><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))} · ${esc(dueText(p))}</div></td>
+    return `<tr><td class="${trkL(p)}"><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))} · ${esc(dueText(p))}</div></td>
       <td class="num">${done}/${us.length}</td>
       <td style="min-width:260px">${us.map(u=>{const v=eff(r.id,p,u.key);return `<span class="ans ${v}" title="${esc(u.s?u.s.title+', '+fmtD(u.s.date):'Entire program')}">${u.s?esc(fmtD(u.s.date,false)):'Program'}: ${v?LBL[v]:'—'}</span>`;}).join('')}</td>
       <td style="font-size:13px">${sel.join('<br>')||'<span class="facts">—</span>'}</td>
@@ -388,8 +408,8 @@ document.addEventListener('click',e=>{ if(menuEl&&!menuEl.contains(e.target)&&!e
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 function cellMenu(ev,iid,pid,key,wholeRow){
   ev.stopPropagation(); closeMenu();
-  const p=prog(pid), r=inst(iid), labels=p.kind==='call'?{A:'Volunteer',N:'Not this time'}:LBL;
-  const what=key===PS?(wholeRow?'whole program':(p.kind==='call'?'this opportunity':'entire program')):((p.sessions.find(s=>s.id===key)||{}).title||'session');
+  const p=prog(pid), r=inst(iid), labels=LBL;
+  const what=key===PS?(wholeRow?'whole program':'entire program'):((p.sessions.find(s=>s.id===key)||{}).title||'session');
   menuEl=document.createElement('div'); menuEl.className='menu';
   menuEl.innerHTML=`<div class="hd">${esc(r.name)}, ${esc(what)}</div>`+Object.entries(labels).map(([v,l])=>`<button onclick="setCell('${iid}','${pid}','${key}','${v}')">${l}</button>`).join('')+`<button onclick="setCell('${iid}','${pid}','${key}','')">Clear${key!==PS?' (use whole-program answer)':''}</button>`;
   document.body.appendChild(menuEl);
@@ -410,8 +430,8 @@ function exportMatrix(which){
   const out=[csvRow(['Program','Date','Session','Start','End','Time Zone','Format','Location',...insts.map(r=>r.name),'# Available','# Not Answered','Comments'])];
   for(const p of list){
     const rows=[];
-    if(p.kind!=='call'&&p.sessions.length) rows.push({key:PS,whole:true,title:`ENTIRE PROGRAM (${fmtRange(p.startDate,p.endDate)})`,date:p.startDate,start:'All dates',end:'All dates'});
-    for(const u of units(p)) rows.push(u.s?{key:u.key,title:u.s.title,date:u.s.date,start:u.s.start,end:u.s.end}:{key:PS,title:p.kind==='call'?'Volunteer':`ENTIRE PROGRAM (${fmtRange(p.startDate,p.endDate)})`,date:p.startDate,start:'All dates',end:'All dates'});
+    if(answerable(p).length) rows.push({key:PS,whole:true,title:`ENTIRE PROGRAM (${fmtRange(p.startDate,p.endDate)})`,date:p.startDate,start:'All dates',end:'All dates'});
+    for(const u of units(p)) rows.push(u.s?{key:u.key,title:u.s.title,date:u.s.date,start:u.s.start,end:u.s.end}:{key:PS,title:`ENTIRE PROGRAM (${fmtRange(p.startDate,p.endDate)})`,date:p.startDate,start:'All dates',end:'All dates'});
     rows.forEach((row,i)=>{
       const vals=insts.map(r=>row.whole?((resp(r.id,p.id)||{}).program||''):eff(r.id,p,row.key));
       const comments=i===0?insts.map(r=>(resp(r.id,p.id)||{}).comment?`${r.name}: ${(resp(r.id,p.id)).comment}`:'').filter(Boolean).join(' | '):'';
@@ -430,10 +450,11 @@ function vSelection(){
   const s=slots(p.id), dirty=U.assignDirty.has(p.id), a=D.assignments[p.id]||{};
   const confirmed=[...new Set(Object.values((a.slots||{})).flat().filter(e=>e.status==='Confirmed').map(e=>e.iid))];
   const toEmail=confirmed.filter(iid=>mailState(p.id,iid).code!=='sent').length;
-  h+=`<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
-    <div><h3 style="color:var(--burgundy);margin:0">${esc(p.title)}</h3>${p.cohort?`<div style="font-size:13px;font-weight:600">${esc(p.cohort)}</div>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))}, ${esc(dueText(p))}${a.updatedAt?`<br>Selections last saved ${stamp(a.updatedAt)} by ${esc(a.updatedBy)}`:''}</div></div>
+  h+=`<div class="card"><div class="ph ${trk(p)}"><h3>${esc(p.title)}</h3>${p.cohort?`<strong style="font-size:13px">${esc(p.cohort)}</strong>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))} · ${esc(p.format||'')}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''} · ${answerable(p).length?answerable(p).length+(isIP(p)?' modules':' sessions'):'whole program'} · ${esc(dueText(p))}</div></div>
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+    <div class="facts">${a.updatedAt?`Selections last saved ${stamp(a.updatedAt)} by ${esc(a.updatedBy)}`:'No selections saved yet'}</div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      ${p.sessions.length&&p.kind!=='call'?`<select id="bulk-i"><option value="">Add one instructor to every session they're available for…</option>${active().filter(r=>units(p).some(u=>eff(r.id,p,u.key)==='A')).map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select><button class="btn ghost small" onclick="bulkAdd('${p.id}')">Add</button>`:''}
+      ${answerable(p).length?`<select id="bulk-i"><option value="">Add one instructor to every session they're available for…</option>${active().filter(r=>units(p).some(u=>eff(r.id,p,u.key)==='A')).map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select><button class="btn ghost small" onclick="bulkAdd('${p.id}')">Add</button>`:''}
       <button class="btn ghost small" onclick="confirmAll('${p.id}')">Mark all confirmed</button>
       ${dirty?`<button class="btn ghost small" onclick="delete U.assignDraft['${p.id}'];U.assignDirty.delete('${p.id}');render()">Discard changes</button>`:''}
       <button class="btn" ${dirty?'':'disabled'} onclick="saveAssign('${p.id}')">Save selections</button>
@@ -444,8 +465,8 @@ function vSelection(){
   for(const u of units(p)){
     const picked=s[u.key]||[];
     const avail=active().filter(r=>eff(r.id,p,u.key)==='A'&&!picked.some(e=>e.iid===r.id));
-    const label=u.s?u.s.title:(p.kind==='call'?'Volunteers':'Entire program');
-    h+=`<div class="slot"><div><div class="meta">${esc(label)}</div><div class="facts">${u.s?fmtD(u.s.date)+(u.s.start?`, ${esc(u.s.start)} – ${esc(u.s.end)} ${esc(p.timezone||'')}`:''):esc(fmtRange(p.startDate,p.endDate))}</div>${u.s&&u.s.zoomLink?`<div class="facts" style="word-break:break-all">${esc(u.s.zoomLink)}</div>`:''}</div>
+    const label=u.s?u.s.title:'Entire program';
+    h+=`<div class="slot"><div><div class="meta">${esc(label)}</div><div class="facts">${u.s?esc(sTime(p,u.s)):esc(fmtRange(p.startDate,p.endDate))}</div>${u.s&&u.s.zoomLink?`<div class="facts" style="word-break:break-all">${esc(u.s.zoomLink)}</div>`:''}</div>
       <div><div class="picked">${picked.map((e,i)=>{const r=inst(e.iid)||{name:'(removed instructor)'};const v=eff(e.iid,p,u.key);const ms=e.status==='Confirmed'&&!dirty?mailState(p.id,e.iid):null;
         return `<div class="pick ${e.status}"><span class="nm">${esc(r.name)}</span>
           <select onchange="editPick('${p.id}','${u.key}',${i},'role',this.value)">${['Lead','Co-instructor','Backup'].map(x=>`<option ${e.role===x?'selected':''}>${x}</option>`).join('')}</select>
@@ -457,6 +478,8 @@ function vSelection(){
         <div class="chips">${avail.length?avail.map(r=>`<span class="chipwrap"><button class="chip" onclick="addPick('${p.id}','${u.key}','${r.id}')">+ ${esc(r.name)}<span class="load">${loadCount(r.id)}</span></button>${evalUrl(r.id)?`<a class="chip-x" href="${esc(evalUrl(r.id))}" target="_blank" rel="noopener" title="Teaching history and evaluations for ${esc(r.name)}">↗</a>`:''}</span>`).join(''):`<span class="facts">${picked.length?'No other instructors marked available.':'Nobody has marked this available yet.'}</span>`}
         <button class="chip na-maybe" onclick="pickAnyone('${p.id}','${u.key}')">+ Someone else</button></div></div></div>`;
   }
+  const allAtt=p.sessions.filter(s=>s.allInstructors);
+  if(allAtt.length) h+=`<div class="slot allrow"><div><div class="meta">${allAtt.map(s=>esc(s.title)).join(', ')}</div><div class="facts">${allAtt.map(s=>esc(sTime(p,s))).join('<br>')}</div></div><div class="facts" style="align-self:center">Every instructor confirmed for this cohort attends automatically. It is included in their selection email and calendar file.</div></div>`;
   h+=`</div><div class="card"><h3>Staffing notes</h3><p class="sub" style="margin-bottom:8px">Notes are for staff only and are kept with the date, time and who wrote them.</p>
     ${(a.notes||[]).map(n=>`<div class="note">${esc(n.text)}<small>${esc(n.by)}, ${stamp(n.at)}</small></div>`).join('')||''}
     <textarea id="note-txt" rows="2" placeholder="Add a note, like who you've reached out to"></textarea><div style="margin-top:8px"><button class="btn small" onclick="addNote('${p.id}')">Add note</button></div>
@@ -562,12 +585,12 @@ async function mailGo(kind,mode){
 
 /* ================= Programs ================= */
 function vPrograms(){
-  let h=`<h2>Programs and opportunities</h2><p class="sub">Each quarter, load the TeamGantt export in the Program Agenda Generator's Quarter batch and choose Send to availability portal; every cohort arrives here with its sessions and calendar file. Add one-off programs or volunteer opportunities by hand. Everything starts as a draft that only staff can see; open it here or on the Overview, then announce it.</p>
-    <div class="bar">${quarterSelect()}<span class="grow"></span><a class="btn" href="/agenda-generator" target="_blank" style="text-decoration:none">Open Agenda Generator</a><button class="btn ghost" onclick="packageDlg()">Import package file</button><button class="btn ghost" onclick="importDlg()">Import spreadsheet</button><button class="btn ghost" onclick="editProgram(null,'call')">New opportunity</button><button class="btn ghost" onclick="editProgram(null,'program')">New one-off program</button></div>`;
+  let h=`<h2>Programs</h2><p class="sub">Each quarter, load the TeamGantt export in the Program Agenda Generator's Quarter batch and choose Send to availability portal; every cohort arrives here with its sessions and calendar file. Add one-off programs by hand. Everything starts as a draft that only staff can see; open it here or on the Overview, then announce it.</p>
+    <div class="bar">${quarterSelect()}<span class="grow"></span><a class="btn" href="/agenda-generator" target="_blank" style="text-decoration:none">Open Agenda Generator</a><button class="btn ghost" onclick="packageDlg()">Import package file</button><button class="btn ghost" onclick="importDlg()">Import spreadsheet</button><button class="btn ghost" onclick="editProgram(null)">New one-off program</button></div>`;
   const list=D.programs.filter(inQuarter);
   if(!list.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Open the Program Agenda Generator, use Quarter batch to load the TeamGantt export, then choose Send to availability portal.</p></div>`;
   h+=`<div class="tbl-wrap"><table><thead><tr><th>Program</th><th>Quarter</th><th>Dates</th><th>Format</th><th>Sessions</th><th>Respond by</th><th>Calendar</th><th>Announced</th><th>Status</th><th></th></tr></thead><tbody>`+
-    list.map(p=>`<tr><td><strong>${esc(p.title)}</strong>${p.kind==='call'?' <span class="pill call">Opportunity</span>':''}${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}${p.source==='agenda-generator'?'<span class="pill src">Agenda Generator</span>':''}</td><td>${esc(p.quarter)}</td><td style="white-space:nowrap">${esc(fmtRange(p.startDate,p.endDate))}</td><td>${esc(p.format)}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''}</td><td>${p.sessions.length||'Whole program'}</td>
+    list.map(p=>`<tr><td class="${trkL(p)}"><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}${p.source==='agenda-generator'?'<span class="pill src">Agenda Generator</span>':''}</td><td>${esc(p.quarter)}</td><td style="white-space:nowrap">${esc(fmtRange(p.startDate,p.endDate))}</td><td>${esc(p.format)}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''}</td><td>${answerable(p).length?answerable(p).length+(isIP(p)?' modules':''):'Whole program'}</td>
       <td style="white-space:nowrap">${fmtD(p.deadline)}${p.deadline?`<div class="facts">${p.deadlineMode==='auto'?'automatic':'set by hand'}${p.pastDeadline?', passed':''}</div>`:''}</td>
       <td>${p.hasIcs?'<span class="okc" title="'+esc(p.icsName)+'">✓ .ics</span>':'<span class="facts">—</span>'}</td>
       <td style="font-size:12px">${p.announcedAt?esc(fmtD(p.announcedAt.slice(0,10))):'<span class="facts">—</span>'}</td>
@@ -576,42 +599,45 @@ function vPrograms(){
   return h;
 }
 function autoDeadline(p){ const ds=(p.sessions||[]).map(s=>s.date).filter(Boolean).sort(); const first=ds[0]||p.startDate; if(!first) return ''; const d=parseD(first); d.setDate(d.getDate()-((D.config||{}).deadlineDays||30)); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
-function editProgram(pid,kind){
-  const p=pid?clone(prog(pid)):{kind,title:'',cohort:'',quarter:U.quarter!=='all'?U.quarter:(quarters()[0]||''),format:kind==='call'?'':'Virtual (Zoom)',location:kind==='call'?'':'Virtual',timezone:'ET',startDate:'',endDate:'',deadline:'',deadlineMode:kind==='call'?'manual':'auto',status:'draft',description:'',sessions:[]};
+function editProgram(pid){
+  const p=pid?clone(prog(pid)):{title:'',cohort:'',quarter:U.quarter!=='all'?U.quarter:(quarters()[0]||''),format:'Virtual (Zoom)',location:'Virtual',timezone:'ET',startDate:'',endDate:'',deadline:'',deadlineMode:'auto',trackSet:'',status:'draft',description:'',sessions:[]};
   if(!p.deadlineMode) p.deadlineMode=p.deadline?'manual':'auto';
   window._edit=p;
-  const titles=[...new Set(D.programs.filter(x=>x.kind!=='call').map(x=>x.title))].sort();
+  const titles=[...new Set(D.programs.map(x=>x.title))].sort();
   const f=(id,label,val,type='text',cls='',extra='')=>`<div class="f ${cls}"><label for="e-${id}">${label}</label><input id="e-${id}" type="${type}" value="${esc(val)}" ${extra}></div>`;
-  let body=`<div class="form">${f('title',p.kind==='call'?'Title':'Course name',p.title,'text','span2','list="dl-titles"')}${p.kind==='call'?'':f('cohort','Cohort label',p.cohort,'text','span2','placeholder="e.g. Jan 7, 2027 Cohort"')}
+  let body=`<div class="form">${f('title','Course name',p.title,'text','span2','list="dl-titles"')}${f('cohort','Cohort label',p.cohort,'text','span2','placeholder="e.g. January 2027 Cohort"')}
     ${f('quarter','Quarter (for filtering)',p.quarter,'text','','placeholder="Q1 2027"')}${f('format','Format',p.format,'text','','list="dl-format"')}${f('location','Location',p.location,'text','','placeholder="Virtual, or City, ST"')}
     <div class="f"><label for="e-timezone">Times are in</label><select id="e-timezone">${[['ET','Eastern (ET)'],['CT','Central (CT)'],['MT','Mountain (MT)'],['PT','Pacific (PT)'],['AT','Atlantic (AT)']].map(([v,l])=>`<option value="${v}" ${(p.timezone||'ET')===v?'selected':''}>${l}</option>`).join('')}</select></div>
     ${f('startDate','Start date',p.startDate,'date')}${f('endDate','End date',p.endDate,'date')}
     <div class="f span2"><label for="e-deadline">Respond by</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input id="e-deadline" type="date" value="${esc(p.deadlineMode==='auto'?autoDeadline(p):p.deadline)}" ${p.deadlineMode==='auto'?'disabled':''}>
       <label style="font-weight:400;font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="e-dlauto" ${p.deadlineMode==='auto'?'checked':''} onchange="dlToggle()"> Automatic: ${(D.config||{}).deadlineDays||30} days before the first live session</label></div></div>
+    <div class="f"><label for="e-track">Program track (header colour)</label><select id="e-track"><option value="" ${!p.trackSet?'selected':''}>Automatic from the course name</option><option value="ncit" ${p.trackSet==='ncit'?'selected':''}>NCIT (burgundy)</option><option value="blue" ${p.trackSet==='blue'?'selected':''}>ELPR and SRA (blue)</option><option value="gold" ${p.trackSet==='gold'?'selected':''}>ACRG and Board Chair (gold)</option><option value="none" ${p.trackSet==='none'?'selected':''}>None</option></select></div>
     <div class="f"><label for="e-status">Status</label><select id="e-status">${['draft','open','closed','archived'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="f span4"><label for="e-description">Description for instructors (optional)</label><textarea id="e-description" rows="3">${esc(p.description)}</textarea></div></div>
     <datalist id="dl-titles">${titles.map(x=>`<option value="${esc(x)}">`).join('')}</datalist><datalist id="dl-format"><option value="Virtual (Zoom)"><option value="In-Person"><option value="Hybrid"></datalist>`;
-  if(p.kind!=='call') body+=`<h3 style="margin-top:18px">Live sessions</h3><p class="sub" style="margin-bottom:8px">Leave this empty for programs staffed as a whole, like in-person programs. Start and end dates fill in from the sessions if left blank. Zoom links are optional now; they go into selection emails and calendar files.</p><div id="sess-ed"></div><button class="btn ghost small" onclick="sessAdd()" style="margin-top:8px">Add session</button>`;
+  body+=`<h3 style="margin-top:18px">Live sessions or modules</h3><p class="sub" style="margin-bottom:8px">Leave this empty for a program staffed as a whole. Start and end dates fill in from the sessions if left blank. Zoom links go into selection emails and calendar files. A Welcome session is removed automatically except in ACRG, ELPR and SRA: Staffing a Board, where all instructors assigned to the cohort attend it. Tick "All attend" for any other session every assigned instructor attends; it is not offered for selection.</p><div id="sess-ed"></div><button class="btn ghost small" onclick="sessAdd()" style="margin-top:8px">Add session</button>`;
   if(pid) body+=`<div class="icsbox"><strong>Calendar file</strong>${p.hasIcs?`<span>${esc(p.icsName)} <span class="facts">(${esc(p.icsSource||'')})</span></span><span style="flex:1"></span><button class="btn link" onclick="downloadIcs('${pid}')">Download</button><button class="btn link" style="color:#9B1C1C" onclick="removeIcs('${pid}')">Remove</button>`:`<span class="facts">None. Upload the program's .ics so selection emails attach it.</span><span style="flex:1"></span>`}<label class="btn link" style="cursor:pointer">${p.hasIcs?'Replace':'Upload .ics'}<input type="file" accept=".ics,text/calendar" hidden onchange="uploadIcs('${pid}',this).then(()=>{closeDlg();editProgram('${pid}')})"></label></div>`;
-  else if(p.kind!=='call') body+=`<p class="facts" style="margin-top:12px">You can upload the program's calendar file (.ics) after you save.</p>`;
-  openDlg(pid?'Edit '+(p.kind==='call'?'opportunity':'program'):(p.kind==='call'?'New opportunity':'New one-off program'),body,
+  else body+=`<p class="facts" style="margin-top:12px">You can upload the program's calendar file (.ics) after you save.</p>`;
+  openDlg(pid?'Edit program':'New one-off program',body,
     `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="saveProgram(${pid?`'${pid}'`:'null'})">Save</button>`);
-  if(p.kind!=='call') sessRender();
+  sessRender();
 }
 function dlToggle(){ const on=document.getElementById('e-dlauto').checked, el=document.getElementById('e-deadline'); el.disabled=on; if(on){ syncEdit(); el.value=autoDeadline(window._edit); } }
 function syncEdit(){ const p=window._edit; const sd=document.getElementById('e-startDate'); if(sd) p.startDate=sd.value; }
 function sessRender(){ const p=window._edit;
-  document.getElementById('sess-ed').innerHTML=p.sessions.length?`<table class="sess-tbl"><thead><tr><th style="width:150px">Date</th><th>Session title</th><th style="width:105px">Start</th><th style="width:105px">End</th><th style="width:220px">Zoom link</th><th style="width:60px"></th></tr></thead><tbody>${p.sessions.map((s,i)=>`<tr>
+  document.getElementById('sess-ed').innerHTML=p.sessions.length?`<table class="sess-tbl"><thead><tr><th style="width:150px">Date</th><th>Session title</th><th style="width:105px">Start</th><th style="width:105px">End</th><th style="width:200px">Zoom link</th><th style="width:60px">All attend</th><th style="width:60px"></th></tr></thead><tbody>${p.sessions.map((s,i)=>`<tr>
     <td><input type="date" value="${esc(s.date)}" onchange="window._edit.sessions[${i}].date=this.value;dlRefresh()"></td><td><input value="${esc(s.title)}" onchange="window._edit.sessions[${i}].title=this.value"></td>
     <td><input value="${esc(s.start)}" placeholder="1:00 PM" onchange="window._edit.sessions[${i}].start=this.value"></td><td><input value="${esc(s.end)}" placeholder="3:00 PM" onchange="window._edit.sessions[${i}].end=this.value"></td>
-    <td><input value="${esc(s.zoomLink||'')}" placeholder="https://zoom.us/j/…" onchange="window._edit.sessions[${i}].zoomLink=this.value"></td>
+    <td><input value="${esc(s.zoomLink||'')}" placeholder="https://zoom.us/j/…" onchange="window._edit.sessions[${i}].zoomLink=this.value">${s.endDate?`<div class="facts">Runs to ${esc(fmtD(s.endDate))}</div>`:''}</td>
+    <td style="text-align:center"><input type="checkbox" ${s.allInstructors?'checked':''} onchange="window._edit.sessions[${i}].allInstructors=this.checked" aria-label="All assigned instructors attend"></td>
     <td><button class="btn link" style="color:#9B1C1C" onclick="window._edit.sessions.splice(${i},1);sessRender();dlRefresh()">Remove</button></td></tr>`).join('')}</tbody></table>`:'<p class="facts">No sessions. Instructors will answer for the entire program.</p>'; }
 function dlRefresh(){ const cb=document.getElementById('e-dlauto'); if(cb&&cb.checked){ syncEdit(); document.getElementById('e-deadline').value=autoDeadline(window._edit); } }
-function sessAdd(){ const l=window._edit.sessions, last=l[l.length-1]||{}; l.push({id:'s_'+Math.random().toString(36).slice(2,10),date:last.date||'',title:'',start:last.start||'',end:last.end||'',zoomLink:''}); sessRender(); }
+function sessAdd(){ const l=window._edit.sessions, last=l[l.length-1]||{}; l.push({id:'s_'+Math.random().toString(36).slice(2,10),date:last.date||'',title:'',start:last.start||'',end:last.end||'',zoomLink:'',allInstructors:false}); sessRender(); }
 async function saveProgram(pid){
   const p=window._edit, g=id=>{const el=document.getElementById('e-'+id);return el?el.value:'';};
   ['title','cohort','quarter','format','location','timezone','startDate','endDate','deadline','status','description'].forEach(k=>p[k]=g(k));
   p.deadlineMode=document.getElementById('e-dlauto')&&document.getElementById('e-dlauto').checked?'auto':'manual';
+  p.trackSet=document.getElementById('e-track').value;
   if(pid&&p.sessions.length<prog(pid).sessions.length&&!confirm('You removed sessions. Instructor answers for those sessions will no longer show. Save anyway?')) return;
   const id=pid||'p_'+crypto.randomUUID().replace(/-/g,'').slice(0,10);
   try{ const r=await api('admin/program/'+id,{method:'PUT',body:JSON.stringify({program:p,baseUpdatedAt:pid?prog(pid).updatedAt:undefined})});
@@ -695,7 +721,7 @@ async function parseImport(){
     for(const r of rows.slice(hi+1)){
       const title=String(r[C.prog]||'').trim(); if(!title) continue;
       const sess=String(r[C.sess]||'').trim(), date=cellDate(r[C.date]);
-      if(!map.has(title)) map.set(title,{kind:'program',title,format:String(r[C.fmt]||'').trim(),location:String(r[C.loc]||'').trim(),timezone:String(r[C.tz]||'').trim(),startDate:date,endDate:'',sessions:[]});
+      if(!map.has(title)) map.set(title,{title,format:String(r[C.fmt]||'').trim(),location:String(r[C.loc]||'').trim(),timezone:String(r[C.tz]||'').trim(),startDate:date,endDate:'',sessions:[]});
       const p=map.get(title);
       if(/^entire program/i.test(sess)){ p.startDate=date||p.startDate; p.endDate=rangeEnd(sess,p.startDate)||p.endDate; continue; }
       if(sess) p.sessions.push({title:sess,date,start:cellTime(r[C.start]),end:cellTime(r[C.end])});
