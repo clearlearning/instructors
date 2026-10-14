@@ -1,9 +1,10 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Instructor Availability | CLEAR Learning</title>
+<link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -75,6 +76,8 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .card .cohort{font-size:13px;font-weight:600;color:var(--charcoal)}
 .card .meta{font-size:13px;color:var(--muted)}
 .card .slist{list-style:none;margin:0;padding:0 18px 12px 94px;font-size:13px}
+.card.responded .slist{background:var(--avail-lt);padding-top:10px}
+.card .slist .all{color:var(--blue);font-size:12px;font-weight:600}
 .card .slist li{padding:2px 0;display:flex;gap:8px;flex-wrap:wrap}
 .card .slist .dt{font-weight:600;min-width:92px}
 .card .slist .more{color:var(--muted)}
@@ -89,6 +92,18 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .badge.none{background:#ECEAEE;color:var(--muted)}
 .badge small{font-weight:600;opacity:.85}
 
+/* Program track colours: NCIT = burgundy, ELPR & SRA = blue, ACRG & Board Chair = gold */
+.tr-ncit{background:var(--burgundy);color:#fff}
+.tr-blue{background:var(--blue);color:#fff}
+.tr-gold{background:var(--gold);color:var(--burgundy-dk)}
+.tr-ncit h2,.tr-blue h2,.tr-ncit .cohort,.tr-blue .cohort{color:#fff!important}
+.tr-gold h2,.tr-gold .cohort{color:var(--burgundy-dk)!important}
+.tr-ncit .meta,.tr-blue .meta,.tr-ncit .facts,.tr-blue .facts{color:rgba(255,255,255,.88)!important}
+.tr-gold .meta,.tr-gold .facts{color:var(--burgundy-dk)!important}
+.tr-ncit .tile,.tr-blue .tile,.tr-gold .tile{border-color:transparent}
+.card-top.tr-ncit,.card-top.tr-blue,.card-top.tr-gold{margin-bottom:10px}
+.tr-ncit .badge.need,.tr-blue .badge.need{border-color:#fff;color:var(--burgundy)}
+.allattend{font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-lt);padding:3px 10px;border-radius:12px;white-space:nowrap}
 /* Detail */
 .back{display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;font-weight:600;text-decoration:none}
 .program{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden}
@@ -151,6 +166,9 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .a-prog{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);margin-bottom:16px;overflow:hidden}
 .a-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 22px;border-bottom:1px solid var(--line);background:#FAF7F8}
 .a-head h2{margin:0;font-size:17px;color:var(--burgundy)}
+.a-head.tr-ncit h2,.a-head.tr-blue h2{color:#fff}.a-head.tr-gold h2{color:var(--burgundy-dk)}
+.a-head.tr-ncit div div,.a-head.tr-blue div div{color:#fff!important}
+.a-head.tr-ncit .btn.ghost,.a-head.tr-blue .btn.ghost{border-color:#fff}
 .assign{display:grid;grid-template-columns:62px 1fr auto;gap:16px;align-items:center;padding:12px 22px;border-bottom:1px solid #EEECEF}
 .assign:last-child{border-bottom:0}
 .role{font-size:12px;font-weight:700;color:var(--burgundy);background:var(--gold-lt);padding:2px 9px;border-radius:12px}
@@ -184,7 +202,6 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
   </div>
   <nav class="tabs" role="tablist" id="tabs">
     <button class="tab" role="tab" data-tab="programs" aria-selected="true">Programs<span class="n" id="n-programs">0</span></button>
-    <button class="tab" role="tab" data-tab="calls" aria-selected="false">Opportunities<span class="n" id="n-calls">0</span></button>
     <button class="tab" role="tab" data-tab="mine" aria-selected="false">My assignments<span class="n" id="n-mine">0</span></button>
   </nav>
 </header>
@@ -194,8 +211,8 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-const S = { data:null, tab:'programs', view:null, drafts:{}, dirty:new Set(), quarter:'all', show:'need', tz:'America/New_York' };
-const LABELS = { program:{A:'Available',N:'Not available',NA:'N/A'}, call:{A:"I'll volunteer",N:'Not this time'} };
+const S = { data:null, tab:'programs', view:null, drafts:{}, dirty:new Set(), quarter:'all', show:'all', tz:'America/New_York' };
+const LABELS = {A:'Available',N:'Not available',NA:'N/A'};
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const LONGM = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -262,8 +279,9 @@ function instant(date, clock, tz){
 }
 function converting(p){ return S.tz!==ET && !isLocalTime(p) && srcZone(p)!==S.tz; }
 // Returns HTML for a session's time, converted when the viewer chose another zone.
-function timeHtml(p, date, start, end){
+function timeHtml(p, date, start, end, endDate){
   if(!start) return '';
+  if(endDate && endDate!==date) return `${esc(start)} – ${esc(fmtDay(endDate))}, ${esc(end)} ${esc(p.timezone||'ET')}${isLocalTime(p)?' <span class="et">(local time)</span>':''}`;
   const src=`${esc(start)}${end?' – '+esc(end):''} ${esc(p.timezone||'ET')}`;
   if(isLocalTime(p)) return `${src}${/person/i.test(p.format||'')?' <span class="et">(local time)</span>':''}`;
   if(!converting(p)) return src;
@@ -313,7 +331,10 @@ async function load(){
 function resetDraft(pid){ const r=S.data.responses[pid]||{}; S.drafts[pid]={ program:r.program||'', sessions:{...(r.sessions||{})}, comment:r.comment||'' }; }
 
 function eff(p, sid){ const d=S.drafts[p.id]; return (d.sessions[sid]) || d.program || ''; }
-function units(p){ return (p.kind!=='call' && p.sessions.length) ? p.sessions.map(s=>s.id) : [null]; }
+const answerable = p => p.sessions.filter(s=>!s.allInstructors);
+const isIP = p => /person/i.test(p.format||'');
+const trk = p => ['ncit','blue','gold'].includes(p.track) ? 'tr-'+p.track : '';
+function units(p){ const a=answerable(p); return a.length ? a.map(s=>s.id) : [null]; }
 function answeredDraft(p){ const d=S.drafts[p.id]; return units(p).filter(u => u ? eff(p,u) : d.program).length; }
 function savedState(p){ // what's actually saved, for the badge
   const r=S.data.responses[p.id]; const n=units(p).length;
@@ -343,7 +364,7 @@ function needsResponse(p){ const s=savedState(p); return !p.locked && s.done<s.n
 function route(){
   const m=location.hash.match(/^#\/program\/([\w-]+)/);
   const pid=m&&S.data.programs.some(p=>p.id===m[1])?m[1]:null;
-  if(pid){ S.view=pid; const p=S.data.programs.find(x=>x.id===pid); S.tab=p.kind==='call'?'calls':'programs'; }
+  if(pid){ S.view=pid; S.tab='programs'; }
   else S.view=null;
   rerender(true);
 }
@@ -368,11 +389,10 @@ function renderWho(){
 function render(){
   renderWho();
   const d=S.data;
-  const progs=d.programs.filter(p=>p.kind!=='call'), calls=d.programs.filter(p=>p.kind==='call');
-  const np=progs.filter(needsResponse).length, nc=calls.filter(needsResponse).length;
+  const progs=d.programs;
+  const np=progs.filter(needsResponse).length;
   const setN=(id,n,hot,title)=>{ const el=document.getElementById(id); el.textContent=n; el.classList.toggle('hot',hot); el.title=title; };
   setN('n-programs', np||progs.length, np>0, np?`${np} need your response`:`${progs.length} programs`);
-  setN('n-calls', nc||calls.length, nc>0, nc?`${nc} need your response`:`${calls.length} opportunities`);
   setN('n-mine', new Set(d.assignments.map(a=>a.programId+a.sessionId)).size, false, 'Confirmed assignments');
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.tab===S.tab));
   document.getElementById('savebar').hidden = !(S.view && S.dirty.has(S.view));
@@ -386,17 +406,14 @@ function render(){
   }
   html += tzBar();
   if (S.view) html += renderDetail(d.programs.find(p=>p.id===S.view));
-  else if (S.tab==='programs') html += renderList(progs, 'program');
-  else if (S.tab==='calls') html += renderList(calls, 'call');
+  else if (S.tab==='programs') html += renderList(progs);
   else html += renderMine();
   main.innerHTML = html;
 }
 
 /* ---------- Card list ---------- */
-function renderList(list, kind){
-  if (!list.length) return kind==='call'
-    ? `<div class="empty"><h3>No open opportunities right now</h3><p>When CLEAR Learning posts a call for volunteers, it shows up here.</p></div>`
-    : `<div class="empty"><h3>No programs are open for availability yet</h3><p>CLEAR Learning staff will email you when the next schedule is ready.</p></div>`;
+function renderList(list){
+  if (!list.length) return `<div class="empty"><h3>No programs are open for availability yet</h3><p>CLEAR Learning staff will email you when the next schedule is ready.</p></div>`;
 
   const quarters=[...new Set(list.map(p=>p.quarter).filter(Boolean))];
   let shown=list.filter(p => S.quarter==='all' || p.quarter===S.quarter);
@@ -408,18 +425,14 @@ function renderList(list, kind){
   const total=openList.reduce((n,p)=>n+units(p).length,0), done=openList.reduce((n,p)=>n+savedState(p).done,0);
   const need=list.filter(needsResponse).length;
   let h='';
-  if (kind==='program'){
-    h += `<div class="intro"><p>Open a program to mark the sessions you could teach, and the ones you can't. You can come back and change your answers any time before the response date.</p>
-      <div class="meter"><div class="meter-label">${done} of ${total} open sessions answered${need?`, ${need} program${need>1?'s':''} still need${need>1?'':'s'} a response`:''}</div><div class="meter-bar"><span style="width:${total?Math.round(done/total*100):0}%"></span></div></div></div>`;
-  } else {
-    h += `<div class="intro"><p>One-off requests where CLEAR Learning is looking for instructors to step in. Volunteering doesn't commit you; staff will confirm with you before anything is final.</p></div>`;
-  }
+  h += `<div class="intro"><p>Open a program to mark the sessions or modules you are able to teach, and those you are not. You may return and change your answers at any time before the response date.</p>
+    <div class="meter"><div class="meter-label">${done} of ${total} open sessions answered${need?`; ${need} program${need>1?'s':''} still need${need>1?'':'s'} a response`:''}</div><div class="meter-bar"><span style="width:${total?Math.round(done/total*100):0}%"></span></div></div></div>`;
   h += `<div class="filters">`;
   if (quarters.length>1) h += `<label for="fq">Quarter</label><select id="fq" onchange="S.quarter=this.value;rerender()"><option value="all">All</option>${quarters.map(q=>`<option ${S.quarter===q?'selected':''}>${esc(q)}</option>`).join('')}</select>`;
   h += `<label for="fs">Show</label><select id="fs" onchange="S.show=this.value;rerender()">
+    <option value="all" ${S.show==='all'?'selected':''}>Everything (${list.length})</option>
     <option value="need" ${S.show==='need'?'selected':''}>Needs my response (${need})</option>
-    <option value="done" ${S.show==='done'?'selected':''}>Responded or closed (${list.length-need})</option>
-    <option value="all" ${S.show==='all'?'selected':''}>Everything (${list.length})</option></select></div>`;
+    <option value="done" ${S.show==='done'?'selected':''}>Responded or closed (${list.length-need})</option></select></div>`;
   if (!shown.length) h += S.show==='need'
     ? `<div class="empty"><h3>You're all caught up</h3><p>You've answered everything that's open. Switch Show to Everything to review or change your answers.</p></div>`
     : `<div class="empty"><h3>Nothing to show</h3><p>Try a different filter.</p></div>`;
@@ -427,21 +440,22 @@ function renderList(list, kind){
   return h;
 }
 function card(p){
-  const n=p.sessions.length, MAX=7;
-  const meta=[p.format, p.location && p.location!=='Virtual' ? p.location : '', p.kind==='call'?'':(n?`${n} live session${n>1?'s':''}`:'Staffed as a whole program')].filter(Boolean).join(' · ');
+  const all=p.sessions, n=answerable(p).length, MAX=7, unit=isIP(p)?'module':'live session';
+  const meta=[p.format, p.location && p.location!=='Virtual' ? p.location : '', n?`${n} ${unit}${n>1?'s':''}`:'Staffed as a whole program'].filter(Boolean).join(' · ');
   let sl='';
-  if (n){
-    sl=`<ul class="slist">${p.sessions.slice(0,n>MAX+1?MAX:n).map(s=>`<li><span class="dt">${esc(fmtDay(s.date))}</span><span>${timeHtml(p,s.date,s.start,s.end)||'<span class="et">Time to be set</span>'}</span></li>`).join('')}${n>MAX+1?`<li class="more">+ ${n-MAX} more sessions</li>`:''}</ul>`;
+  if (all.length){
+    sl=`<ul class="slist">${all.slice(0,all.length>MAX+1?MAX:all.length).map(s=>`<li><span class="dt">${esc(fmtDay(s.date))}</span><span>${isIP(p)?esc(s.title)+' · ':''}${timeHtml(p,s.date,s.start,s.end,s.endDate)||'<span class="et">Time to be set</span>'}${s.allInstructors?' <span class="all">All cohort instructors attend</span>':''}</span></li>`).join('')}${all.length>MAX+1?`<li class="more">+ ${all.length-MAX} more</li>`:''}</ul>`;
   }
-  return `<a class="card" href="#/program/${p.id}">
-    <div class="card-top">${tile(p.startDate,p.endDate)}<div><h2>${esc(p.title)}</h2>${p.cohort?`<div class="cohort">${esc(p.cohort)}</div>`:''}<div class="meta">${esc(fmtRange(p.startDate,p.endDate))}${meta?' · '+esc(meta):''}</div></div></div>
+  const s0=savedState(p), done=s0.n&&s0.done>=s0.n;
+  return `<a class="card${done?' responded':''}" href="#/program/${p.id}">
+    <div class="card-top ${trk(p)}">${tile(p.startDate,p.endDate)}<div><h2>${esc(p.title)}</h2>${p.cohort?`<div class="cohort">${esc(p.cohort)}</div>`:''}<div class="meta">${esc(fmtRange(p.startDate,p.endDate))}${meta?' · '+esc(meta):''}</div></div></div>
     ${sl}
     <div class="card-foot">${dueHtml(p)}${badge(p)}</div></a>`;
 }
 
 /* ---------- Detail ---------- */
 function answerCtl(p, sid, value, inherited){
-  const labels = LABELS[p.kind==='call'?'call':'program'];
+  const labels = LABELS;
   const locked = p.locked || S.data.viewingAs;
   const which = sid===null ? 'whole program' : 'this session';
   return `<div class="answer ${inherited?'inherited':''}" role="group" aria-label="Your answer for ${which}">` +
@@ -450,12 +464,12 @@ function answerCtl(p, sid, value, inherited){
     `</div>`;
 }
 function renderDetail(p){
-  const d=S.drafts[p.id], r=S.data.responses[p.id], isCall=p.kind==='call', dirty=S.dirty.has(p.id);
+  const d=S.drafts[p.id], r=S.data.responses[p.id], dirty=S.dirty.has(p.id), unit=isIP(p)?'module':'session';
   const facts=[fmtRange(p.startDate,p.endDate), p.format, p.location && p.location!=='Virtual' ? p.location : ''].filter(Boolean);
   const editable=!p.locked && !S.data.viewingAs;
-  let h=`<a class="back" href="#/">← All ${isCall?'opportunities':'programs'}</a>
+  let h=`<a class="back" href="#/">← All programs</a>
   <section class="program" id="prog-${p.id}">
-    <div class="p-head">${tile(p.startDate,p.endDate)}<div>
+    <div class="p-head ${trk(p)}">${tile(p.startDate,p.endDate)}<div>
       <h2>${esc(p.title)}</h2>${p.cohort?`<div style="font-weight:600;color:var(--charcoal)">${esc(p.cohort)}</div>`:''}
       <div class="facts">${facts.map(f=>`<span>${esc(f)}</span>`).join('')}</div>
     </div>
@@ -464,22 +478,25 @@ function renderDetail(p){
   else if (p.deadline) h+=`<div class="deadline-box"><strong>Respond by ${fmtLong(p.deadline)}</strong> (11:59 PM Eastern). ${r?'You can change your answers until then.':'You can save now and change your answers any time until then.'}</div>`;
   if (p.description) h+=`<div class="desc">${esc(p.description)}</div>`;
 
-  if (isCall){
-    h+=`<div class="whole" style="margin-top:${p.description?'14px':'0'};border-top:${p.description?'1px solid var(--line)':'0'}"><span class="lbl">Your answer</span>${answerCtl(p,null,d.program,false)}</div>`;
-  } else if (!p.sessions.length){
+  if (!answerable(p).length){
     h+=`<div class="whole"><span class="lbl">Entire program</span>${answerCtl(p,null,d.program,false)}<span class="hint">This program is staffed as a whole. Note any days you can't cover in the comments.</span></div>`;
   } else {
-    h+=`<div class="whole"><span class="lbl">Whole program</span>${answerCtl(p,null,d.program,false)}<span class="hint">Sets every session below in one click. Change any single session to override it.</span></div><ol class="sessions">`;
+    h+=`<div class="whole"><span class="lbl">Whole program</span>${answerCtl(p,null,d.program,false)}<span class="hint">Sets every ${unit} below in one click. Change any single ${unit} to override it.</span></div><ol class="sessions">`;
     for (const s of p.sessions){
+      const t=timeHtml(p,s.date,s.start,s.end,s.endDate);
+      if (s.allInstructors){
+        h+=`<li class="session">${tile(s.date)}<div><div class="s-title">${esc(s.title)}</div><div class="s-time">${esc(fmtDay(s.date))}${t?', '+t:''}</div></div>
+          <div class="ans-wrap"><span class="allattend">All instructors assigned to this cohort attend</span></div></li>`;
+        continue;
+      }
       const own=d.sessions[s.id]||'', v=own||d.program||'', inh=!own && !!d.program;
-      const t=timeHtml(p,s.date,s.start,s.end);
       h+=`<li class="session">${tile(s.date)}<div><div class="s-title">${esc(s.title)}</div><div class="s-time">${esc(fmtDay(s.date))}${t?', '+t:''}</div></div>
         <div class="ans-wrap">${answerCtl(p,s.id,v,inh)}${inh?'<div class="inherit">From whole program</div>':''}</div></li>`;
     }
     h+=`</ol>`;
   }
   h+=`<div class="comment"><label for="c-${p.id}">Comments for staff</label>
-    <textarea id="c-${p.id}" ${editable?'':'disabled'} placeholder="${isCall?'Anything staff should know, like relevant experience':'Conditions or notes, like “first half only” or a session you’d especially like to lead'}" oninput="setComment('${p.id}',this.value)">${esc(d.comment)}</textarea></div>
+    <textarea id="c-${p.id}" ${editable?'':'disabled'} placeholder="Conditions or notes, for example “first half only” or a ${unit} you would especially like to lead" oninput="setComment('${p.id}',this.value)">${esc(d.comment)}</textarea></div>
     <div class="p-bottom"><span class="saved-at">${r && r.updatedAt ? 'Last saved '+fmtStamp(r.updatedAt) : 'Not answered yet'}</span>
     ${editable?`<button class="btn" ${dirty?'':'disabled'} onclick="save('${p.id}')">${r?'Save changes':'Save answers'}</button>`:''}</div></section>`;
   return h;
@@ -492,11 +509,11 @@ function renderMine(){
   const groups=[]; for(const x of a){ let g=groups.find(g=>g.pid===x.programId); if(!g){ g={pid:x.programId,items:[]}; groups.push(g); } g.items.push(x); }
   return groups.map(g=>{
     const f=g.items[0], p=S.data.programs.find(x=>x.id===g.pid)||{format:f.format,timezone:f.timezone,location:f.location};
-    return `<div class="a-prog"><div class="a-head"><div><h2>${esc(f.programTitle)}</h2>${f.cohort?`<div style="font-size:13px;font-weight:600;color:var(--charcoal)">${esc(f.cohort)}</div>`:''}</div>
+    return `<div class="a-prog"><div class="a-head ${trk(f)}"><div><h2>${esc(f.programTitle)}</h2>${f.cohort?`<div style="font-size:13px;font-weight:600;color:var(--charcoal)">${esc(f.cohort)}</div>`:''}</div>
       <button class="btn ghost small" onclick="getIcs('${g.pid}')">Add to calendar (.ics)</button></div>` +
       g.items.map(x=>{
         const whole=x.sessionId==='__program';
-        const t=whole?esc(fmtRange(x.date,x.endDate)):`${esc(fmtDay(x.date))}${x.start?', '+timeHtml(p,x.date,x.start,x.end):''}`;
+        const t=whole?esc(fmtRange(x.date,x.endDate)):`${esc(fmtDay(x.date))}${x.start?', '+timeHtml(p,x.date,x.start,x.end,x.endDate):''}`;
         return `<div class="assign">${tile(x.date, whole?x.endDate:null)}
           <div><div class="s-title">${esc(x.sessionTitle)}</div><div class="s-time">${t}${x.location&&x.location!=='Virtual'?', '+esc(x.location):''}</div>
           ${x.zoomLink?`<div class="zoom">Zoom: <a href="${esc(x.zoomLink)}" target="_blank" rel="noopener">${esc(x.zoomLink)}</a></div>`:''}</div>
@@ -546,7 +563,7 @@ async function save(pid){
     S.dirty.delete(pid);
     rerender();
     const left=units(p).length-answeredDraft(p);
-    toast((had?'Changes saved':'Answers saved')+(left?`. ${left} session${left>1?'s are':' is'} still unanswered.`:p.deadline?`. You can change them until ${fmtD(p.deadline)}.`:'.'));
+    toast((had?'Changes saved':'Answers saved')+(left?`. ${left} ${isIP(p)?'module':'session'}${left>1?'s are':' is'} still unanswered.`:p.deadline?`. You can change them until ${fmtD(p.deadline)}.`:'.'));
   }catch(e){ toast(e.message); }
 }
 window.addEventListener('beforeunload', e => { if (S.dirty.size){ e.preventDefault(); e.returnValue=''; } });
