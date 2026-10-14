@@ -143,8 +143,8 @@ dialog::backdrop{background:rgba(40,20,28,.45)}
 .ph,.mx-band{border-top:6px solid var(--tc,var(--line));background:#FAF7F8}
 .ph h3,.mx-band h3{color:var(--tt,var(--burgundy))!important}
 .ttl{display:flex;gap:12px;align-items:center;min-width:0}
-.plogo{width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid var(--line);object-fit:contain;padding:4px;flex:none}
-.plogo.sm{width:28px;height:28px;padding:3px}
+.plogo{width:40px;height:40px;border-radius:8px;background:#fff;border:1px solid var(--line);object-fit:contain;padding:4px;flex:none}
+.plogo.sm{width:28px;height:28px;padding:3px;border-radius:6px}
 .trk{border-left:6px solid transparent}.trk.k-ncit{border-left-color:var(--burgundy)}.trk.k-blue{border-left-color:var(--blue)}.trk.k-gold{border-left-color:var(--gold)}
 .mx-band{padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:10px}
 .mx-band h3{margin:0}
@@ -614,7 +614,7 @@ function editProgram(pid){
     <div class="f span2"><label for="e-deadline">Respond by</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input id="e-deadline" type="date" value="${esc(p.deadlineMode==='auto'?autoDeadline(p):p.deadline)}" ${p.deadlineMode==='auto'?'disabled':''}>
       <label style="font-weight:400;font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="e-dlauto" ${p.deadlineMode==='auto'?'checked':''} onchange="dlToggle()"> Automatic: ${(D.config||{}).deadlineDays||30} days before the first live session</label></div></div>
     <div class="f"><label for="e-track">Program track (header colour)</label><select id="e-track"><option value="" ${!p.trackSet?'selected':''}>Automatic from the course name</option><option value="ncit" ${/^ncit/.test(p.trackSet||'')?'selected':''}>NCIT (burgundy)</option><option value="blue" ${p.trackSet==='blue'?'selected':''}>ELPR and SRA (blue)</option><option value="gold" ${p.trackSet==='gold'?'selected':''}>ACRG, IRG and Board Chair (gold)</option><option value="none" ${p.trackSet==='none'?'selected':''}>None</option></select></div>
-    <div class="f"><label for="e-logo">Program logo</label><select id="e-logo"><option value="">Automatic from the course name</option>${[['NCITB','NCIT Basic'],['NCITS','NCIT Specialized'],['NCITAIT','NCIT AIT'],['NCITWDDI','Workshop: Drug Diversion'],['NCITWIRSM','Workshop: Sexual Misconduct'],['NCITWCSAP','Workshop: Communications'],['NCITWERI','Workshop: Ethics'],['SRASAB','SRA: Staffing a Board'],['ACRG','ACRG'],['ELPR','ELPR'],['BCT','Board Chair Training'],['IRG','Introduction to Regulatory Governance']].map(([v,l])=>`<option value="${v}" ${p.logoSet===v?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="f"><label for="e-logo">Program logo</label><select id="e-logo"><option value="">Automatic from the course name</option>${[['NCITB','NCIT Basic'],['NCITS','NCIT Specialized'],['NCITAIT','NCIT AIT'],['NCITWS','NCIT Workshop Series'],['NCITWDDI','Workshop: Drug Diversion'],['NCITWIRSM','Workshop: Sexual Misconduct'],['NCITWCSAP','Workshop: Communications'],['NCITWERI','Workshop: Ethics'],['SRASAB','SRA: Staffing a Board'],['ACRG','ACRG'],['ELPR','ELPR'],['BCT','Board Chair Training'],['IRG','Introduction to Regulatory Governance']].map(([v,l])=>`<option value="${v}" ${p.logoSet===v?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="f"><label for="e-status">Status</label><select id="e-status">${['draft','open','closed','archived'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
     <div class="f span4"><label for="e-description">Description for instructors (optional)</label><textarea id="e-description" rows="3">${esc(p.description)}</textarea></div></div>
     <datalist id="dl-titles">${titles.map(x=>`<option value="${esc(x)}">`).join('')}</datalist><datalist id="dl-format"><option value="Virtual (Zoom)"><option value="In-Person"><option value="Hybrid"></datalist>`;
