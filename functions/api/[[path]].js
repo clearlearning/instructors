@@ -31,18 +31,23 @@ const PROGRAM_SLOT = '__program';
 const ET = 'America/New_York';
 const DEADLINE_DAYS = 30;
 const MAX_ICS = 900_000;
-const TRACKS = ['ncit', 'blue', 'gold', 'none'];
-// Program track sets the header colour on both dashboards: NCIT = burgundy, ELPR & SRA = blue, ACRG & Board Chair = gold.
+const TRACKS = ['ncit', 'ncit-s', 'ncit-ait', 'ncit-ws', 'blue', 'gold', 'none'];
+// Program track sets the header colour on both dashboards. NCIT is burgundy, shaded by program: Basic 100%,
+// Specialized 80%, AIT 60%, Workshops 40%. ELPR & SRA = blue, ACRG & Board Chair = gold.
 const TRACK_BY_COURSE = {
-  '126': 'ncit', '128': 'ncit', '129': 'ncit', 'ip-ncit-b-us': 'ncit', 'ip-ncit-b-can': 'ncit', 'ip-ncit-s': 'ncit', 'ip-ncit-ait': 'ncit',
-  'ncit-workshop-series': 'ncit', '146': 'ncit', '157': 'ncit', '169': 'ncit', '143': 'ncit',
+  '126': 'ncit', '128': 'ncit', 'ip-ncit-b-us': 'ncit', 'ip-ncit-b-can': 'ncit',
+  '129': 'ncit-s', 'ip-ncit-s': 'ncit-s', 'ip-ncit-ait': 'ncit-ait',
+  'ncit-workshop-series': 'ncit-ws', '146': 'ncit-ws', '157': 'ncit-ws', '169': 'ncit-ws', '143': 'ncit-ws',
   '138': 'blue', '147': 'blue', '142': 'gold', '165': 'gold'
 };
 function autoTrack(p) {
   const byId = TRACK_BY_COURSE[String(p.courseId || '')];
   if (byId) return byId;
   const t = String(p.title || '');
-  if (/NCIT|Investigat|Drug Diversion|Sexual Misconduct|Ethics for the Regulatory|Art of Persuasion|Applied Investigative/i.test(t)) return 'ncit';
+  if (/Applied Investigative|\bAIT\b/i.test(t)) return 'ncit-ait';
+  if (/Workshop|Drug Diversion|Sexual Misconduct|Ethics for the Regulatory|Art of Persuasion/i.test(t)) return 'ncit-ws';
+  if (/NCIT.*Specialized|Specialized.*NCIT|NCIT S\b/i.test(t)) return 'ncit-s';
+  if (/NCIT|Investigat/i.test(t)) return 'ncit';
   if (/Executive Leadership|\bELPR\b|Staffing a Board|\bSRA\b/i.test(t)) return 'blue';
   if (/Advanced Concepts|\bACRG\b|Getting the Most|Board Chair|Chairing/i.test(t)) return 'gold';
   return 'none';
@@ -246,7 +251,7 @@ function withState(p, today) {
   return { ...p, track: trackOf(p), pastDeadline: pastDeadline(p, today), locked: isLocked(p, today) };
 }
 // Programs saved before tracks existed have no stored track, so work it out on every read.
-function trackOf(p) { return p.trackSet || (p.track && p.track !== 'none' ? p.track : autoTrack(p)); }
+function trackOf(p) { return p.trackSet || autoTrack(p); }
 
 /* ======================= Instructor portal ======================= */
 
