@@ -243,8 +243,10 @@ const answerable = p => (p.sessions || []).filter(s => !s.allInstructors);
 function pastDeadline(p, today) { return !!(p.deadline && (today || todayET()) > p.deadline); }
 function isLocked(p, today) { return p.status !== 'open' || pastDeadline(p, today); }
 function withState(p, today) {
-  return { ...p, pastDeadline: pastDeadline(p, today), locked: isLocked(p, today) };
+  return { ...p, track: trackOf(p), pastDeadline: pastDeadline(p, today), locked: isLocked(p, today) };
 }
+// Programs saved before tracks existed have no stored track, so work it out on every read.
+function trackOf(p) { return p.trackSet || (p.track && p.track !== 'none' ? p.track : autoTrack(p)); }
 
 /* ======================= Instructor portal ======================= */
 
@@ -291,7 +293,7 @@ async function portal(env, me, asId) {
 
 function assignRow(p, slot, s, role) {
   return {
-    programId: p.id, programTitle: p.title, cohort: p.cohort || '', track: p.track || 'none', format: p.format, location: p.location, timezone: p.timezone,
+    programId: p.id, programTitle: p.title, cohort: p.cohort || '', track: trackOf(p), format: p.format, location: p.location, timezone: p.timezone,
     sessionId: slot, sessionTitle: s ? s.title : 'Entire program',
     date: s ? s.date : p.startDate, endDate: s ? (s.endDate || s.date) : p.endDate, start: s ? s.start : '', end: s ? s.end : '',
     zoomLink: s ? s.zoomLink || '' : '', role, hasIcs: !!p.hasIcs
