@@ -31,26 +31,40 @@ const PROGRAM_SLOT = '__program';
 const ET = 'America/New_York';
 const DEADLINE_DAYS = 30;
 const MAX_ICS = 900_000;
-const TRACKS = ['ncit', 'ncit-s', 'ncit-ait', 'ncit-ws', 'blue', 'gold', 'none'];
-// Program track sets the header colour on both dashboards. NCIT is burgundy, shaded by program: Basic 100%,
-// Specialized 80%, AIT 60%, Workshops 40%. ELPR & SRA = blue, ACRG & Board Chair = gold.
+const TRACKS = ['ncit', 'blue', 'gold', 'none'];
+// Program track sets the colour band on both dashboards: NCIT = burgundy, ELPR & SRA = blue, ACRG, IRG & Board Chair = gold.
+// The program logo (in /images of this repo) tells individual programs apart.
 const TRACK_BY_COURSE = {
-  '126': 'ncit', '128': 'ncit', 'ip-ncit-b-us': 'ncit', 'ip-ncit-b-can': 'ncit',
-  '129': 'ncit-s', 'ip-ncit-s': 'ncit-s', 'ip-ncit-ait': 'ncit-ait',
-  'ncit-workshop-series': 'ncit-ws', '146': 'ncit-ws', '157': 'ncit-ws', '169': 'ncit-ws', '143': 'ncit-ws',
+  '126': 'ncit', '128': 'ncit', 'ip-ncit-b-us': 'ncit', 'ip-ncit-b-can': 'ncit', '129': 'ncit', 'ip-ncit-s': 'ncit', 'ip-ncit-ait': 'ncit',
+  'ncit-workshop-series': 'ncit', '146': 'ncit', '157': 'ncit', '169': 'ncit', '143': 'ncit',
   '138': 'blue', '147': 'blue', '142': 'gold', '165': 'gold'
 };
 function autoTrack(p) {
   const byId = TRACK_BY_COURSE[String(p.courseId || '')];
   if (byId) return byId;
   const t = String(p.title || '');
-  if (/Applied Investigative|\bAIT\b/i.test(t)) return 'ncit-ait';
-  if (/Workshop|Drug Diversion|Sexual Misconduct|Ethics for the Regulatory|Art of Persuasion/i.test(t)) return 'ncit-ws';
-  if (/NCIT.*Specialized|Specialized.*NCIT|NCIT S\b/i.test(t)) return 'ncit-s';
-  if (/NCIT|Investigat/i.test(t)) return 'ncit';
+  if (/NCIT|Investigat|Drug Diversion|Sexual Misconduct|Ethics for the Regulatory|Art of Persuasion/i.test(t)) return 'ncit';
   if (/Executive Leadership|\bELPR\b|Staffing a Board|\bSRA\b/i.test(t)) return 'blue';
-  if (/Advanced Concepts|\bACRG\b|Getting the Most|Board Chair|Chairing/i.test(t)) return 'gold';
+  if (/Advanced Concepts|\bACRG\b|Getting the Most|Board Chair|Chairing|Introduction to Regulatory Governance|\bIRG\b/i.test(t)) return 'gold';
   return 'none';
+}
+const LOGO_DIR = '/images/';
+const LOGO_BY_COURSE = {
+  '126': 'NCITB', '128': 'NCITB', 'ip-ncit-b-us': 'NCITB', 'ip-ncit-b-can': 'NCITB',
+  '129': 'NCITS', 'ip-ncit-s': 'NCITS', 'ip-ncit-ait': 'NCITAIT',
+  '169': 'NCITWDDI', '143': 'NCITWIRSM', '146': 'NCITWCSAP', '157': 'NCITWERI',
+  '147': 'SRASAB', '142': 'ACRG', '138': 'ELPR', '165': 'BCT'
+};
+const LOGO_BY_TITLE = [
+  [/Applied Investigative|\bAIT\b/i, 'NCITAIT'], [/Drug Diversion/i, 'NCITWDDI'], [/Sexual Misconduct/i, 'NCITWIRSM'],
+  [/Art of Persuasion|Communications/i, 'NCITWCSAP'], [/Ethics/i, 'NCITWERI'], [/Specialized/i, 'NCITS'], [/NCIT.*Basic|Basic.*NCIT/i, 'NCITB'],
+  [/Staffing a Board|\bSRA\b/i, 'SRASAB'], [/Advanced Concepts|\bACRG\b/i, 'ACRG'], [/Executive Leadership|\bELPR\b/i, 'ELPR'],
+  [/Getting the Most|Board Chair/i, 'BCT'], [/Introduction to Regulatory Governance|\bIRG\b/i, 'IRG']
+];
+const LOGO_NAMES = ['NCITB', 'NCITS', 'NCITAIT', 'NCITWDDI', 'NCITWIRSM', 'NCITWCSAP', 'NCITWERI', 'SRASAB', 'ACRG', 'ELPR', 'BCT', 'IRG'];
+function logoOf(p) {
+  const name = (LOGO_NAMES.includes(p.logoSet) && p.logoSet) || LOGO_BY_COURSE[String(p.courseId || '')] || (LOGO_BY_TITLE.find(r => r[0].test(String(p.title || ''))) || [])[1] || '';
+  return name ? LOGO_DIR + name + '.svg' : '';
 }
 // Instructors attend the Welcome session only in ACRG, ELPR and SRA: Staffing a Board. Everywhere else it is removed.
 function keepsWelcome(p) {
@@ -248,10 +262,10 @@ const answerable = p => (p.sessions || []).filter(s => !s.allInstructors);
 function pastDeadline(p, today) { return !!(p.deadline && (today || todayET()) > p.deadline); }
 function isLocked(p, today) { return p.status !== 'open' || pastDeadline(p, today); }
 function withState(p, today) {
-  return { ...p, track: trackOf(p), pastDeadline: pastDeadline(p, today), locked: isLocked(p, today) };
+  return { ...p, track: trackOf(p), logo: logoOf(p), pastDeadline: pastDeadline(p, today), locked: isLocked(p, today) };
 }
 // Programs saved before tracks existed have no stored track, so work it out on every read.
-function trackOf(p) { return p.trackSet || autoTrack(p); }
+function trackOf(p) { return (p.trackSet && TRACKS.includes(p.trackSet) && p.trackSet) || autoTrack(p); }
 
 /* ======================= Instructor portal ======================= */
 
@@ -298,7 +312,7 @@ async function portal(env, me, asId) {
 
 function assignRow(p, slot, s, role) {
   return {
-    programId: p.id, programTitle: p.title, cohort: p.cohort || '', track: trackOf(p), format: p.format, location: p.location, timezone: p.timezone,
+    programId: p.id, programTitle: p.title, cohort: p.cohort || '', track: trackOf(p), logo: logoOf(p), format: p.format, location: p.location, timezone: p.timezone,
     sessionId: slot, sessionTitle: s ? s.title : 'Entire program',
     date: s ? s.date : p.startDate, endDate: s ? (s.endDate || s.date) : p.endDate, start: s ? s.start : '', end: s ? s.end : '',
     zoomLink: s ? s.zoomLink || '' : '', role, hasIcs: !!p.hasIcs
@@ -413,7 +427,8 @@ function normalizeProgram(id, p, existing) {
   sessions.sort((a, b) => a.date.localeCompare(b.date) || toMin(a.start) - toMin(b.start));
   const startDate = cleanDate(p.startDate) || allDates[0] || '';
   const endDate = cleanDate(p.endDate) || allDates[allDates.length - 1] || startDate;
-  const trackSet = TRACKS.includes(p.trackSet) ? p.trackSet : '';
+  const trackSet = TRACKS.includes(p.trackSet) ? p.trackSet : (/^ncit/.test(p.trackSet || '') ? 'ncit' : '');
+  const logoSet = LOGO_NAMES.includes(p.logoSet) ? p.logoSet : '';
 
   // Deadline: automatic = 30 days before the first live session, unless staff set one by hand.
   let deadlineMode = p.deadlineMode === 'manual' || p.deadlineMode === 'auto' ? p.deadlineMode
@@ -426,7 +441,7 @@ function normalizeProgram(id, p, existing) {
 
   const keep = k => existing ? existing[k] : undefined;
   return {
-    id, kind: 'program', title, track: trackSet || autoTrack(ctx), trackSet,
+    id, kind: 'program', title, track: trackSet || autoTrack(ctx), trackSet, logoSet,
     cohort: String(p.cohort || '').trim().slice(0, 120),
     quarter: String(p.quarter || '').slice(0, 40),
     format: String(p.format || '').slice(0, 60),
