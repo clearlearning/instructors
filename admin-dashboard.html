@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Instructor Availability Dashboard | CLEAR Learning</title>
+<title>Instructor Portal Staff Dashboard | CLEAR Learning</title>
 <link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -183,7 +183,7 @@ table.quals td{padding:6px 8px}
 <body>
 <header class="top">
   <div class="top-in">
-    <div class="brand"><small>CLEAR Learning</small><h1>Instructor availability dashboard</h1></div>
+    <div class="brand"><small>CLEAR Learning</small><h1>Instructor Portal Staff Dashboard</h1></div>
     <div class="who" id="who"></div>
   </div>
   <nav class="tabs" id="tabs" role="tablist">
@@ -456,7 +456,7 @@ function exportMatrix(which){
       out.push(csvRow([titleOf(p),row.date,row.title,row.start,row.end,p.timezone,p.format,p.location,...vals.map(v=>v?LBL[v]:''),vals.filter(v=>v==='A').length,vals.filter(v=>!v).length,comments]));
     });
   }
-  download(`instructor-availability-${which==='one'?prog(U.pid).title.replace(/[^\w]+/g,'-'):'open-programs'}.csv`,out.join('\r\n'));
+  download(`instructor-portal-${which==='one'?prog(U.pid).title.replace(/[^\w]+/g,'-'):'open-programs'}.csv`,out.join('\r\n'));
 }
 
 /* ================= Selection ================= */
@@ -654,10 +654,10 @@ async function mailGo(kind,mode){
 
 /* ================= Programs ================= */
 function vPrograms(){
-  let h=`<h2>Programs</h2><p class="sub">Each quarter, load the TeamGantt export in the Program Agenda Generator's Quarter batch and choose Send to availability portal; every cohort arrives here with its sessions and calendar file. Add one-off programs by hand. Everything starts as a draft that only staff can see; open it here or on the Overview, then announce it.</p>
+  let h=`<h2>Programs</h2><p class="sub">Each quarter, load the TeamGantt export in the Program Agenda Generator's Quarter batch and choose Send to Instructor Portal; every cohort arrives here with its sessions and calendar file. Add one-off programs by hand. Everything starts as a draft that only staff can see; open it here or on the Overview, then announce it.</p>
     <div class="bar">${quarterSelect()}<span class="grow"></span><a class="btn" href="/agenda-generator" target="_blank" style="text-decoration:none">Open Agenda Generator</a><button class="btn ghost" onclick="packageDlg()">Import package file</button><button class="btn ghost" onclick="importDlg()">Import spreadsheet</button><button class="btn ghost" onclick="editProgram(null)">New one-off program</button></div>`;
   const list=D.programs.filter(inQuarter);
-  if(!list.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Open the Program Agenda Generator, use Quarter batch to load the TeamGantt export, then choose Send to availability portal.</p></div>`;
+  if(!list.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Open the Program Agenda Generator, use Quarter batch to load the TeamGantt export, then choose Send to Instructor Portal.</p></div>`;
   h+=`<div class="tbl-wrap"><table><thead><tr><th>Program</th><th>Quarter</th><th>Dates</th><th>Format</th><th>Sessions</th><th>Respond by</th><th>Calendar</th><th>Announced</th><th>Status</th><th></th></tr></thead><tbody>`+
     list.map(p=>`<tr><td class="${trkL(p)}"><div class="ttl">${logoImg(p,1)}<div><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}${p.source==='agenda-generator'?'<span class="pill src">Agenda Generator</span>':''}</div></div></td><td>${esc(p.quarter)}</td><td style="white-space:nowrap">${esc(fmtRange(p.startDate,p.endDate))}</td><td>${esc(p.format)}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''}</td><td>${answerable(p).length?answerable(p).length+(isIP(p)?' modules':''):'Whole program'}</td>
       <td style="white-space:nowrap">${fmtD(p.deadline)}${p.deadline?`<div class="facts">${p.deadlineMode==='auto'?'automatic':'set by hand'}${p.pastDeadline?', passed':''}</div>`:''}</td>
