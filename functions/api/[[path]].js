@@ -1,4 +1,4 @@
-/* CLEAR Learning Instructor Availability — API
+/* CLEAR Learning Instructor Portal — API
    Cloudflare Pages Function. File path in the repo: functions/api/[[path]].js
    Serves every request under /api/*.
 
@@ -13,7 +13,7 @@
    Email (optional, turns on the Announce / Remind / Selection email buttons)
      NOTIFY_FLOW_URL        (Secret) HTTP POST URL of the Power Automate flow that sends the email
      NOTIFY_MAILBOX         the shared mailbox the flow sends from, e.g. clearlearning@clearhq.org
-     PORTAL_URL             link put in emails, e.g. https://availability.clearhq.org (defaults to this site)
+     PORTAL_URL             link put in emails, e.g. https://<portal domain> (defaults to this site)
 
    Automatic reminders (optional; called once a day by the instructor-availability-cron Worker)
      CRON_SECRET            (Secret) shared with the cron Worker; must match its CRON_SECRET
@@ -699,7 +699,7 @@ function filterIcs(text, sessions) {
 function buildIcs(prog, sessions) {
   const tzid = TZIDS[String(prog.timezone || 'ET').toUpperCase()] || ET;
   const stampNow = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//CLEAR Learning//Instructor Availability//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//CLEAR Learning//Instructor Portal//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
   const ev = (uid, when, summary, desc, loc) => {
     lines.push('BEGIN:VEVENT', 'UID:' + uid, 'DTSTAMP:' + stampNow, ...when, fold('SUMMARY:' + icsEsc(summary)), fold('DESCRIPTION:' + icsEsc(desc)));
     if (loc) lines.push(fold('LOCATION:' + icsEsc(loc)));
@@ -758,7 +758,7 @@ function emailShell(title, inner, origin) {
   return `<div style="font-family:'Open Sans',Arial,sans-serif;color:#2B2B2B;max-width:640px;margin:0 auto">
 <div style="background:#64092C;color:#fff;padding:18px 22px;border-radius:8px 8px 0 0"><img src="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png" alt="CLEAR" width="40" height="40" style="float:right;width:40px;height:40px;background:#fff;border-radius:6px;padding:3px"><div style="font-size:12px;opacity:.85;font-weight:600">CLEAR Learning</div><div style="font-size:20px;font-weight:800;margin-top:2px">${H(title)}</div></div>
 <div style="border:1px solid #DEDCE0;border-top:0;padding:20px 22px;border-radius:0 0 8px 8px;font-size:14px;line-height:1.55">${inner}
-<p style="margin:22px 0 6px"><a href="${H(origin)}" style="background:#64092C;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:700;display:inline-block">Open the instructor availability portal</a></p>
+<p style="margin:22px 0 6px"><a href="${H(origin)}" style="background:#64092C;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:700;display:inline-block">Open the Instructor Portal</a></p>
 <p style="font-size:12px;color:#6E6B70;margin-top:16px">Sign in with this email address; you'll get a one-time code by email. Questions: reply to this message or write to clearlearning@clearhq.org.</p></div></div>`;
 }
 function noteBlock(note) { return note ? `<p style="background:#F8EDD3;border-left:4px solid #DDA838;padding:10px 14px;border-radius:4px;white-space:pre-wrap">${H(note)}</p>` : ''; }
@@ -786,7 +786,7 @@ async function notifyAnnounce(env, body, me) {
   if (!body.test && progs.some(p => p.status !== 'open')) throw httpErr(400, 'Only open programs can be announced. Open them first.');
   progs.sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
   const build = list => ({
-    subject: (body.test ? '[TEST] ' : '') + (list.length === 1 ? `New CLEAR Learning program open for instructors: ${list[0].title}` : `${list.length} new CLEAR Learning programs are open for instructor availability`),
+    subject: (body.test ? '[TEST] ' : '') + (list.length === 1 ? `New CLEAR Learning program open for instructors: ${list[0].title}` : `${list.length} new CLEAR Learning programs are open in the Instructor Portal`),
     html: emailShell('New programs are open for availability', `<p>Hello,</p>
 <p>CLEAR Learning has posted ${list.length === 1 ? 'a new program' : list.length + ' new programs'} you are approved to teach. Please mark the sessions you are able to teach, and those you are not, by each program's response date.</p>
 ${noteBlock(body.note)}
