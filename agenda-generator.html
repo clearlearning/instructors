@@ -210,7 +210,7 @@
 <body>
 <div class="header">
   <div class="header-icon">&#128197;</div>
-  <div style="flex:1"><h1>Program Agenda Generator</h1><p>Build one program at a time, or a whole quarter from the TeamGantt export, then send it to the instructor availability portal</p></div>
+  <div style="flex:1"><h1>Program Agenda Generator</h1><p>Build one program at a time, or a whole quarter from the TeamGantt export, then send it to the Instructor Portal</p></div>
   <a href="/admin-dashboard" style="color:#fff;font-weight:700;font-size:13px;white-space:nowrap">Staff dashboard &rarr;</a>
 </div>
 <div class="main">
@@ -250,10 +250,10 @@
         <div class="btn-row">
           <button class="btn btn-gold" onclick="batchPrintAgendas()">&#11015; Print all program agendas</button>
           <button class="btn btn-outlook" onclick="batchZipIcs()">&#128197; Download all calendar files (.zip)</button>
-          <button class="btn btn-burgundy" onclick="batchSend()">&#11014; Send to availability portal</button>
+          <button class="btn btn-burgundy" onclick="batchSend()">&#11014; Send to Instructor Portal</button>
           <button class="btn btn-ghost btn-sm" onclick="batchPackage()" title="Backup copy of what would be sent">Download package (.json)</button>
         </div>
-        <div class="ics-tip"><strong>Agendas:</strong> all ticked cohorts open in one print window, one agenda per page. Choose Save as PDF for a combined file, or use the Agenda button on a row for a single cohort.<br><strong>Send to availability portal:</strong> new cohorts arrive in the <a href="/admin-dashboard" target="_blank">staff dashboard</a> as drafts, with the response date set 30 days before the first live session. Sending again later (say, after adding Zoom links) updates the same programs without losing anyone's answers.</div>
+        <div class="ics-tip"><strong>Agendas:</strong> all ticked cohorts open in one print window, one agenda per page. Choose Save as PDF for a combined file, or use the Agenda button on a row for a single cohort.<br><strong>Send to Instructor Portal:</strong> new cohorts arrive in the <a href="/admin-dashboard" target="_blank">staff dashboard</a> as drafts, with the response date set 30 days before the first live session. Sending again later (say, after adding Zoom links) updates the same programs without losing anyone's answers.</div>
         <div id="batchGenStatus" class="status-bar"></div>
       </div>
     </div>
@@ -405,7 +405,7 @@
       <button class="btn btn-gold" onclick="exportPDF()">&#11015; Program Agenda PDF</button>
       <button class="btn btn-burgundy" onclick="exportInstructorPDF()">&#128101; Instructor Agenda PDF</button>
       <button class="btn btn-outlook" onclick="exportOutlookICS()">&#128197; Export Instructor Calendar Invites (.ics)</button>
-      <button class="btn btn-secondary" onclick="sendSingle()" title="Adds this program to the instructor availability portal as a draft, or updates it if it was sent before">&#11014; Send to availability portal</button>
+      <button class="btn btn-secondary" onclick="sendSingle()" title="Adds this program to the Instructor Portal as a draft, or updates it if it was sent before">&#11014; Send to Instructor Portal</button>
     </div>
     <div class="ics-tip">
       <strong>How to use the .ics file:</strong> Download, then attach it to your instructor materials email. Instructors double-click the attachment in Outlook — one click to add all their sessions to their calendar. Each invite is set to start 15 minutes before the agenda time for setup and tech check. For virtual sessions, paste the Zoom link in the table above and it will appear in the invite's Location field. For NCIT Basic and Specialized programs, the testing window is added as an all-day event marked Free.
@@ -1917,7 +1917,7 @@ function batchPackage(){
   if(!r.out.length){ batchMsg('error','Nothing to package.<br>'+r.errors.map(esc).join('<br>')); return; }
   packageFile(r.out.map(x=>x.v),`portal-package-${(BATCH.round||'batch').replace(/\s+/g,'-')}.json`);
   const noIcs=r.out.filter(x=>!x.v.ics).map(x=>x.c.key);
-  batchMsg(r.errors.length?'warn':'success',`Downloaded the portal package with ${r.out.length} program${r.out.length===1?'':'s'}. Import it on the Programs tab of the instructor availability dashboard.${noIcs.length?'<br>No calendar file for: '+noIcs.map(esc).join(', '):''}${r.errors.length?'<br>Left out: '+r.errors.map(esc).join('<br>'):''}`);
+  batchMsg(r.errors.length?'warn':'success',`Downloaded the portal package with ${r.out.length} program${r.out.length===1?'':'s'}. Import it on the Programs tab of the Instructor Portal Staff Dashboard.${noIcs.length?'<br>No calendar file for: '+noIcs.map(esc).join(', '):''}${r.errors.length?'<br>Left out: '+r.errors.map(esc).join('<br>'):''}`);
 }
 async function sendPackage(programs){
   const pkg={format:'clear-availability-package',version:1,source:'Program Agenda Generator',generatedAt:new Date().toISOString(),programs};
@@ -1928,14 +1928,14 @@ async function sendPackage(programs){
   return j;
 }
 function sendSummary(j){
-  return `Sent to the availability portal: ${j.created.length} new draft${j.created.length===1?'':'s'}, ${j.updated.length} updated. <a href="/admin-dashboard" target="_blank">Open the staff dashboard</a> to check and open them.`+
+  return `Sent to the Instructor Portal: ${j.created.length} new draft${j.created.length===1?'':'s'}, ${j.updated.length} updated. <a href="/admin-dashboard" target="_blank">Open the staff dashboard</a> to check and open them.`+
     (j.warnings&&j.warnings.length?'<br>'+j.warnings.map(esc).join('<br>'):'');
 }
 async function batchSend(){
   const list=needPicked(); if(!list) return;
   const r=withEachCohort(list,c=>portalProgramFromEditor(c,BATCH.round));
   if(!r.out.length){ batchMsg('error','Nothing to send.<br>'+r.errors.map(esc).join('<br>')); return; }
-  if(!confirm(`Send ${r.out.length} program${r.out.length===1?'':'s'} to the availability portal? New ones arrive as drafts that only staff can see.`)) return;
+  if(!confirm(`Send ${r.out.length} program${r.out.length===1?'':'s'} to the Instructor Portal? New ones arrive as drafts that only staff can see.`)) return;
   batchMsg('info','Sending\u2026');
   try{ const j=await sendPackage(r.out.map(x=>x.v)); r.out.forEach(x=>x.c.sentAt=new Date().toISOString()); saveBatch(); renderBatch();
     batchMsg(j.warnings&&j.warnings.length||r.errors.length?'warn':'success',sendSummary(j)+(r.errors.length?'<br>Left out: '+r.errors.map(esc).join('<br>'):''));
@@ -1945,7 +1945,7 @@ async function sendSingle(){
   let p;
   try{ const c=batchEditing?BATCH.cohorts.find(x=>x.id===batchEditing):null; p=portalProgramFromEditor(c,c?BATCH.round:''); }
   catch(e){ alert(e.message+' Set the program\u2019s dates and times first.'); return; }
-  if(!confirm(`Send ${p.title}${p.cohort?' ('+p.cohort+')':''} to the availability portal?`)) return;
+  if(!confirm(`Send ${p.title}${p.cohort?' ('+p.cohort+')':''} to the Instructor Portal?`)) return;
   try{ const j=await sendPackage([p]); const tmp=document.createElement('div'); tmp.innerHTML=sendSummary(j); alert(tmp.textContent); }
   catch(e){ alert(e.message); }
 }
