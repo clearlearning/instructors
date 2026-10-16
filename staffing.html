@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -595,7 +595,7 @@ async function reloadAll(){
   runEvalSearch();
   openFromQuery();
 }
-// Deep link from the instructor availability dashboard: ?instructor=Last, First&email=...
+// Deep link from the Instructor Portal Staff Dashboard: ?instructor=Last, First&email=...
 function openFromQuery(){
   const q=new URLSearchParams(location.search), name=q.get('instructor'), email=(q.get('email')||'').toLowerCase();
   if(!name&&!email)return;
