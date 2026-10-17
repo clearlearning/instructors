@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"> 
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Instructor Portal | CLEAR Learning</title>
 <link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
@@ -358,7 +358,7 @@ function route(){
   const m=location.hash.match(/^#\/program\/([\w-]+)/);
   const pid=m&&S.data.programs.some(p=>p.id===m[1])?m[1]:null;
   if(pid){ S.view=pid; S.tab='programs'; }
-  else S.view=null;
+  else { S.view=null; if(location.hash==='#/mine'){ S.tab='mine'; history.replaceState(null,'','#/'); } }
   rerender(true);
 }
 window.addEventListener('hashchange',()=>{
@@ -528,7 +528,7 @@ function renderMine(){
         const t=whole?esc(fmtRange(x.date,x.endDate)):`${esc(fmtDay(x.date))}${x.start?', '+timeHtml(p,x.date,x.start,x.end,x.endDate):''}`;
         return `<div class="assign">
           <div><div class="s-title">${esc(x.sessionTitle)}</div><div class="s-time">${t}${x.location&&x.location!=='Virtual'?', '+esc(x.location):''}</div>
-          ${x.zoomLink?`<div class="zoom">Zoom: <a href="${esc(x.zoomLink)}" target="_blank" rel="noopener">${esc(x.zoomLink)}</a></div>`:''}</div>
+          ${x.zoomLink?`<div class="zoom">Zoom: <a href="${esc(x.zoomLink)}" target="_blank" rel="noopener">${esc(x.zoomLink)}</a></div>`:(x.sessionId!=='__program'&&!/person/i.test(p.format||'')?'<div class="zoom et">The Zoom link appears here before the first session.</div>':'')}</div>
           <div class="ans-wrap"><span class="role">${esc(x.role)}</span></div></div>`;
       }).join('') + `</div>`;
   }).join('');
