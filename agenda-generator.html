@@ -224,11 +224,12 @@
     <div class="panel">
       <h2>&#128467; Quarter batch from TeamGantt</h2>
       <div class="panel-section">
-        <h3>1. Load the TeamGantt export</h3>
+        <h3>1. Load the quarter's cohorts</h3>
+        <div class="batch-edit hidden" id="handoffBox"><span></span><button class="btn btn-burgundy btn-sm" onclick="loadHandoff()">Load into batch</button></div>
         <div class="upload-zone" id="batchZone" onclick="document.getElementById('batchFile').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');if(event.dataTransfer.files[0])loadBatchFile(event.dataTransfer.files[0])">
           <input type="file" id="batchFile" accept=".csv,text/csv" onchange="if(this.files[0])loadBatchFile(this.files[0]);this.value=''">
           <div class="uz-icon">&#128202;</div>
-          <div class="uz-title">Drop the TeamGantt CSV export here, or click to browse</div>
+          <div class="uz-title">Drop a Program Scheduler or TeamGantt CSV here, or click to browse</div>
           <div class="uz-sub">In TeamGantt, open the CL Programs project and export to CSV. Every cohort (the dated groups like &ldquo;2027.01.07 NCIT B CAN V Open&rdquo;) is matched to its program template, and each task date lands on the matching live session.</div>
         </div>
         <div id="batchStatus" class="status-bar"></div>
@@ -1605,8 +1606,10 @@ function csvParse(text){
   return out.filter(r=>r.some(v=>String(v).trim()));
 }
 function tgDate(s){ const m=String(s||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(m) return m[3]+'-'+m[1].padStart(2,'0')+'-'+m[2].padStart(2,'0'); const x=String(s||'').trim(); return /^\d{4}-\d{2}-\d{2}/.test(x)?x.slice(0,10):''; }
+// Optional Start Time column (written by the Program Scheduler): "13:30" or "1:30 PM" -> "13:30".
+function tgTime(s){ const x=String(s||'').trim(); let m=x.match(/^(\d{1,2}):(\d{2})\s*([AP])\.?M\.?$/i); if(m) return String(+m[1]%12+(/p/i.test(m[3])?12:0)).padStart(2,'0')+':'+m[2]; m=x.match(/^(\d{1,2}):(\d{2})$/); return m?m[1].padStart(2,'0')+':'+m[2]:''; }
 function mapCourse(code,group){ const s=code+' | '+group; const hit=COHORT_RULES.find(r=>r[0].test(s)); return hit?hit[1]:''; }
-function parseLocation(code){ const m=code.match(/\b([A-Z][a-z][A-Za-z.' -]*?)\s+([A-Z]{2})$/); return m?m[1].trim()+', '+m[2]:''; }
+function parseLocation(code){ code=String(code).replace(/\s+(Open|Closed)$/i,''); const m=code.match(/\b([A-Z][a-z][A-Za-z.' -]*?)\s+([A-Z]{2})$/); return m?m[1].trim()+', '+m[2]:''; }
 function tzForLocation(loc){ const st=(String(loc).match(/\b([A-Z]{2})$/)||[])[1]; if(!st) return 'ET'; for(const [tz,list] of Object.entries(STATE_TZ)) if(list.split(' ').includes(st)) return tz; return 'ET'; }
 
 function parseTeamGantt(text){
@@ -1614,9 +1617,9 @@ function parseTeamGantt(text){
   if(!rows.length) throw new Error('The file is empty.');
   const head=rows[0].map(h=>h.trim().toLowerCase());
   const col=n=>head.findIndex(h=>h===n);
-  const C={wbs:col('wbs #'),name:col('name / title'),type:col('type'),start:col('start date'),end:col('end date')};
+  const C={wbs:col('wbs #'),name:col('name / title'),type:col('type'),start:col('start date'),end:col('end date'),time:col('start time'),label:col('cohort label'),cid:col('cohort id')};
   if(C.wbs<0||C.name<0||C.type<0||C.start<0) throw new Error('This doesn\u2019t look like a TeamGantt CSV export. It needs the WBS #, Name / Title, Type and Start Date columns.');
-  const items=rows.slice(1).filter(r=>(r[C.wbs]||'').trim()).map(r=>({wbs:r[C.wbs].trim(),name:(r[C.name]||'').trim(),type:(r[C.type]||'').trim().toLowerCase(),start:tgDate(r[C.start]),end:tgDate(r[C.end])||tgDate(r[C.start])}));
+  const items=rows.slice(1).filter(r=>(r[C.wbs]||'').trim()).map(r=>({wbs:r[C.wbs].trim(),name:(r[C.name]||'').trim(),type:(r[C.type]||'').trim().toLowerCase(),start:tgDate(r[C.start]),end:tgDate(r[C.end])||tgDate(r[C.start]),time:C.time<0?'':tgTime(r[C.time]),label:C.label<0?'':(r[C.label]||'').trim(),cid:C.cid<0?'':(r[C.cid]||'').trim()}));
   const byWbs=new Map(items.map(i=>[i.wbs,i]));
   const parent=i=>byWbs.get(i.wbs.split('.').slice(0,-1).join('.'));
   const cohorts=[];
@@ -1632,22 +1635,23 @@ function parseTeamGantt(text){
   const seen={};
   cohorts.forEach(c=>{ const k=c.courseId+'|'+c.startDate.slice(0,7); seen[k]=(seen[k]||0)+1; });
   cohorts.forEach(c=>{ const [y,mo,d]=c.startDate.split('-').map(Number); c.label=seen[c.courseId+'|'+c.startDate.slice(0,7)]>1?`${LONG_MONTHS[mo-1]} ${d}, ${y} Cohort`:`${LONG_MONTHS[mo-1]} ${y} Cohort`; });
+  cohorts.forEach(c=>{ if(c.csvLabel) c.label=c.csvLabel; }); // label from the Program Scheduler
   return cohorts;
 }
 function buildCohort(it,code,group,kids){
   const courseId=mapCourse(code,group);
   const course=COURSES.find(x=>String(x.id)===courseId);
   const tw=kids.find(k=>/testing window/i.test(k.name));
-  const tasks=kids.filter(k=>k!==tw).map(k=>({name:k.name,date:k.start}));
+  const tasks=kids.filter(k=>k!==tw).map(k=>({name:k.name,date:k.start,time:k.time||''}));
   const c={id:'c_'+it.wbs.replace(/\./g,'_'),key:it.name,group,code,courseId,startDate:it.start,endDate:it.end,tasks,twClose:tw?tw.end:'',
-    include:true,startTime:'12:00',dailyStart:'',location:'',tz:'ET',label:'',edited:null,map:null};
-  if(course&&course.isInPerson){ c.dailyStart=course.defaultStart; c.location=parseLocation(code); c.tz=tzForLocation(c.location); }
-  if(!kids.length&&course&&!course.isInPerson) c.tasks=[{name:code,date:it.start}]; // a one-session program listed as a single task
+    include:true,csvLabel:it.label||'',schedId:it.cid||'',startTime:it.time||(tasks.find(x=>x.time)||{}).time||'12:00',dailyStart:'',location:'',tz:'ET',label:'',edited:null,map:null,fromScheduler:!!it.time};
+  if(course&&course.isInPerson){ c.dailyStart=it.time||course.defaultStart; c.location=parseLocation(code); c.tz=tzForLocation(c.location); }
+  if(!kids.length&&course&&!course.isInPerson) c.tasks=[{name:code,date:it.start,time:it.time||''}]; // a one-session program listed as a single task
   c.map=mapSessions(c);
   return c;
 }
 function mapSessions(c){
-  const course=courseOf(c), out={dates:{},extras:[],missing:[],byOrder:false,warnings:[]};
+  const course=courseOf(c), out={dates:{},times:{},extras:[],missing:[],byOrder:false,warnings:[]};
   if(!course){ out.warnings.push('No program template matched this cohort. Choose one.'); return out; }
   if(course.isInPerson){ if(!c.location) out.warnings.push('Add the location (City, ST).'); return out; }
   const tpl=course.rows.map((r,i)=>({i,r,text:(r.displayName+' '+(r.title||'')).toLowerCase()})).filter(x=>x.r.isILT);
@@ -1657,11 +1661,11 @@ function mapSessions(c){
     for(const [tre,rowTest] of SESSION_RULES){ if(!tre.test(n)) continue; hit=tpl.find(x=>!used.has(x.i)&&rowTest(x.text)); if(hit) break; }
     if(!hit){ const mm=n.match(/\bmodule\s*(\d)\b/); if(mm) hit=tpl.find(x=>!used.has(x.i)&&new RegExp('module\\s*'+mm[1]+'\\b').test(x.text)); }
     if(!hit) hit=tpl.find(x=>!used.has(x.i)&&x.text.includes(n));
-    if(hit){ used.add(hit.i); out.dates[hit.i]=t.date; } else unmatched.push(t);
+    if(hit){ used.add(hit.i); out.dates[hit.i]=t.date; if(t.time) out.times[hit.i]=t.time; } else unmatched.push(t);
   }
   const free=tpl.filter(x=>!used.has(x.i));
   if(unmatched.length&&unmatched.length===free.length){
-    unmatched.forEach((t,k)=>{ out.dates[free[k].i]=t.date; used.add(free[k].i); });
+    unmatched.forEach((t,k)=>{ out.dates[free[k].i]=t.date; if(t.time) out.times[free[k].i]=t.time; used.add(free[k].i); });
     out.byOrder=true; out.warnings.push('Matched by order: '+unmatched.map((t,k)=>`\u201c${t.name}\u201d \u2192 ${free[k].r.displayName}`).join('; ')+'. Check these.');
   } else {
     out.extras=unmatched;
@@ -1688,19 +1692,26 @@ function setMode(m){
 }
 
 /* ---------- Load file ---------- */
-async function loadBatchFile(file){
+async function loadBatchFile(file){ loadBatchText(await file.text(),file.name,null); }
+function loadBatchText(text,fileName,handoff){
   const st=document.getElementById('batchStatus');
   try{
-    const cohorts=parseTeamGantt(await file.text());
+    const cohorts=parseTeamGantt(text);
     if(!cohorts.length) throw new Error('No cohorts found. Cohort rows start with a date like \u201c2027.01.07 \u2026\u201d.');
     if(BATCH.cohorts.some(c=>c.edited)&&!confirm('Loading a new file replaces the current batch, including cohorts you edited. Continue?')) return;
-    BATCH={cohorts,quarter:'upcoming',round:nextQuarterLabel(),fileName:file.name,loadedAt:new Date().toISOString()};
-    BATCH.cohorts.forEach(c=>c.include=quarterOf(c.startDate)===BATCH.round);
+    BATCH={cohorts,quarter:handoff?'all':'upcoming',round:(handoff&&handoff.round)||nextQuarterLabel(),fileName,loadedAt:new Date().toISOString()};
+    BATCH.cohorts.forEach(c=>c.include=handoff?true:quarterOf(c.startDate)===BATCH.round);
     saveBatch(); renderBatch();
+    if(handoff){ try{ localStorage.removeItem('clear_scheduler_handoff'); }catch(e){} renderHandoff(); st.className='status-bar success'; st.textContent=`\u2713 Loaded ${cohorts.length} cohorts from the Program Scheduler with their session dates and start times. Check them below, then generate.`; return; }
     const up=shownCohorts().length, tk=pickedCohorts().length;
     st.className='status-bar success'; st.textContent=`\u2713 Read ${cohorts.length} cohorts from ${file.name}. Showing the ${up} that haven't started yet, with the ${tk} starting in ${BATCH.round} ticked. Tick any others that belong in this round.`;
   }catch(e){ st.className='status-bar error'; st.textContent=e.message; }
 }
+// Cohorts handed over by the Program Scheduler (same site, same browser).
+function readHandoff(){ try{ return JSON.parse(localStorage.getItem('clear_scheduler_handoff')||'null'); }catch(e){ return null; } }
+function renderHandoff(){ const el=document.getElementById('handoffBox'); if(!el) return; const h=readHandoff();
+  el.classList.toggle('hidden',!h); if(h) el.querySelector('span').innerHTML=`<strong>${h.count} cohort${h.count===1?'':'s'} from the Program Scheduler</strong> are ready to load (sent ${esc(new Date(h.at).toLocaleString())}${h.round?', '+esc(h.round):''}).`; }
+function loadHandoff(){ const h=readHandoff(); if(!h){ renderHandoff(); return; } loadBatchText(h.csv,'Program Scheduler',h); }
 function onBatchQuarter(q){ BATCH.quarter=q; if(/^Q\d/.test(q)){ BATCH.cohorts.forEach(c=>c.include=quarterOf(c.startDate)===q); BATCH.round=q; } saveBatch(); renderBatch(); }
 function todayIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 const shownCohorts=()=>BATCH.cohorts.filter(c=>BATCH.quarter==='all'||(BATCH.quarter==='upcoming'?c.startDate>=todayIso():quarterOf(c.startDate)===BATCH.quarter));
@@ -1791,8 +1802,10 @@ function loadCohortIntoEditor(c){
     buildInPersonRows();
   } else {
     Object.entries(c.map.dates).forEach(([i,d])=>{ if(rows[i]) rows[i].date=d; });
+    // Per-session start times from the Program Scheduler keep each session's length.
+    Object.entries(c.map.times||{}).forEach(([i,tm])=>{ const r=rows[i]; if(!r||!tm||r.startTime===tm) return; const dur=r.endTime&&r.startTime?timeToMin(r.endTime)-timeToMin(r.startTime):60; r.startTime=tm; r.endTime=calcEndTime(tm,dur>0?dur:60); r.startTimeEdited=true; r.endTimeEdited=true; });
     const def=getDefaultTime24();
-    (c.map.extras||[]).forEach(x=>rows.push({id:++_rowId,displayName:x.name,isILT:true,platform:'Zoom',title:null,topicsHtml:null,date:x.date,startTime:def,endTime:calcEndTime(def,60),instructor:'',zoomLink:'',selected:false,isDayHeader:false,startTimeEdited:false,endTimeEdited:false}));
+    (c.map.extras||[]).forEach(x=>rows.push({id:++_rowId,displayName:x.name,isILT:true,platform:'Zoom',title:null,topicsHtml:null,date:x.date,startTime:x.time||def,endTime:calcEndTime(x.time||def,60),instructor:'',zoomLink:'',selected:false,isDayHeader:false,startTimeEdited:false,endTimeEdited:false}));
     if(course.programBlocks){
       const first=k=>rows.filter(r=>r.blockKey===k&&r.date).map(r=>r.date).sort()[0]||'9999';
       programBlockOrder.sort((a,b)=>first(a).localeCompare(first(b)));
@@ -1886,7 +1899,8 @@ function portalProgramFromEditor(c,round){
     const ds=sessions.map(s=>s.date).sort(); startDate=ds[0]||''; endDate=ds[ds.length-1]||''; }
   if(!startDate) throw new Error('No dated sessions yet.');
   const ics=buildIcsText();
-  return { externalKey:c?'teamgantt:'+c.key:'agenda:'+course.id+':'+startDate, courseId:String(course.id), title:course.name, cohort:val('cohortName'),
+  // Cohorts from the Program Scheduler keep the same key when their dates move, so the live program is updated, not duplicated.
+  return { externalKey:c?(c.schedId?'scheduler:'+c.schedId:'teamgantt:'+c.key):'agenda:'+course.id+':'+startDate, courseId:String(course.id), title:course.name, cohort:val('cohortName'),
     quarter:round||quarterOf(startDate), format:isIP?'In-Person':'Virtual (Zoom)', location:isIP?val('ipLocation'):'Virtual', timezone:val('timezone')||'ET',
     startDate, endDate, deadline:isoAdd(startDate,-DEADLINE_DAYS), sessions, ics:ics||'', icsName:ics?icsFileName():'' };
 }
@@ -1958,6 +1972,18 @@ function exportSinglePackage(){
 }
 
 loadSavedBatch();
+// Engine used by the Program Scheduler, which loads this page in a hidden frame. It builds program agendas and
+// Instructor Portal programs with exactly the code above, without confirmations and without touching the saved batch.
+window.agendaEngine={
+  load(csv,round){ const cohorts=parseTeamGantt(csv); cohorts.forEach(c=>c.include=true); BATCH={cohorts,quarter:'all',round:round||'',fileName:'Program Scheduler',loadedAt:new Date().toISOString()};
+    return cohorts.map(c=>({schedId:c.schedId,key:c.key,courseId:c.courseId,warnings:c.map?c.map.warnings:[]})); },
+  programs(){ const r=withEachCohort(pickedCohorts(),c=>portalProgramFromEditor(c,BATCH.round)); return {programs:r.out.map(x=>({...x.v,schedId:x.c.schedId})),errors:r.errors}; },
+  agendaHtml(schedId){ const c=BATCH.cohorts.find(x=>x.schedId===schedId); if(!c) throw new Error('That cohort wasn\u2019t loaded.'); const r=withEachCohort([c],()=>buildProgramAgendaHtml()); if(r.errors.length) throw new Error(r.errors[0]); return r.out[0].v; },
+  allAgendasHtml(){ const r=withEachCohort(pickedCohorts(),()=>buildProgramAgendaHtml()); return {html:r.out.length?combineAgendas(r.out.map(x=>x.v)):'',count:r.out.length,errors:r.errors}; }
+};
+const ENGINE_MODE=/[?&]engine=1/.test(location.search);
+document.addEventListener('DOMContentLoaded',()=>{ if(ENGINE_MODE) return; renderHandoff(); if(location.hash==='#from-scheduler'&&readHandoff()){ setMode('batch'); loadHandoff(); history.replaceState(null,'',location.pathname); } });
+if(document.readyState!=='loading'){ renderHandoff(); if(location.hash==='#from-scheduler'&&readHandoff()){ setMode('batch'); loadHandoff(); history.replaceState(null,'',location.pathname); } }
 </script>
 
 </body>
