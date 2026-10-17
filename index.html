@@ -201,6 +201,7 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
   <nav class="tabs" role="tablist" id="tabs">
     <button class="tab" role="tab" data-tab="programs" aria-selected="true">Programs<span class="n" id="n-programs">0</span></button>
     <button class="tab" role="tab" data-tab="mine" aria-selected="false">My assignments<span class="n" id="n-mine">0</span></button>
+    <button class="tab" role="tab" data-tab="reports" aria-selected="false">Evaluation reports<span class="n" id="n-reports">0</span></button>
   </nav>
 </header>
 
@@ -358,7 +359,7 @@ function route(){
   const m=location.hash.match(/^#\/program\/([\w-]+)/);
   const pid=m&&S.data.programs.some(p=>p.id===m[1])?m[1]:null;
   if(pid){ S.view=pid; S.tab='programs'; }
-  else { S.view=null; if(location.hash==='#/mine'){ S.tab='mine'; history.replaceState(null,'','#/'); } }
+  else { S.view=null; if(location.hash==='#/mine'||location.hash==='#/reports'){ S.tab=location.hash.slice(2); history.replaceState(null,'','#/'); } }
   rerender(true);
 }
 window.addEventListener('hashchange',()=>{
@@ -387,6 +388,8 @@ function render(){
   const setN=(id,n,hot,title)=>{ const el=document.getElementById(id); el.textContent=n; el.classList.toggle('hot',hot); el.title=title; };
   setN('n-programs', np||progs.length, np>0, np?`${np} need your response`:`${progs.length} programs`);
   setN('n-mine', new Set(d.assignments.map(a=>a.programId+a.sessionId)).size, false, 'Confirmed assignments');
+  const rp=d.reports||[], unread=rp.filter(r=>!r.viewedAt).length;
+  setN('n-reports', unread||rp.length, unread>0, unread?`${unread} new report${unread>1?'s':''}`:`${rp.length} reports`);
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.tab===S.tab));
   document.getElementById('savebar').hidden = !(S.view && S.dirty.has(S.view));
 
@@ -400,6 +403,7 @@ function render(){
   html += tzBar();
   if (S.view) html += renderDetail(d.programs.find(p=>p.id===S.view));
   else if (S.tab==='programs') html += prefCard() + renderList(progs);
+  else if (S.tab==='reports') html += renderReports();
   else html += renderMine();
   main.innerHTML = html;
 }
@@ -532,6 +536,13 @@ function renderMine(){
           <div class="ans-wrap"><span class="role">${esc(x.role)}</span></div></div>`;
       }).join('') + `</div>`;
   }).join('');
+}
+function renderReports(){
+  const rp=S.data.reports||[];
+  if(!rp.length) return `<div class="empty"><h3>No evaluation reports yet</h3><p>When CLEAR Learning publishes a report on your module evaluations, it appears here and you'll receive an email.</p></div>`;
+  return `<div class="intro"><p>Each report summarizes participant ratings and comments from your module evaluations. Reports open in a new tab; to keep a copy, use your browser's print option and choose Save as PDF.</p></div>
+    <div class="a-prog">${rp.map(r=>`<div class="assign"><div><div class="s-title">${esc(r.title)}</div><div class="s-time">Published ${esc(fmtStamp(r.createdAt).split(',')[0])}${r.viewedAt?'':' <span class="badge need" style="margin-left:6px">New</span>'}</div></div>
+      <div class="ans-wrap"><a class="btn small" href="${esc(r.url)}" target="_blank" rel="noopener" style="text-decoration:none" onclick="setTimeout(load,1500)">View report</a></div></div>`).join('')}</div>`;
 }
 async function getIcs(pid){
   try{
