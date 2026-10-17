@@ -486,7 +486,7 @@ function cellMenu(ev,iid,pid,key,wholeRow){
   ev.stopPropagation(); closeMenu();
   const p=prog(pid), r=inst(iid), labels=LBL;
   const what=key===PS?(wholeRow?'whole program':'entire program'):((p.sessions.find(s=>s.id===key)||{}).title||'session');
-  menuEl=document.createElement('div'); menuEl.className='menu';
+  menuEl=document.createElement('div'); menuEl.className='menu';        <div class="err"><strong>Note:</strong> When adding or removing staff, make and save your changes, then send an email to <a href="mailto:avance@clearhq.org?subject=Staff%20Addition%20or%20Removal%20Notification&body=Hello%2C%0D%0A%0D%0AI%20have%20made%20a%20change%20to%20the%20staff%20listed%20in%20the%20Instructor%20Portal%20that%20requires%20a%20change%20to%20the%20Cloudflare%20Zero%20Trust%20policy%20for%20this%20site.%20The%20staff%20information%20and%20status%20are%20included%20below.%0D%0A%0D%0AStaff%20Name%3A%20%0D%0AEmail%3A%20%0D%0AAdded%20or%20Removed%20from%20Portal%3A%20%0D%0A" style="color:#0144db;font-weight:bold;">avance@clearhq.org</a> notifying of the change. This allows the admin to make the appropriate changes to the site’s access permissions.</div>
   menuEl.innerHTML=`<div class="hd">${esc(r.name)}, ${esc(what)}</div>`+Object.entries(labels).map(([v,l])=>`<button onclick="setCell('${iid}','${pid}','${key}','${v}')">${l}</button>`).join('')+`<button onclick="setCell('${iid}','${pid}','${key}','')">Clear${key!==PS?' (use whole-program answer)':''}</button>`;
   document.body.appendChild(menuEl);
   const b=ev.target.getBoundingClientRect();
