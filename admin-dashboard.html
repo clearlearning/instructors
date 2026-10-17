@@ -184,6 +184,14 @@ tr.grp .ttl{gap:10px}tr.grp strong{font-size:14px}
 .pgroup .pg-h h3{margin:0;font-size:16px;color:var(--burgundy)}
 .pgroup.k-blue .pg-h h3{color:var(--blue)}.pgroup.k-gold .pg-h h3{color:var(--burgundy-dk)}
 .pgroup .tbl-wrap{border-radius:var(--radius-sm)}
+.rte-bar{display:flex;gap:4px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-bottom:0;border-radius:var(--radius-sm) var(--radius-sm) 0 0;background:#FAF7F8;padding:5px 6px}
+.rte-bar button{border:1px solid transparent;background:none;border-radius:4px;padding:3px 9px;font-size:13px;cursor:pointer;color:var(--ink)}
+.rte-bar button:hover{background:#fff;border-color:var(--line)}
+.rte-bar .sep{width:1px;height:18px;background:var(--line);margin:0 4px}
+.rte{min-height:200px;max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:10px 12px;background:#fff;line-height:1.55;font-size:14px}
+.rte:focus{outline:3px solid var(--gold);outline-offset:1px}
+.rte:empty::before{content:attr(data-ph);color:var(--muted)}
+.rte p{margin:0 0 10px}.rte ul,.rte ol{margin:0 0 10px;padding-left:22px}
 .icsbox{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;background:#FAF7F8;border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 12px;margin-top:12px}
 @media (max-width:820px){.slot{grid-template-columns:1fr}.form{grid-template-columns:1fr 1fr}.log-row{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -645,11 +653,44 @@ function composeDlg(o={}){
     <div class="f span2" id="cm-pwrap"><label for="cm-pid">Program</label><select id="cm-pid" onchange="U.cm.pid=this.value;cmRefresh()">${progs.map(p=>`<option value="${p.id}" ${U.cm.pid===p.id?'selected':''}>${esc(titleOf(p))}</option>`).join('')}</select></div>
     <div class="f span4" id="cm-pick"></div>
     <div class="f span4"><label for="cm-subj">Subject</label><input id="cm-subj" maxlength="200" placeholder="Instructor materials for the January cohorts"></div>
-    <div class="f span4"><label for="cm-body">Message</label><textarea id="cm-body" rows="10" placeholder="Write your message. Leave a blank line between paragraphs. Web addresses become links."></textarea></div>
+    <div class="f span4"><label for="cm-body" id="cm-bl">Message</label>
+      <div class="rte-bar" role="toolbar" aria-label="Formatting" aria-controls="cm-body">
+        <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('bold')" title="Bold (Ctrl+B)" aria-label="Bold"><strong>B</strong></button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('italic')" title="Italic (Ctrl+I)" aria-label="Italic"><em>I</em></button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('underline')" title="Underline (Ctrl+U)" aria-label="Underline"><u>U</u></button>
+        <span class="sep"></span>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('insertUnorderedList')" title="Bulleted list" aria-label="Bulleted list">• List</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('insertOrderedList')" title="Numbered list" aria-label="Numbered list">1. List</button>
+        <span class="sep"></span>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rteLink()" title="Add a link to the selected text" aria-label="Add link">Link</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('unlink')" title="Remove link" aria-label="Remove link">Unlink</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('removeFormat')" title="Clear formatting" aria-label="Clear formatting">Clear</button>
+      </div>
+      <div id="cm-body" class="rte" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="cm-bl" data-ph="Write your message. Select text to make it bold, italic or a link."></div></div>
     <div class="f span4"><label style="font-weight:400;display:flex;gap:6px;align-items:center"><input type="checkbox" id="cm-greet" checked> Start with “Hello” and the instructor’s first name</label></div></div>
     <p class="facts" id="cm-count"></p><div class="mail-prev" id="mail-prev"></div>`,
     mailFoot('custom','Send email'));
   cmRefresh();
+}
+/* Rich text for Compose email. The portal keeps bold, italic, underline, lists and links when it sends. */
+function rteCmd(c){ document.getElementById('cm-body').focus(); try{ document.execCommand('defaultParagraphSeparator',false,'p'); }catch(e){} document.execCommand(c,false,null); }
+function rteLink(){
+  const sel=window.getSelection(); if(!sel||sel.isCollapsed){ toast('Select the text to turn into a link first.'); return; }
+  const range=sel.getRangeAt(0);
+  let url=prompt('Link address (https:// or mailto:)','https://'); if(!url) return; url=url.trim();
+  if(!/^(https:\/\/|mailto:)/i.test(url)){ if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(url)) url='mailto:'+url; else { toast('Links must start with https:// or mailto:'); return; } }
+  sel.removeAllRanges(); sel.addRange(range); document.getElementById('cm-body').focus(); document.execCommand('createLink',false,url);
+}
+// Wrap loose top-level text in paragraphs so every line is styled in the email.
+function rteHtml(el){
+  const out=[]; let run='';
+  const flush=()=>{ if(run.replace(/<br>|&nbsp;|\s/g,'')) out.push('<p>'+run+'</p>'); run=''; };
+  el.childNodes.forEach(n=>{
+    if(n.nodeType===1&&/^(P|DIV|UL|OL|H[1-6]|BLOCKQUOTE)$/.test(n.tagName)){ flush(); out.push(n.outerHTML); }
+    else if(n.nodeType===1&&n.tagName==='BR'){ if(run) run+='<br>'; else flush(); }
+    else run+=n.nodeType===3?esc(n.textContent):n.outerHTML;
+  });
+  flush(); return out.join('');
 }
 function cmPeople(){
   const c=U.cm, act=active(), p=prog(c.pid);
@@ -678,7 +719,7 @@ function mailBody(kind){
   if(kind==='announce') return {pids:vals('.ann-p'),note};
   if(kind==='remind') return {pids:vals('.rem-p'),note};
   if(kind==='change') return {iids:vals('.chg-i'),note};
-  if(kind==='custom') return {audience:U.cm.audience,pid:U.cm.pid,iids:U.cm.iids||[],subject:document.getElementById('cm-subj').value,body:document.getElementById('cm-body').value,greet:document.getElementById('cm-greet').checked};
+  if(kind==='custom'){const el=document.getElementById('cm-body');return {audience:U.cm.audience,pid:U.cm.pid,iids:U.cm.iids||[],subject:document.getElementById('cm-subj').value,body:el.innerText.trim(),bodyHtml:rteHtml(el),greet:document.getElementById('cm-greet').checked};}
   return {iids:vals('.sel-i'),note};
 }
 async function mailGo(kind,mode){
