@@ -216,6 +216,9 @@ export async function onRequest({ request, env }) {
       }
       if (b === 'zoom' && c === 'assign' && method === 'POST') return json(await zoomAssign(env, body, me.email));
 
+      if (b === 'schedule' && method === 'GET') return json(await getSchedule(env));
+      if (b === 'schedule' && method === 'PUT') return json(await putSchedule(env, body, me.email));
+
       if (b === 'log' && method === 'GET') return json(await readLog(env));
     }
 
@@ -839,10 +842,10 @@ async function notifyAnnounce(env, body, me) {
   const build = list => ({
     subject: (body.test ? '[TEST] ' : '') + (list.length === 1 ? `New CLEAR Learning program open for instructors: ${list[0].title}` : `${list.length} new CLEAR Learning programs are open in the Instructor Portal`),
     html: emailShell('New programs are open for availability', `<p>Hello,</p>
-<p>CLEAR Learning has posted ${list.length === 1 ? 'a new program' : list.length + ' new programs'} you are approved to teach. Please mark the sessions you are able to teach, and those you are not, by each program's response date.</p>
+<p>CLEAR Learning has posted ${list.length === 1 ? 'a new program that is aligned' : list.length + ' new programs that are aligned'} with your instruction preferences. Please mark the sessions you are able to teach, and those you are not, by each program's response date. You can update your answers in the portal at any time before that date.</p>
 ${noteBlock(body.note)}
 <table style="width:100%;border-collapse:collapse">${list.map(programLine).join('')}</table>
-<p style="font-size:13px;color:#6E6B70">All session times are listed in Eastern Time. The portal can show them in your own time zone. You can change your answers at any time until the response date.</p>`, me.origin)
+<p style="font-size:13px;color:#6E6B70">All session times are listed in Eastern Time. In the portal, you have the option to change the time zone to one of your choosing.</p>`, me.origin)
   });
   // Each instructor hears only about programs they are approved to teach. People with the same list share one BCC email.
   const groups = new Map();
@@ -1392,6 +1395,30 @@ async function addNote(env, pid, body, by) {
   cur.notes = [...(cur.notes || []), { at: new Date().toISOString(), by, text }];
   await putJSON(env, key, cur); // notes don't change updatedAt, so they never block a selection save
   return { ok: true, notes: cur.notes };
+}
+
+/* ======================= Program Scheduler ======================= */
+// One shared schedule for all staff. Each save names the version it was based on, so two people
+// editing at once can't silently overwrite each other.
+async function getSchedule(env) {
+  const rec = await getJSON(env, 'schedule', null);
+  return rec ? { state: rec.state, version: rec.version, updatedAt: rec.updatedAt, updatedBy: rec.updatedBy } : { state: null, version: 0 };
+}
+async function putSchedule(env, body, by) {
+  const cur = await getJSON(env, 'schedule', null);
+  const curVer = cur ? cur.version : 0;
+  if ((body.baseVersion || 0) !== curVer) {
+    const e = httpErr(409, `${cur.updatedBy} saved changes to the schedule at ${new Date(cur.updatedAt).toLocaleString('en-US', { timeZone: ET, hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' })} ET.`);
+    throw e;
+  }
+  const state = body.state;
+  if (!state || typeof state !== 'object' || !Array.isArray(state.cohorts) || !Array.isArray(state.templates)) throw httpErr(400, 'That isn\'t a valid schedule.');
+  const text = JSON.stringify(state);
+  if (text.length > 4_000_000) throw httpErr(400, 'The schedule is too large to save.');
+  const rec = { state, version: curVer + 1, updatedAt: new Date().toISOString(), updatedBy: by };
+  await env.IA_KV.put('schedule', JSON.stringify(rec));
+  if (!cur) await log(env, by, 'Started the shared program schedule', `${state.cohorts.length} cohorts`);
+  return { ok: true, version: rec.version, updatedAt: rec.updatedAt };
 }
 
 /* ======================= Activity log ======================= */
