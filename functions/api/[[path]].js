@@ -829,9 +829,12 @@ function outlookify(html) {
     .replace(/<li(\s[^>]*)?>/g, addStyle('li', 'margin:0 0 6px 0;' + EBODY))
     .replace(/<a (href="[^"]*")>/g, '<a $1 style="color:#0144db;text-decoration:underline;">');
 }
+// The outer cell's top padding is the space above the button: Outlook ignores margins on lists and tables but keeps cell padding.
 function emailButton(btn) {
-  return `<table cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 8px 0;"><tr><td bgcolor="#64092c" align="center" style="background-color:#64092c;padding:12px 26px;">
-<a href="${H(btn.href)}" style="${EF}font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;display:inline-block;">${H(btn.label)}</a></td></tr></table>`;
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:16px 0 8px 0;">
+<table cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#64092c" align="center" style="background-color:#64092c;padding:12px 26px;">
+<a href="${H(btn.href)}" style="${EF}font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;display:inline-block;">${H(btn.label)}</a></td></tr></table>
+</td></tr></table>`;
 }
 function emailShell(title, inner, origin, button) {
   const btn = button || { label: 'Open the Instructor Portal', href: origin };
@@ -844,7 +847,6 @@ function emailShell(title, inner, origin, button) {
 <tr><td height="4" bgcolor="#c9933a" style="font-size:0;line-height:0;height:4px;background-color:#c9933a;">&nbsp;</td></tr>
 <tr><td bgcolor="#ffffff" style="padding:32px 32px 8px 32px;${EBODY}">
 <table width="556" cellpadding="0" cellspacing="0" border="0" align="center" style="width:100%;max-width:556px;"><tr><td style="${EBODY}">
-<p style="margin:0 0 20px 0;${EF}font-size:19px;line-height:25px;font-weight:bold;color:#64092c;">${H(title)}</p>
 ${outlookify(inner)}
 ${emailButton(btn)}
 <p style="margin:24px 0 28px 0;${EF}font-size:12px;line-height:18px;color:#4a3040;">Sign in with this email address; you will receive a one-time code by email. If you have any questions or require assistance, please contact us at <a href="mailto:clearlearning@clearhq.org" style="color:#0144db;font-weight:bold;">clearlearning@clearhq.org</a> or <strong style="color:#64092c;">859-269-1289</strong>.</p>
