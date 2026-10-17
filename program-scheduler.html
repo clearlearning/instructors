@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Program Scheduler | CLEAR Learning</title>
+<link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --burgundy:#64092C;--burgundy-dk:#4A0620;--gold:#DDA838;--gold-lt:#F8EDD3;--blue:#084D78;--blue-lt:#E2EDF4;
+  --ink:#2B2B2B;--charcoal:#484848;--muted:#6E6B70;--line:#DEDCE0;--bg:#F3F3F5;--surface:#fff;
+  --red:#B42318;--red-lt:#FDECEA;--green:#1F6B3F;--green-lt:#E3F1E8;--radius:10px;--radius-sm:6px;
+  font-family:"Open Sans","Trebuchet MS",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+a{color:var(--blue)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+
+.top{background:var(--burgundy);color:#fff}
+.top-in{max-width:1400px;margin:0 auto;padding:18px 24px 0;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.brand small{display:block;font-size:13px;opacity:.85;font-weight:600}
+.brand h1{margin:2px 0 14px;font-size:26px;font-weight:800;letter-spacing:-.01em}
+.links{font-size:13px;padding-bottom:14px}
+.links a{color:#fff;opacity:.9;margin-left:14px}
+.tabs{max-width:1400px;margin:0 auto;padding:0 24px;display:flex;gap:4px;overflow-x:auto}
+.tab{background:none;border:0;color:#fff;opacity:.78;padding:10px 16px 12px;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0;white-space:nowrap}
+.tab:hover{opacity:1}
+.tab[aria-selected="true"]{background:var(--bg);color:var(--burgundy);opacity:1}
+.tab .n{display:inline-block;min-width:20px;padding:0 6px;margin-left:6px;border-radius:10px;background:rgba(255,255,255,.2);font-size:12px;text-align:center}
+.tab .n.hot{background:#fff;color:var(--red)}
+.tab[aria-selected="true"] .n.hot{background:var(--red);color:#fff}
+
+main{max-width:1400px;margin:0 auto;padding:20px 24px 80px}
+h2{margin:0 0 4px;font-size:21px;color:var(--burgundy)}
+h3{margin:0 0 8px;font-size:16px}
+.sub{color:var(--charcoal);margin:0 0 16px;max-width:85ch}
+.facts{font-size:12px;color:var(--muted)}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.grow{flex:1}
+.btn{border:0;border-radius:var(--radius-sm);padding:8px 14px;font-weight:700;cursor:pointer;background:var(--burgundy);color:#fff;white-space:nowrap}
+.btn:hover{background:var(--burgundy-dk)}
+.btn:disabled{background:#CFCBD0;cursor:default}
+.btn.ghost{background:#fff;color:var(--burgundy);border:1px solid var(--burgundy)}
+.btn.ghost:hover{background:#FAF4F6}
+.btn.small{padding:5px 10px;font-size:12px}
+.btn.link{background:none;border:0;color:var(--blue);padding:2px 4px;font-weight:600}
+.btn.link:hover{text-decoration:underline}
+.btn.danger{color:var(--red)}
+select,input[type=text],input[type=date],input[type=number],textarea{border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px 8px;background:#fff}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
+.notice{background:var(--gold-lt);border-left:4px solid var(--gold);padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:14px}
+.err{background:var(--red-lt);border-left:4px solid var(--red);padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:14px}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px;white-space:nowrap}
+.pill.red{background:var(--red-lt);color:var(--red)}
+.pill.gold{background:var(--gold-lt);color:#7A5410}
+.pill.blue{background:var(--blue-lt);color:var(--blue)}
+.pill.grey{background:#EEECEF;color:var(--muted)}
+.plogo{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.plogo.sm{width:24px;height:24px;border-radius:5px}
+.ttl{display:flex;gap:10px;align-items:center;min-width:0}
+.fdot{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:800;color:#fff;flex:none}
+
+/* Quarter switcher */
+.qnav{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--line);border-radius:var(--radius-sm);padding:2px}
+.qnav button{border:0;background:none;padding:4px 10px;cursor:pointer;font-weight:700;color:var(--burgundy);border-radius:4px}
+.qnav button:hover{background:#FAF4F6}
+.qnav strong{min-width:84px;text-align:center}
+
+/* Calendar */
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--charcoal);margin-bottom:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+.months{display:grid;grid-template-columns:1fr;gap:22px}
+.month h3{font-size:17px;color:var(--burgundy);margin:0 0 6px}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--line);gap:1px}
+.dow{background:#FAF7F8;font-size:12px;font-weight:700;color:var(--charcoal);padding:6px 8px}
+.day{background:#fff;min-height:118px;padding:4px 5px 6px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.day.out{background:#FAFAFB}
+.day.out .dn{opacity:.35}
+.day.wknd{background:#F7F6F8}
+.day.hol{background:repeating-linear-gradient(135deg,#FFF6F5,#FFF6F5 6px,#FDECEA 6px,#FDECEA 12px)}
+.day.off{background:repeating-linear-gradient(135deg,#FBF6E9,#FBF6E9 6px,#F8EDD3 6px,#F8EDD3 12px)}
+.day.today .dn{background:var(--burgundy);color:#fff}
+.dhead{display:flex;align-items:center;gap:6px;min-width:0}
+.dn{font-weight:700;font-size:12px;border:0;background:none;padding:1px 6px;border-radius:10px;cursor:pointer;color:var(--ink)}
+.dn:hover{background:var(--blue-lt)}
+.hname{font-size:10.5px;font-weight:700;color:var(--red);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day.off .hname{color:#7A5410}
+.chip{display:flex;align-items:center;gap:4px;border:0;border-radius:4px;padding:2px 5px;font-size:11px;line-height:1.3;cursor:pointer;text-align:left;width:100%;min-width:0;color:#fff}
+.chip .t{font-weight:700;white-space:nowrap}
+.chip .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.95}
+.chip.k-ncit{background:var(--burgundy)}
+.chip.k-blue{background:var(--blue)}
+.chip.k-gold{background:var(--gold);color:var(--burgundy-dk)}
+.chip.k-none{background:var(--charcoal)}
+.chip.ip{background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.0),rgba(255,255,255,.0) 8px,rgba(255,255,255,.14) 8px,rgba(255,255,255,.14) 10px)}
+.chip.bad{box-shadow:0 0 0 2px var(--red);position:relative}
+.chip.bad::after{content:"!";position:absolute;right:-3px;top:-5px;background:var(--red);color:#fff;font-size:9px;font-weight:800;width:13px;height:13px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.chip.dim{opacity:.25}
+.chip .fdot{width:15px;height:15px;font-size:9px;box-shadow:0 0 0 1px rgba(255,255,255,.7)}
+.more{font-size:11px;color:var(--blue);border:0;background:none;padding:0;text-align:left;cursor:pointer;font-weight:600}
+
+/* Day timeline */
+.tl{position:relative;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;margin-top:8px}
+.tl-hours{position:relative;height:24px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted)}
+.tl-hours span{position:absolute;top:4px;transform:translateX(-50%)}
+.tl-body{position:relative}
+.tl-grid{position:absolute;top:0;bottom:0;border-left:1px dashed #EEECEF}
+.tl-bar{position:absolute;height:34px;border-radius:5px;padding:2px 7px;font-size:11.5px;line-height:1.35;overflow:hidden;cursor:pointer;border:0;text-align:left;color:#fff}
+.tl-bar.k-ncit{background:var(--burgundy)}.tl-bar.k-blue{background:var(--blue)}.tl-bar.k-gold{background:var(--gold);color:var(--burgundy-dk)}.tl-bar.k-none{background:var(--charcoal)}
+.tl-bar.bad{box-shadow:0 0 0 2px var(--red)}
+
+/* Tables */
+.tbl-wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:var(--radius)}
+table{border-collapse:collapse;width:100%}
+th,td{padding:7px 10px;border-bottom:1px solid #EEECEF;text-align:left;vertical-align:middle}
+th{background:#FAF7F8;font-size:12px;font-weight:700;color:var(--charcoal);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td input[type=date]{width:150px}
+td select{max-width:130px}
+
+/* Cohort cards */
+.grp-h{display:flex;align-items:center;gap:10px;margin:22px 0 10px}
+.grp-h h3{margin:0;font-size:17px}
+.cohort{background:#fff;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.ch{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:#FAF7F8;border-top:6px solid var(--tc,#DEDCE0);cursor:pointer}
+.ch.k-ncit{--tc:var(--burgundy)}.ch.k-blue{--tc:var(--blue)}.ch.k-gold{--tc:var(--gold)}
+.ch h4{margin:0;font-size:15px;color:var(--burgundy)}
+.ch.k-blue h4{color:var(--blue)}.ch.k-gold h4{color:var(--burgundy-dk)}
+.ch .ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;cursor:default}
+.ch label{font-size:12px;font-weight:600;color:var(--charcoal)}
+.cbody{padding:4px 0 8px}
+.flag{display:inline-flex;gap:4px;flex-wrap:wrap}
+.edited{font-size:10.5px;font-weight:700;color:var(--blue);background:var(--blue-lt);border-radius:8px;padding:0 6px}
+
+/* Conflicts */
+.cf{background:#fff;border:1px solid var(--line);border-left:5px solid var(--red);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px}
+.cf.warn{border-left-color:var(--gold)}
+.cf.ack{border-left-color:var(--line);opacity:.75}
+.cf .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.cf .side{background:#FAF7F8;border-radius:var(--radius-sm);padding:8px 10px}
+.cf .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+/* Dialog */
+dialog{border:0;border-radius:var(--radius);padding:0;max-width:min(860px,94vw);width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(30,10,18,.45)}
+.dlg-h{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.dlg-h h3{margin:0;font-size:17px;color:var(--burgundy)}
+.dlg-b{padding:16px 18px;max-height:70vh;overflow:auto}
+.dlg-f{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:#FAF7F8}
+.form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.f{display:flex;flex-direction:column;gap:4px}
+.f label{font-size:12px;font-weight:700;color:var(--charcoal)}
+.span2{grid-column:span 2}.span4{grid-column:1 / -1}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;max-width:90vw}
+.toast.show{opacity:1}
+.empty{background:#fff;border:1px dashed var(--line);border-radius:var(--radius);padding:30px;text-align:center;color:var(--charcoal)}
+.empty h3{color:var(--burgundy)}
+
+.savestate{font-size:12px;font-weight:700;padding:2px 9px;border-radius:10px;background:rgba(255,255,255,.18);margin-right:6px}
+.savestate.ok{background:rgba(255,255,255,.18)}.savestate.bad{background:#fff;color:var(--red)}
+.sticky{position:sticky;top:0;z-index:30;background:var(--bg);padding-top:10px;margin-top:-10px;box-shadow:0 6px 8px -8px rgba(0,0,0,.18)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:#fff}
+.seg button{border:0;background:#fff;padding:6px 12px;font-weight:700;cursor:pointer;font-size:13px;color:var(--charcoal)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--burgundy);color:#fff}
+.drop{outline:3px dashed var(--blue);outline-offset:-3px}
+.chip[draggable="true"],.wk-ev{cursor:grab}
+.fdot.cover{box-shadow:0 0 0 2px #fff,0 0 0 3px var(--ink)!important}
+.cohort-tools{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.cohort-tools h3{font-size:14px;margin-bottom:6px}
+/* Week view */
+.wk{display:grid;background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.wk-h{background:#FAF7F8;border-bottom:1px solid var(--line);border-left:1px solid var(--line);padding:6px 8px;min-height:44px;min-width:0}
+.wk-h:first-child{border-left:0}
+.wk-h.today .dn{background:var(--burgundy);color:#fff}
+.wk-gut{position:relative;background:#FAFAFB}
+.wk-hr{position:absolute;right:6px;transform:translateY(-50%);font-size:11px;color:var(--muted)}
+.wk-hr:first-child{transform:none}
+.wk-col{position:relative;border-left:1px solid var(--line)}
+.wk-col.hol{background:repeating-linear-gradient(135deg,#FFF6F5,#FFF6F5 8px,#FDECEA 8px,#FDECEA 16px)}
+.wk-col.off{background:repeating-linear-gradient(135deg,#FBF6E9,#FBF6E9 8px,#F8EDD3 8px,#F8EDD3 16px)}
+.wk-line{position:absolute;left:0;right:0;border-top:1px solid #ECEAEE}
+.wk-line.half{border-top-style:dashed;border-top-color:#F3F2F4}
+.wk-ev{position:absolute;border:0;border-radius:5px;padding:3px 6px;font-size:11.5px;line-height:1.3;overflow:hidden;text-align:left;color:#fff;display:flex;flex-direction:column;gap:1px;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.wk-ev.k-ncit{background:var(--burgundy)}.wk-ev.k-blue{background:var(--blue)}.wk-ev.k-gold{background:var(--gold);color:var(--burgundy-dk)}.wk-ev.k-none{background:var(--charcoal)}
+.wk-ev.bad{box-shadow:0 0 0 2px var(--red)}
+.wk-t{font-weight:700;font-size:11px}
+.wk-c{font-size:10.5px;opacity:.9}
+.wk-f{display:inline-flex;gap:4px;align-items:center;font-size:10.5px}
+.wk-f .fdot{width:14px;height:14px;font-size:8px}
+@media (max-width:900px){
+  .day{min-height:90px}.chip .s{display:none}
+  .form{grid-template-columns:1fr 1fr}.cf .pair{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media print{.top .tabs,.bar,.links{display:none}body{background:#fff}.day{min-height:96px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><small>CLEAR Learning · Instructor Portal</small><h1>Program Scheduler</h1></div>
+    <div class="links"><span class="savestate" id="savestate">Loading…</span><a href="/admin-dashboard">Staff dashboard</a></div>
+  </div>
+  <nav class="tabs" id="tabs" role="tablist">
+    <button class="tab" data-tab="calendar" role="tab">Calendar</button>
+    <button class="tab" data-tab="cohorts" role="tab">Cohorts<span class="n" id="n-cohorts">0</span></button>
+    <button class="tab" data-tab="conflicts" role="tab">Conflicts<span class="n" id="n-conflicts">0</span></button>
+    <button class="tab" data-tab="templates" role="tab">Program templates</button>
+    <button class="tab" data-tab="settings" role="tab">Facilitators and days off</button>
+  </nav>
+</header>
+<main id="main"><p class="facts">Loading the shared schedule…</p></main>
+<iframe id="engine" src="/agenda-generator?engine=1" title="Agenda engine" hidden aria-hidden="true" tabindex="-1" onload="engineReady()"></iframe>
+<dialog id="dlg"><div class="dlg-h"><h3 id="dlg-t"></h3><button class="btn link" onclick="closeDlg()" aria-label="Close">Close</button></div><div class="dlg-b" id="dlg-b"></div><div class="dlg-f" id="dlg-f"></div></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   CLEAR Learning Program Scheduler
+   Plans a quarter of cohorts from program templates, shows them on a calendar with
+   holidays and days off, and flags overlapping sessions and facilitator conflicts.
+   Session lists and lengths follow the Program Agenda Generator (the SOP); day patterns
+   follow CLEAR Learning's standard cohort patterns. Saved in this browser; back up from
+   the Facilitators and days off tab. Sends the quarter to the Agenda Generator.
+   ===================================================================== */
+const STORE='clear_program_scheduler_v1', HANDOFF='clear_scheduler_handoff';
+const MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DOWL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone=o=>JSON.parse(JSON.stringify(o));
+const uid=p=>p+'_'+Math.random().toString(36).slice(2,9);
+
+/* ---------- Dates and times ---------- */
+const P=iso=>{const [y,m,d]=iso.split('-').map(Number);return new Date(Date.UTC(y,m-1,d,12));};
+const ISO=d=>d.toISOString().slice(0,10);
+const addD=(iso,n)=>{const d=P(iso);d.setUTCDate(d.getUTCDate()+n);return ISO(d);};
+const dowOf=iso=>P(iso).getUTCDay();
+const diffD=(a,b)=>Math.round((P(b)-P(a))/864e5);
+const fmtD=(iso,y=true)=>{if(!iso)return '';const d=P(iso);return `${MS[d.getUTCMonth()]} ${d.getUTCDate()}${y?', '+d.getUTCFullYear():''}`;};
+const fmtDay=iso=>iso?`${DOW[dowOf(iso)]}, ${fmtD(iso,false)}`:'';
+const toMin=t=>{if(!t)return 0;const [h,m]=t.split(':').map(Number);return h*60+m;};
+const toT=m=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+const fmtT=t=>{const m=toMin(t),h=Math.floor(m/60);return `${h%12||12}:${String(m%60).padStart(2,'0')} ${h>=12?'PM':'AM'}`;};
+const todayISO=(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
+const quarterOf=iso=>{const d=P(iso);return {y:d.getUTCFullYear(),q:Math.floor(d.getUTCMonth()/3)+1};};
+// Half-hour times. For online programs the usual starts (1 PM, 11 AM, 2 PM) are listed first.
+function timeOptions(sel,from=6*60,to=20*60,common=false){
+  const top=common?['13:00','11:00','14:00']:[], inTop=top.includes(sel);
+  const opt=(v,s)=>`<option value="${v}" ${s?'selected':''}>${fmtT(v)}</option>`;
+  let all='';for(let m=from;m<=to;m+=30){const v=toT(m);all+=opt(v,v===sel&&!inTop);}
+  if(sel&&!inTop&&!all.includes(`value="${sel}"`))all=opt(sel,true)+all;
+  if(!common)return all;
+  return `<optgroup label="Usual start times">${top.map(v=>opt(v,v===sel)).join('')}</optgroup><optgroup label="All times">${all}</optgroup>`;
+}
+
+/* ---------- Holidays ---------- */
+function nthDow(y,m,dow,n){const d=new Date(Date.UTC(y,m,1,12));let c=0;while(true){if(d.getUTCDay()===dow&&++c===n)return ISO(d);d.setUTCDate(d.getUTCDate()+1);}}
+function lastDow(y,m,dow){const d=new Date(Date.UTC(y,m+1,0,12));while(d.getUTCDay()!==dow)d.setUTCDate(d.getUTCDate()-1);return ISO(d);}
+function observed(iso){const w=dowOf(iso);return w===6?addD(iso,-1):w===0?addD(iso,1):iso;}
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return `${y}-${String(mo).padStart(2,'0')}-${String(da).padStart(2,'0')}`;}
+const pad=(y,m,d)=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+function usHolidays(y){return [
+  [observed(pad(y,1,1)),"New Year's Day"],[nthDow(y,0,1,3),'Martin Luther King Jr. Day'],[nthDow(y,1,1,3),"Presidents' Day"],
+  [lastDow(y,4,1),'Memorial Day'],[observed(pad(y,6,19)),'Juneteenth'],[observed(pad(y,7,4)),'Independence Day'],[nthDow(y,8,1,1),'Labor Day'],
+  [nthDow(y,9,1,2),"Columbus / Indigenous Peoples' Day"],[observed(pad(y,11,11)),'Veterans Day'],[nthDow(y,10,4,4),'Thanksgiving'],[observed(pad(y,12,25)),'Christmas Day']];}
+function caHolidays(y){const vic=(()=>{const d=P(pad(y,5,24));while(dowOf(ISO(d))!==1)d.setUTCDate(d.getUTCDate()-1);return ISO(d);})();return [
+  [observed(pad(y,1,1)),"New Year's Day (Canada)"],[addD(easter(y),-2),'Good Friday (Canada)'],[vic,'Victoria Day (Canada)'],[observed(pad(y,7,1)),'Canada Day'],
+  [nthDow(y,7,1,1),'Civic Holiday (Canada)'],[nthDow(y,8,1,1),'Labour Day (Canada)'],[pad(y,9,30),'Truth and Reconciliation Day (Canada)'],
+  [nthDow(y,9,1,2),'Thanksgiving (Canada)'],[pad(y,11,11),'Remembrance Day (Canada)'],[observed(pad(y,12,25)),'Christmas Day (Canada)'],[pad(y,12,26),'Boxing Day (Canada)']];}
+const holCache={};
+function holidaysOn(iso){
+  const y=+iso.slice(0,4), key=y+'|'+S.showCA;
+  if(!holCache[key]){const m={};for(const [d,n] of usHolidays(y))(m[d]=m[d]||[]).push(n);if(S.showCA)for(const [d,n] of caHolidays(y))(m[d]=m[d]||[]).push(n);holCache[key]=m;}
+  return holCache[key][iso]||[];
+}
+const dayOffOn=iso=>S.daysOff.filter(x=>x.date===iso);
+
+/* ---------- Default program templates ----------
+   Sessions and lengths: Program Agenda Generator. Day patterns: day 0 is the Welcome session
+   (or day 1 of an in-person program); "nw" places a session on that weekday of the following week (1 = Monday).
+   tg = the session name the Agenda Generator expects; code/group = how the cohort is named for it. */
+const W=(tg,title,rule,dur)=>({tg,title,rule,dur});
+const DEFAULT_TEMPLATES=[
+  {id:'ncitb-us',name:'NCIT Basic Online (US)',courseId:'126',logo:'NCITB',track:'ncit',group:'NCIT Basic',kind:'virtual',startDow:4,time:'13:00',code:'NCIT B US V',tgGroup:'NCITB-Virtual',tw:true,sessions:[
+    W('Welcome Session','Welcome & Introduction Session',{d:0},60),W('Investigative Process','Investigative Process',{d:5},120),W('Interviewing Techniques','Interviewing Techniques',{d:6},180),
+    W('Week 1 Q & A','Week One Q & A',{d:7},60),W('Report Writing','Report Writing',{d:12},180),W('Testifying','Testifying in Administrative and Criminal Proceedings',{d:13},180),W('Program Review & Test Prep','Program Review & Exam Information',{d:14},120)]},
+  {id:'ncitb-can',name:'NCIT Basic Online (Canadian)',courseId:'128',logo:'NCITB',track:'ncit',group:'NCIT Basic',kind:'virtual',startDow:4,time:'13:00',code:'NCIT B CAN V',tgGroup:'NCITB-Virtual',tw:true,sessions:[
+    W('Welcome Session','Welcome & Introduction Session',{d:0},60),W('Investigative Process','Investigative Process',{d:5},120),W('Interviewing Techniques','Interviewing Techniques',{d:6},180),
+    W('Week 1 Q & A','Week One Q & A',{d:7},60),W('Report Writing','Report Writing',{d:12},180),W('Testifying','Testifying in Administrative and Criminal Proceedings',{d:13},180),W('Program Review & Test Prep','Program Review & Final Exam Information',{d:14},120)]},
+  {id:'ncits',name:'NCIT Specialized Online',courseId:'129',logo:'NCITS',track:'ncit',group:'NCIT Specialized',kind:'virtual',startDow:4,time:'13:00',code:'NCIT S V',tgGroup:'NCITS-Virtual',tw:true,sessions:[
+    W('Welcome','Welcome & Introduction Session',{d:0},60),W('CMRT','Cognitive Memory Recall Technique (CMRT)',{d:5},120),W('BAQ','Behavioral Analysis & Questioning',{d:6},150),
+    W('M2 Review','Module Review (Module 2)',{d:7},150),W('Observation Skills','Observation Skills',{d:12},120),W('M3 Review','Module Review (Module 3)',{d:13},90),W('Program Review and Test Prep','Program Review & Test Prep',{d:14},90)]},
+  {id:'ncitb-us-ip',name:'NCIT Basic In-Person (US)',courseId:'ip-ncit-b-us',logo:'NCITB',track:'ncit',group:'NCIT Basic',kind:'inperson',startDow:null,time:'08:00',code:'NCIT B US',tgGroup:'NCITB-IPT',days:[['Day One',-30,570],['Day Two',0,555],['Day Three',0,570]]},
+  {id:'ncitb-can-ip',name:'NCIT Basic In-Person (Canadian)',courseId:'ip-ncit-b-can',logo:'NCITB',track:'ncit',group:'NCIT Basic',kind:'inperson',startDow:null,time:'08:00',code:'NCIT B CAN',tgGroup:'NCITB-IPT',days:[['Day One',-30,570],['Day Two',0,555],['Day Three',0,570]]},
+  {id:'ncits-ip',name:'NCIT Specialized In-Person',courseId:'ip-ncit-s',logo:'NCITS',track:'ncit',group:'NCIT Specialized',kind:'inperson',startDow:null,time:'09:00',code:'NCIT S',tgGroup:'NCITS-IPT',days:[['Day One',-30,480],['Day Two',0,480],['Day Three',0,375]]},
+  {id:'ncitait-ip',name:'NCIT AIT In-Person',courseId:'ip-ncit-ait',logo:'NCITAIT',track:'ncit',group:'NCIT AIT',kind:'inperson',startDow:null,time:'08:30',code:'NCIT AIT',tgGroup:'NCIT AIT IPT',days:[['Day One',0,480],['Day Two',0,480]]},
+  {id:'ncitws',name:'NCIT Workshop Series',courseId:'ncit-workshop-series',logo:'NCITWS',track:'ncit',group:'NCIT Workshops',kind:'virtual',startDow:4,time:'13:00',code:'NCIT W Series',tgGroup:'NCITW',swappable:true,sessions:[
+    W('Welcome Session','Welcome & Introduction Session',{d:0},60),W('Communications','Communications and the Art of Persuasion',{d:4},180),W('DDI S1','Drug Diversion Investigations: Session One',{d:6},120),
+    W('DDI S2','Drug Diversion Investigations: Session Two',{d:7},120),W('Ethics','Ethics for the Regulatory Investigator',{d:11},180),W('IRSM S1','Sexual Misconduct: Workshop One',{d:13},120),W('IRSM S2','Sexual Misconduct: Workshop Two',{d:14},120)]},
+  {id:'ncitw-ddi',name:'Drug Diversion Investigations',courseId:'169',logo:'NCITWDDI',track:'ncit',group:'NCIT Workshops',kind:'virtual',startDow:null,time:'13:00',code:'NCIT W DDI',tgGroup:'NCITW',sessions:[
+    W('Welcome Session','Welcome & Introduction Session',{d:0},60),W('DDI S1','Session One',{nw:2},120),W('DDI S2','Session Two',{nw:4},120)]},
+  {id:'ncitw-irsm',name:'Investigating Reports of Sexual Misconduct',courseId:'143',logo:'NCITWIRSM',track:'ncit',group:'NCIT Workshops',kind:'virtual',startDow:null,time:'13:00',code:'NCIT W IRSM',tgGroup:'NCITW',sessions:[
+    W('Welcome Session','Welcome & Introduction Session',{d:0},60),W('IRSM S1','Workshop One',{nw:2},120),W('IRSM S2','Workshop Two',{nw:4},120)]},
+  {id:'ncitw-comm',name:'Communications and the Art of Persuasion',courseId:'146',logo:'NCITWCSAP',track:'ncit',group:'NCIT Workshops',kind:'virtual',startDow:null,time:'13:00',code:'NCIT W Communications',tgGroup:'NCITW',single:true,sessions:[
+    W('Communications','Communications and the Art of Persuasion',{d:0},180)]},
+  {id:'ncitw-ethics',name:'Ethics for the Regulatory Investigator',courseId:'157',logo:'NCITWERI',track:'ncit',group:'NCIT Workshops',kind:'virtual',startDow:null,time:'13:00',code:'NCIT W Ethics',tgGroup:'NCITW',single:true,sessions:[
+    W('Ethics','Developing a Professional Attitude: Ethics for the Regulatory Investigator',{d:0},180)]},
+  {id:'elpr',name:'ELPR',courseId:'138',logo:'ELPR',track:'blue',group:'ELPR',kind:'virtual',startDow:4,time:'13:00',code:'ELPR',tgGroup:'ELPR',sessions:[
+    W('Welcome Session','Welcome & Introduction Session',{d:0},60),W('Module 1','Module 1',{d:4},150),W('Module 2','Module 2',{d:5},120),W('Module 3','Module 3',{d:6},150),W('Module 4','Module 4',{d:7},180)]},
+  {id:'sra',name:'SRA: Staffing a Board',courseId:'147',logo:'SRASAB',track:'blue',group:'SRA: Staffing a Board',kind:'virtual',startDow:4,time:'13:00',code:'SRA SAB',tgGroup:'SRA SAB',sessions:[
+    W('Welcome Session','Welcome & Introduction Session',{d:0},60),W('Module 1','Module 1',{d:5},180),W('Module 2','Module 2',{d:6},180),W('Module 3','Module 3',{d:7},180)]},
+  {id:'acrg',name:'ACRG',courseId:'142',logo:'ACRG',track:'gold',group:'ACRG',kind:'virtual',startDow:4,time:'13:00',code:'ACRG',tgGroup:'ACRG Virtual',sessions:[
+    W('Welcome Session','Welcome & Introduction Session',{d:0},60),W('Module 1','Module 1: Striving for Governance Excellence',{d:5},180),W('Module 2','Module 2: Evaluation',{d:12},120),W('Module 3','Module 3: Public Reporting',{d:19},90)]},
+  {id:'bct',name:'Board Chair Training',courseId:'165',logo:'BCT',track:'gold',group:'Board Chair Training',kind:'virtual',startDow:4,time:'13:00',code:'GMFB Board Chair',tgGroup:'BCT',sessions:[
+    W('Welcome Session','Welcome & Introduction Session',{d:0},60),W('Roles of a Board Chair','Roles of a Board Chair',{d:4},60),W('Running Effective Board Meetings','Running Effective Board Meetings',{d:5},60),
+    W('Challenges','Challenges',{d:6},60),W('Staff Interactions','Staff Interactions',{d:7},60)]}
+];
+const GROUP_ORDER=['NCIT Basic','NCIT Specialized','NCIT AIT','NCIT Workshops','ELPR','SRA: Staffing a Board','Introduction to Regulatory Governance','ACRG','Board Chair Training'];
+const FAC_COLORS=['#084D78','#1F6B3F','#7A3E9D','#B4531A','#0E7C86','#9B1C1C'];
+
+/* ---------- State ---------- */
+let S;
+const ABBR={'ncitb-us':'NCIT B US','ncitb-can':'NCIT B CAN','ncits':'NCIT S','ncitb-us-ip':'NCIT B US','ncitb-can-ip':'NCIT B CAN','ncits-ip':'NCIT S','ncitait-ip':'NCIT AIT','ncitws':'NCIT W Series','ncitw-ddi':'NCIT W DDI','ncitw-irsm':'NCIT W IRSM','ncitw-comm':'NCIT W Comm','ncitw-ethics':'NCIT W Ethics','elpr':'ELPR','sra':'SRA SAB','acrg':'ACRG','bct':'BCT'};
+function freshState(){return {version:2,templates:clone(DEFAULT_TEMPLATES),facilitators:[
+  {id:'f_zephir',name:'Zephir',color:FAC_COLORS[0],off:[]},{id:'f_michelle',name:'Michelle',color:FAC_COLORS[1],off:[]},{id:'f_amanda',name:'Amanda',color:FAC_COLORS[2],off:[]},{id:'f_kemi',name:'Kemi',color:FAC_COLORS[3],off:[]}],
+  daysOff:[],showCA:true,buffer:15,cohorts:[],acks:{},quarter:null,view:'quarter',week:null,weekends:false};}
+function migrate(){
+  S.templates=S.templates||[];S.acks=S.acks||{};S.daysOff=S.daysOff||[];S.cohorts=S.cohorts||[];S.facilitators=S.facilitators||[];
+  for(const d of DEFAULT_TEMPLATES) if(!S.templates.some(t=>t.id===d.id)) S.templates.push(clone(d));
+  for(const t of S.templates){ if(!t.abbr) t.abbr=ABBR[t.id]||t.code||t.name; }
+  if((S.version||1)<2){ // version 2: online programs default to 1 PM; cohort labels are built from the date, course, location and enrollment
+    for(const t of S.templates) if(t.kind!=='inperson'&&(t.time==='12:00'||(t.id==='acrg'&&t.time==='14:00'))) t.time='13:00';
+    S.version=2;
+  }
+  for(const f of S.facilitators) f.off=f.off||[];
+  for(const c of S.cohorts){ c.enroll=c.enroll||'Open'; for(const s of c.sessions) s.fac=s.fac||''; delete c.label; }
+  S.view=S.view||'quarter'; if(S.weekends===undefined) S.weekends=false;
+}
+/* ---------- Shared storage ----------
+   The schedule is saved to the Instructor Portal so every staff member works on the same plan.
+   Each save names the version it started from; if someone else saved in between, you choose whose changes to keep.
+   View settings (quarter, calendar view, week) stay in this browser. */
+const PREFS='clear_program_scheduler_prefs';
+let VER=0, saveT=null, saving=false, pending=false, loadedOk=false;
+const SHARED_KEYS=['version','templates','facilitators','daysOff','showCA','buffer','cohorts','acks'];
+const sharedState=()=>Object.fromEntries(SHARED_KEYS.map(k=>[k,S[k]]));
+function savePrefs(){try{localStorage.setItem(PREFS,JSON.stringify({quarter:S.quarter,view:S.view,week:S.week,weekends:S.weekends}));}catch(e){}}
+function readPrefs(){try{return JSON.parse(localStorage.getItem(PREFS)||'null')||{};}catch(e){return {};}}
+function setSaveState(txt,cls){const el=document.getElementById('savestate');if(el){el.textContent=txt;el.className='savestate '+(cls||'');}}
+async function apiCall(path,opts={}){const r=await fetch('/api/'+path,{...opts,headers:{'Content-Type':'application/json'},credentials:'same-origin'});let j={};try{j=await r.json();}catch(e){j={error:`The portal returned ${r.status}.`};}
+  if(r.status===401) throw Object.assign(new Error('Your sign-in expired. Reload the page to sign in again.'),{status:401});
+  if(!r.ok) throw Object.assign(new Error(j.error||`The portal returned ${r.status}.`),{status:r.status});return j;}
+async function load(){
+  const prefs=readPrefs();
+  try{
+    const j=await apiCall('admin/schedule');
+    if(j.state){ S=j.state; VER=j.version; }
+    else {
+      // First use: start from a schedule saved in this browser by the earlier version, if there is one.
+      let local=null; try{local=JSON.parse(localStorage.getItem(STORE)||'null');}catch(e){}
+      S=local&&local.templates?local:freshState(); VER=0; pending=true;
+      if(local&&local.cohorts&&local.cohorts.length) setTimeout(()=>toast(`Moved the ${local.cohorts.length} cohorts saved in this browser to the shared schedule.`),400);
+    }
+    loadedOk=true;
+  }catch(e){
+    S=freshState();
+    document.getElementById('main').innerHTML=`<div class="err"><strong>Couldn't open the shared schedule.</strong> ${esc(e.message)}</div>`;
+    setSaveState('Not connected','bad');
+    return false;
+  }
+  migrate();
+  Object.assign(S,{quarter:prefs.quarter||S.quarter,view:prefs.view||'quarter',week:prefs.week||null,weekends:!!prefs.weekends});
+  if(!S.quarter){const n=new Date();let q=Math.floor(n.getMonth()/3)+2,y=n.getFullYear();if(q>4){q=1;y++;}S.quarter={y,q};}
+  setSaveState('All changes saved','ok');
+  if(pending) flush();
+  return true;
+}
+function save(){savePrefs();if(!loadedOk)return;pending=true;setSaveState('Saving…','');clearTimeout(saveT);saveT=setTimeout(flush,600);}
+async function flush(){
+  if(saving){clearTimeout(saveT);saveT=setTimeout(flush,400);return;}
+  if(!pending)return;
+  saving=true;pending=false;
+  try{
+    const j=await apiCall('admin/schedule',{method:'PUT',body:JSON.stringify({state:sharedState(),baseVersion:VER})});
+    VER=j.version;setSaveState(pending?'Saving…':'All changes saved','ok');
+  }catch(e){
+    if(e.status===409){pending=true;setSaveState('Not saved','bad');conflictDlg(e.message);}
+    else{pending=true;setSaveState('Not saved; retrying','bad');clearTimeout(saveT);saveT=setTimeout(flush,5000);if(e.status!==401)toast('Couldn’t save the schedule: '+e.message);}
+  }finally{saving=false;}
+}
+function conflictDlg(msg){
+  openDlg('Someone else changed the schedule',`<p>${esc(msg)} Your latest changes haven't been saved.</p><p class="sub">Load their version to see the current schedule (your unsaved changes are discarded), or keep yours, which replaces their changes.</p>`,
+    `<button class="btn ghost" onclick="keepMine()">Keep my version</button><button class="btn" onclick="location.reload()">Load their version</button>`);
+}
+async function keepMine(){try{const j=await apiCall('admin/schedule');VER=j.version;pending=true;closeDlg();await flush();toast('Your version is saved');}catch(e){toast(e.message);}}
+window.addEventListener('beforeunload',e=>{if(pending||saving){e.preventDefault();e.returnValue='';}});
+
+/* ---------- Agenda engine (the Agenda Generator, loaded in a hidden frame) ---------- */
+let ENG=null;
+function engineReady(){const f=document.getElementById('engine');try{ENG=f.contentWindow.agendaEngine||null;}catch(e){ENG=null;}
+  if(location.hash==='#agendas'&&ENG&&loadedOk){history.replaceState(null,'',location.pathname);agendaDlg();}}
+function needEngine(){if(ENG)return true;toast('The agenda tools are still loading. Try again in a moment.');return false;}
+
+const U={tab:'calendar',open:{},facFilter:'',progFilter:''};
+const tpl=id=>S.templates.find(t=>t.id===id);
+const coh=id=>S.cohorts.find(c=>c.id===id);
+const fac=id=>S.facilitators.find(f=>f.id===id);
+
+/* ---------- Building cohorts ---------- */
+function ruleDate(start,rule){
+  if(rule.nw){const w=dowOf(start),mon=addD(start,-((w+6)%7));return addD(mon,7+rule.nw-1);}
+  return addD(start,rule.d||0);
+}
+function buildSessions(t,start,time){
+  if(t.kind==='inperson') return t.days.map(([label,so,eo],i)=>({id:uid('s'),key:'day'+i,tg:label,title:label,date:addD(start,i),time:toT(toMin(time)+so),dur:eo-so,fac:'',dateEdited:false,timeEdited:false}));
+  return t.sessions.map((s,i)=>({id:uid('s'),key:'s'+i,tg:s.tg,title:s.title,date:ruleDate(start,s.rule),time,dur:s.dur,fac:'',dateEdited:false,timeEdited:false}));
+}
+function twClose(c){const t=tpl(c.tpl);if(!t||!t.tw)return '';const r=c.sessions.find(s=>/program review/i.test(s.tg));if(!r)return '';
+  let d=addD(r.date,14);while(dowOf(d)!==4)d=addD(d,1);return c.twOverride||d;}
+// Cohort label: YYYY.MM.DD, course abbreviation, City, ST for in-person, Open or Closed enrollment.
+function labelOf(c){const t=tpl(c.tpl)||{};return `${c.start.replace(/-/g,'.')} ${t.abbr||t.name||''}${t.kind==='inperson'&&c.location?' '+c.location:''} ${c.enroll||'Open'}`;}
+const endOf=s=>toT(toMin(s.time)+s.dur);
+const cohortStart=c=>c.sessions.map(s=>s.date).sort()[0]||c.start;
+const effFac=(c,s)=>(s&&s.fac)||c.fac||'';
+
+/* ---------- Facilitator availability ---------- */
+function facOffOn(f,iso){ if(!f) return null; return (f.off||[]).find(o=>iso>=o.from&&iso<=(o.to||o.from))||null; }
+function facOffAny(f,dates){ for(const d of dates){ const o=facOffOn(f,d); if(o) return {date:d,o}; } return null; }
+function facOptions(selected,dates,blankLabel){
+  return `<option value="">${esc(blankLabel)}</option>`+S.facilitators.map(f=>{const off=facOffAny(f,dates);
+    return `<option value="${f.id}" ${selected===f.id?'selected':''} ${off&&selected!==f.id?'disabled':''}>${esc(f.name)}${off?` (unavailable ${fmtD(off.date,false)})`:''}</option>`;}).join('');
+}
+
+/* ---------- Conflicts ---------- */
+function allSessions(){const out=[];for(const c of S.cohorts){const t=tpl(c.tpl);if(!t)continue;for(const s of c.sessions)out.push({c,t,s,f:effFac(c,s),a:toMin(s.time),b:toMin(s.time)+s.dur});}return out;}
+function pairKey(x,y){return [x.s.id,y.s.id].sort().join('|');}
+let CF=null;
+function computeConflicts(){
+  const items=allSessions(), byDate={};
+  for(const x of items)(byDate[x.s.date]=byDate[x.s.date]||[]).push(x);
+  const overlaps=[], dayFlags=[], bad=new Set();
+  for(const list of Object.values(byDate)){
+    for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
+      const x=list[i],y=list[j];
+      if(x.c.id===y.c.id||!(x.a<y.b&&y.a<x.b))continue;
+      const facClash=!!(x.f&&x.f===y.f);
+      const k=pairKey(x,y), ack=!!S.acks[k];
+      overlaps.push({x,y,facClash,key:k,ack});
+      if(!ack){bad.add(x.s.id);bad.add(y.s.id);}
+    }
+  }
+  for(const x of items){
+    const h=holidaysOn(x.s.date),o=dayOffOn(x.s.date),w=dowOf(x.s.date);
+    const why=[...h,...o.map(d=>d.label||'Day off')];
+    if(w===0||w===6)why.push(DOWL[w]);
+    if(why.length){const k='day|'+x.s.id+'|'+x.s.date;const ack=!!S.acks[k];dayFlags.push({x,why,key:k,ack});if(!ack)bad.add(x.s.id);}
+    const f=fac(x.f), off=facOffOn(f,x.s.date);
+    if(off){const k='fav|'+x.s.id+'|'+x.s.date+'|'+f.id;const ack=!!S.acks[k];dayFlags.push({x,why:[`${f.name} is unavailable${off.note?' ('+off.note+')':''}`],key:k,ack,avail:true});if(!ack)bad.add(x.s.id);}
+  }
+  overlaps.sort((p,q)=>(q.facClash-p.facClash)||p.x.s.date.localeCompare(q.x.s.date));
+  dayFlags.sort((p,q)=>(q.avail?1:0)-(p.avail?1:0)||p.x.s.date.localeCompare(q.x.s.date));
+  CF={overlaps,dayFlags,bad,open:overlaps.filter(o=>!o.ack).length+dayFlags.filter(d=>!d.ack).length};
+  return CF;
+}
+// Suggested start times that clear the other session (with the buffer), on the half hour, between 7 AM and 8 PM.
+function suggestTimes(x,y){const buf=S.buffer||0,out=[];
+  const after=Math.ceil((y.b+buf)/30)*30; if(after+x.s.dur<=20*60) out.push(after);
+  const before=Math.floor((y.a-buf-x.s.dur)/30)*30; if(before>=7*60) out.push(before);
+  return out;}
+
+/* ---------- Date fields: apply typed dates when typing is finished ---------- */
+// Re-drawing the page on every change would replace a date field while someone is typing into it.
+function dtKey(e){ e.target._typing=true; if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } }
+function dtChange(el,fn){ if(el._typing){ el._pending=fn; return; } fn(); }
+function dtBlur(el){ const f=el._pending; el._pending=null; el._typing=false; if(f) f(); }
+const dtAttrs=fn=>`onkeydown="dtKey(event)" onblur="dtBlur(this)" onchange="dtChange(this,()=>{${fn}})"`;
+
+/* ---------- Render shell ---------- */
+function render(){
+  computeConflicts();
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===U.tab));
+  const n=document.getElementById('n-conflicts');n.textContent=CF.open;n.classList.toggle('hot',CF.open>0);
+  document.getElementById('n-cohorts').textContent=S.cohorts.length;
+  const v={calendar:vCalendar,cohorts:vCohorts,conflicts:vConflicts,templates:vTemplates,settings:vSettings}[U.tab];
+  const y=window.scrollY;
+  document.getElementById('main').innerHTML=v();
+  window.scrollTo(0,y);
+}
+document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;U.tab=b.dataset.tab;render();window.scrollTo(0,0);});
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200);}
+function openDlg(title,body,foot){document.getElementById('dlg-t').textContent=title;document.getElementById('dlg-b').innerHTML=body;document.getElementById('dlg-f').innerHTML=foot||'<button class="btn" onclick="closeDlg()">Done</button>';const d=document.getElementById('dlg');if(!d.open)d.showModal();}
+function closeDlg(){const d=document.getElementById('dlg');if(d.open)d.close();}
+const logo=(t,cls='')=>t&&t.logo?`<img class="plogo ${cls}" src="/images/${t.logo}.svg" alt="" onerror="this.remove()">`:'';
+const fdot=(f,cover)=>f?`<span class="fdot ${cover?'cover':''}" style="background:${esc(f.color)}" title="${esc(f.name)}${cover?' (covering this session)':''}">${esc(f.name[0]||'?')}</span>`:'';
+const qLabel=q=>`Q${q.q} ${q.y}`;
+function qMonths(q){return [0,1,2].map(i=>({y:q.y,m:(q.q-1)*3+i}));}
+function qnav(){return `<span class="qnav"><button onclick="shiftQ(-1)" aria-label="Previous quarter">‹</button><strong>${qLabel(S.quarter)}</strong><button onclick="shiftQ(1)" aria-label="Next quarter">›</button></span>`;}
+function shiftQ(n){let {y,q}=S.quarter;q+=n;while(q>4){q-=4;y++;}while(q<1){q+=4;y--;}S.quarter={y,q};save();render();}
+const inQ=(c,q=S.quarter)=>{const a=quarterOf(cohortStart(c));return a.y===q.y&&a.q===q.q;};
+const short=t=>({'ncitb-us':'B US','ncitb-can':'B CAN','ncits':'S','ncitb-us-ip':'B US','ncitb-can-ip':'B CAN','ncits-ip':'S','ncitait-ip':'AIT','ncitws':'W','ncitw-ddi':'DDI','ncitw-irsm':'IRSM','ncitw-comm':'Comm','ncitw-ethics':'Ethics','elpr':'ELPR','sra':'SRA','acrg':'ACRG','bct':'BCT'}[t.id]||t.abbr||t.name.split(' ')[0]);
+const filtered=()=>allSessions().filter(x=>(!U.facFilter||(U.facFilter==='-'?!x.f:x.f===U.facFilter))&&(!U.progFilter||x.t.group===U.progFilter));
+
+/* ---------- Calendar ---------- */
+function vCalendar(){
+  const wk=S.view==='week';
+  let h=`<div class="sticky"><div class="bar"><div class="seg" role="group" aria-label="Calendar view"><button aria-pressed="${!wk}" onclick="setView('quarter')">Quarter</button><button aria-pressed="${wk}" onclick="setView('week')">Week</button></div>
+    ${wk?weekNav():qnav()}<button class="btn" onclick="addCohortDlg()">Add cohort</button><span class="grow"></span>
+    <label for="ff" class="facts" style="font-weight:700">Facilitator</label><select id="ff" onchange="U.facFilter=this.value;render()"><option value="">Everyone</option>${S.facilitators.map(f=>`<option value="${f.id}" ${U.facFilter===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}<option value="-" ${U.facFilter==='-'?'selected':''}>Not assigned</option></select>
+    <label for="pf" class="facts" style="font-weight:700">Program</label><select id="pf" onchange="U.progFilter=this.value;render()"><option value="">All programs</option>${GROUP_ORDER.filter(g=>S.templates.some(t=>t.group===g)).map(g=>`<option ${U.progFilter===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
+    <button class="btn ghost" onclick="agendaDlg()">Generate program agendas</button><button class="btn ghost" onclick="publishDlg()">Publish to Instructor Portal</button></div>
+  <div class="legend"><span><i class="sw" style="background:var(--burgundy)"></i>NCIT</span><span><i class="sw" style="background:var(--blue)"></i>ELPR and SRA</span><span><i class="sw" style="background:var(--gold)"></i>ACRG and Board Chair</span>
+    <span><i class="sw" style="background:repeating-linear-gradient(135deg,#FFF6F5,#FFF6F5 3px,#FDECEA 3px,#FDECEA 6px);border:1px solid #F3C7C2"></i>Holiday</span>
+    <span><i class="sw" style="background:repeating-linear-gradient(135deg,#FBF6E9,#FBF6E9 3px,#F8EDD3 3px,#F8EDD3 6px);border:1px solid #E8D6A6"></i>CLEAR day off</span>
+    <span><i class="sw" style="box-shadow:0 0 0 2px var(--red);background:#fff"></i>Needs attention</span><span><span class="fdot cover" style="background:var(--charcoal)">A</span> Covering one session</span>
+    <span>${wk?'Drag a session to another day or time.':'Drag a session to another day. Click a date to open its week.'}</span></div></div>`;
+  if(!S.cohorts.length) h+=`<div class="empty"><h3>No cohorts scheduled yet</h3><p>Add the quarter's cohorts and they appear here with holidays, days off and conflicts.</p><button class="btn" onclick="addCohortDlg()">Add cohort</button></div>`;
+  return h+(wk?weekView():quarterView());
+}
+function setView(v){S.view=v;if(v==='week'&&!S.week)S.week=weekStartOf(firstSessionInQuarter()||todayISO);save();render();}
+function quarterView(){
+  const byDate={};for(const x of filtered())(byDate[x.s.date]=byDate[x.s.date]||[]).push(x);
+  for(const l of Object.values(byDate))l.sort((a,b)=>a.a-b.a);
+  return `<div class="months">`+qMonths(S.quarter).map(({y,m})=>monthGrid(y,m,byDate)).join('')+`</div>`;
+}
+function monthGrid(y,m,byDate){
+  const first=new Date(Date.UTC(y,m,1,12)), start=addD(ISO(first),-first.getUTCDay());
+  const last=new Date(Date.UTC(y,m+1,0,12)), cells=Math.ceil((first.getUTCDay()+last.getUTCDate())/7)*7;
+  let h=`<section class="month"><h3>${MON[m]} ${y}</h3><div class="grid">`+DOW.map(d=>`<div class="dow">${d}</div>`).join('');
+  for(let i=0;i<cells;i++){
+    const iso=addD(start,i), d=P(iso), out=d.getUTCMonth()!==m, w=d.getUTCDay();
+    const hol=holidaysOn(iso), off=dayOffOn(iso), list=out?[]:(byDate[iso]||[]);
+    const cls=['day',out?'out':'',(w===0||w===6)?'wknd':'',hol.length?'hol':off.length?'off':'',iso===todayISO?'today':''].join(' ');
+    const label=[...hol,...off.map(o=>o.label||'Day off')].join('; ');
+    const MAX=5;
+    h+=`<div class="${cls}" ${out?'':`ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropOnDay(event,'${iso}')"`}><div class="dhead"><button class="dn" onclick="openWeek('${iso}')" aria-label="Open the week of ${esc(fmtDay(iso))}${label?': '+esc(label):''}">${d.getUTCDate()}</button>${!out&&label?`<span class="hname" title="${esc(label)}">${esc(label)}</span>`:''}</div>`+
+      list.slice(0,list.length>MAX+1?MAX:list.length).map(chip).join('')+(list.length>MAX+1?`<button class="more" onclick="openWeek('${iso}')">+ ${list.length-MAX} more</button>`:'')+`</div>`;
+  }
+  return h+`</div></section>`;
+}
+function chip(x){
+  const f=fac(x.f), cover=!!x.s.fac&&x.s.fac!==x.c.fac, bad=CF.bad.has(x.s.id);
+  return `<button class="chip k-${x.t.track||'none'} ${x.t.kind==='inperson'?'ip':''} ${bad?'bad':''}" draggable="true" ondragstart="dragStart(event,'${x.c.id}','${x.s.id}')" onclick="sessDlg('${x.c.id}','${x.s.id}')" title="${esc(labelOf(x.c))}: ${esc(x.s.title)}, ${fmtT(x.s.time)}–${fmtT(endOf(x.s))}${f?', '+esc(f.name):''}${cover?' (covering)':''}">${fdot(f,cover)}<span class="t">${fmtT(x.s.time).replace(':00','').replace(' ','').toLowerCase()}</span><span class="s">${esc(short(x.t))} ${esc(x.s.title)}</span></button>`;
+}
+
+/* ---------- Week view ---------- */
+const HOUR=46;
+function weekStartOf(iso){return addD(iso,-dowOf(iso));}
+function firstSessionInQuarter(){const q=S.quarter;const d=allSessions().map(x=>x.s.date).filter(d=>{const a=quarterOf(d);return a.y===q.y&&a.q===q.q;}).sort();return d[0]||pad(q.y,(q.q-1)*3+1,1);}
+function weekNav(){const a=S.week,b=addD(a,6);return `<span class="qnav"><button onclick="shiftW(-7)" aria-label="Previous week">‹</button><strong style="min-width:170px">${fmtD(a,false)} – ${fmtD(b)}</strong><button onclick="shiftW(7)" aria-label="Next week">›</button></span><button class="btn link" onclick="S.week=weekStartOf(todayISO);save();render()">This week</button>
+  <label class="facts" style="display:inline-flex;gap:5px;align-items:center;font-weight:700"><input type="checkbox" ${S.weekends?'checked':''} onchange="S.weekends=this.checked;save();render()"> Weekends</label>`;}
+function shiftW(n){S.week=addD(S.week,n);const q=quarterOf(addD(S.week,3));S.quarter=q;save();render();}
+function openWeek(iso){S.view='week';S.week=weekStartOf(iso);save();render();window.scrollTo(0,0);}
+function weekView(){
+  const days=[...Array(7)].map((_,i)=>addD(S.week,i)).filter(d=>S.weekends||(dowOf(d)!==0&&dowOf(d)!==6));
+  const items=filtered().filter(x=>days.includes(x.s.date));
+  const from=Math.min(7*60,...items.map(x=>Math.floor(x.a/60)*60)), to=Math.max(19*60,...items.map(x=>Math.ceil(x.b/60)*60));
+  const H=(to-from)/60*HOUR, px=m=>(m-from)/60*HOUR;
+  let gut='';for(let m=from;m<to;m+=60)gut+=`<div class="wk-hr" style="top:${px(m)}px">${fmtT(toT(m)).replace(':00','')}</div>`;
+  let lines='';for(let m=from;m<to;m+=60)lines+=`<div class="wk-line" style="top:${px(m)}px"></div><div class="wk-line half" style="top:${px(m+30)}px"></div>`;
+  const cols=days.map(iso=>{
+    const hol=holidaysOn(iso),off=dayOffOn(iso),list=items.filter(x=>x.s.date===iso).sort((a,b)=>a.a-b.a||b.b-a.b);
+    // Side-by-side lanes for overlapping sessions, like Outlook
+    const lanes=[];for(const x of list){let l=lanes.findIndex(e=>e<=x.a);if(l<0){l=lanes.length;lanes.push(0);}lanes[l]=x.b;x.lane=l;}
+    for(const x of list){x.cols=1;for(const y of list)if(x!==y&&x.a<y.b&&y.a<x.b)x.cols=Math.max(x.cols,Math.max(x.lane,y.lane)+1);}
+    const ev=list.map(x=>{const f=fac(x.f),cover=!!x.s.fac&&x.s.fac!==x.c.fac,w=100/x.cols;
+      return `<button class="wk-ev k-${x.t.track||'none'} ${CF.bad.has(x.s.id)?'bad':''}" draggable="true" ondragstart="dragStart(event,'${x.c.id}','${x.s.id}')" onclick="sessDlg('${x.c.id}','${x.s.id}')"
+        style="top:${px(x.a)}px;height:${Math.max(px(x.b)-px(x.a)-2,18)}px;left:calc(${x.lane*w}% + 2px);width:calc(${w}% - 4px)" title="${esc(labelOf(x.c))}: ${esc(x.s.title)}">
+        <span class="wk-t">${fmtT(x.s.time)}–${fmtT(endOf(x.s))}</span><strong>${esc(short(x.t))}</strong> ${esc(x.s.title)}<span class="wk-c">${esc(labelOf(x.c))}</span>${f?`<span class="wk-f">${fdot(f,cover)} ${esc(f.name)}${cover?' (covering)':''}</span>`:''}</button>`;}).join('');
+    return {iso,hol,off,html:`<div class="wk-col ${hol.length?'hol':off.length?'off':''} ${iso===todayISO?'today':''}" style="height:${H}px" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropOnWeek(event,'${iso}',${from})">${lines}${ev}</div>`};
+  });
+  return `<div class="wk" style="grid-template-columns:56px repeat(${days.length},minmax(0,1fr))">
+    <div class="wk-h"></div>${cols.map(c=>`<div class="wk-h ${c.iso===todayISO?'today':''}"><button class="dn" onclick="S.view='quarter';S.quarter=quarterOf('${c.iso}');save();render()" title="Back to the quarter">${DOW[dowOf(c.iso)]} ${P(c.iso).getUTCDate()}</button>${[...c.hol,...c.off.map(o=>o.label||'Day off')].map(n=>`<div class="hname" title="${esc(n)}">${esc(n)}</div>`).join('')}</div>`).join('')}
+    <div class="wk-gut" style="height:${H}px">${gut}</div>${cols.map(c=>c.html).join('')}</div>
+    <p class="facts" style="margin-top:8px">Online programs are in Eastern Time; in-person programs show the venue's local time. Drop a session on a new day or time; times snap to the half hour.</p>`;
+}
+
+/* ---------- Drag and drop ---------- */
+function dragStart(e,cid,sid){e.dataTransfer.setData('text/plain',cid+'|'+sid);e.dataTransfer.effectAllowed='move';
+  const s=coh(cid).sessions.find(x=>x.id===sid);U.drag={cid,sid,grab:S.view==='week'?(e.offsetY||0):0,dur:s.dur};}
+function dragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('drop');}
+function dragLeave(e){e.currentTarget.classList.remove('drop');}
+function dragData(e){e.preventDefault();e.currentTarget.classList.remove('drop');const [cid,sid]=(e.dataTransfer.getData('text/plain')||'').split('|');const c=coh(cid);const s=c&&c.sessions.find(x=>x.id===sid);return s?{c,s}:null;}
+function dropOnDay(e,iso){const d=dragData(e);if(!d||d.s.date===iso)return;const old=d.s.date;d.s.date=iso;d.s.dateEdited=true;save();render();
+  toast(`${d.s.title} moved from ${fmtD(old,false)} to ${fmtD(iso,false)}`);}
+function dropOnWeek(e,iso,from){const d=dragData(e);if(!d)return;
+  const rect=e.currentTarget.getBoundingClientRect();const y=e.clientY-rect.top-(U.drag?U.drag.grab:0);
+  const m=Math.max(6*60,Math.min(21*60,Math.round((from+y/HOUR*60)/30)*30));const t=toT(m);
+  if(d.s.date===iso&&d.s.time===t)return;
+  const msg=`${d.s.title} moved to ${fmtDay(iso)}, ${fmtT(t)}`;
+  if(d.s.date!==iso){d.s.date=iso;d.s.dateEdited=true;} if(d.s.time!==t){d.s.time=t;d.s.timeEdited=true;}
+  save();render();toast(msg);}
+
+/* ---------- Session popup ---------- */
+function sessDlg(cid,sid){
+  const c=coh(cid),t=tpl(c.tpl),s=c.sessions.find(x=>x.id===sid);if(!s)return;
+  computeConflicts();
+  const mine=CF.overlaps.filter(o=>o.x.s.id===sid||o.y.s.id===sid), days=CF.dayFlags.filter(d=>d.x.s.id===sid), ip=t.kind==='inperson';
+  const cf=fac(c.fac);
+  let body=`<div class="ttl" style="margin-bottom:12px">${logo(t)}<div><strong>${esc(labelOf(c))}</strong><div class="facts">${esc(t.name)}${cf?' · Cohort facilitator: '+esc(cf.name):''}</div></div></div>
+    <div class="form"><div class="f span2"><label>${ip?'Day':'Session'}</label><div><strong>${esc(s.title)}</strong> <span class="facts">${s.dur} minutes</span>${s.dateEdited||s.timeEdited?' <span class="edited">Changed</span>':''}</div></div>
+    <div class="f"><label for="sd-date">Date</label><input type="date" id="sd-date" value="${s.date}"></div>
+    <div class="f"><label for="sd-time">Start time</label><select id="sd-time">${timeOptions(s.time,6*60,21*60,!ip)}</select></div>
+    ${ip?'':`<div class="f span4"><label for="sd-fac">Facilitator for this session</label><select id="sd-fac">${facOptions(s.fac,[s.date],cf?`Same as the cohort (${cf.name})`:'Same as the cohort (not assigned)')}</select>
+      <span class="facts">Choose someone else when they're covering this one session. The session is marked as covered on the calendar and checked for their conflicts.</span></div>`}</div>`;
+  if(mine.length||days.length){
+    body+=`<h3 style="margin-top:16px">Needs attention</h3>`;
+    for(const o of mine){const me=o.x.s.id===sid?o.x:o.y, other=o.x.s.id===sid?o.y:o.x;
+      body+=`<div class="cf ${o.ack?'ack':''}"><strong>${o.facClash?'Facilitator conflict: ':''}Overlaps ${esc(labelOf(other.c))}</strong><div class="facts">${esc(other.s.title)}, ${fmtT(other.s.time)}–${fmtT(endOf(other.s))}${o.facClash?' · both facilitated by '+esc(fac(me.f).name):''}</div>
+        <div class="acts">${suggestTimes(me,other).map(m=>`<button class="btn small" onclick="moveTo('${me.c.id}','${me.s.id}','${toT(m)}')">Move this session to ${fmtT(toT(m))}</button>`).join('')}${suggestTimes(other,me).map(m=>`<button class="btn ghost small" onclick="moveTo('${other.c.id}','${other.s.id}','${toT(m)}')">Move the other to ${fmtT(toT(m))}</button>`).join('')}
+        <button class="btn link" onclick="ack('${o.key}',${!o.ack})">${o.ack?'Flag again':'Keep both as scheduled'}</button></div></div>`;}
+    for(const d of days) body+=`<div class="cf warn ${d.ack?'ack':''}"><strong>${d.avail?'':'Falls on '}${esc(d.why.join('; '))}</strong><div class="acts"><button class="btn link" onclick="ack('${d.key}',${!d.ack})">${d.ack?'Flag again':d.avail?'Keep this facilitator':'Keep it on this day'}</button></div></div>`;
+  }
+  body+=`<div class="cohort-tools"><h3>This cohort</h3><div class="bar" style="margin:0">
+    <label class="facts" style="font-weight:700" for="sd-cfac">Cohort facilitator</label><select id="sd-cfac" onchange="setFac('${c.id}',this.value);closeDlg()">${facOptions(c.fac,c.sessions.map(x=>x.date),'Not assigned')}</select>
+    <button class="btn link" onclick="closeDlg();U.tab='cohorts';U.open['${c.id}']=true;S.quarter=quarterOf(cohortStart(coh('${c.id}')));render()">Open in Cohorts</button>
+    <span class="grow"></span><button class="btn link danger" onclick="delCohort('${c.id}')">Delete cohort</button></div></div>`;
+  openDlg(fmtDay(s.date),body,`${s.dateEdited||s.timeEdited||s.fac?`<button class="btn link" onclick="resetSess('${cid}','${sid}')">Reset to pattern</button>`:''}<span class="grow"></span><button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="saveSess('${cid}','${sid}')">Save session</button>`);
+}
+function saveSess(cid,sid){const c=coh(cid),s=c.sessions.find(x=>x.id===sid);
+  const d=document.getElementById('sd-date').value,t=document.getElementById('sd-time').value,fe=document.getElementById('sd-fac');
+  if(!d){toast('Choose a date.');return;}
+  if(d!==s.date){s.date=d;s.dateEdited=true;} if(t!==s.time){s.time=t;s.timeEdited=true;}
+  if(fe){const v=fe.value;s.fac=(v&&v!==c.fac)?v:'';const f=fac(s.fac),off=f&&facOffOn(f,s.date);if(off)toast(`${f.name} is unavailable on ${fmtD(s.date,false)}.`);}
+  save();closeDlg();render();toast('Session saved');}
+function moveTo(cid,sid,t){const s=coh(cid).sessions.find(x=>x.id===sid);s.time=t;s.timeEdited=true;save();closeDlg();render();toast(`Moved to ${fmtT(t)}`);}
+function patternFor(c,s){const t=tpl(c.tpl),fresh=buildSessions(t,c.start,c.time);return fresh.find(x=>x.key===s.key);}
+function resetSess(cid,sid){const c=coh(cid),s=c.sessions.find(x=>x.id===sid),p=patternFor(c,s);if(!p){toast('This session isn’t in the template.');return;}
+  Object.assign(s,{date:p.date,time:p.time,dur:p.dur,fac:'',dateEdited:false,timeEdited:false});save();closeDlg();render();toast('Session reset to the pattern');}
+function ack(k,on){if(on)S.acks[k]=true;else delete S.acks[k];save();closeDlg();render();}
+
+/* ---------- Cohorts ---------- */
+function groupsWithCohorts(list){return GROUP_ORDER.concat(['Other']).map(g=>({g,list:list.filter(c=>{const t=tpl(c.tpl);return (t?t.group:'Other')===g||(g==='Other'&&t&&!GROUP_ORDER.includes(t.group));}).sort((a,b)=>cohortStart(a).localeCompare(cohortStart(b)))})).filter(x=>x.list.length);}
+function vCohorts(){
+  const list=S.cohorts.filter(c=>inQ(c));
+  let h=`<h2>Cohorts</h2><p class="sub">Each cohort is built from its program template. Change the first date to move the whole cohort, or the start time to move every session that hasn't been set by hand. The cohort facilitator covers every session unless you choose someone else for a single session.</p>
+    <div class="bar">${qnav()}<span class="facts">${list.length} cohort${list.length===1?'':'s'} start in ${qLabel(S.quarter)}</span><span class="grow"></span><button class="btn ghost" onclick="agendaDlg()">Generate program agendas</button><button class="btn ghost" onclick="publishDlg()">Publish to Instructor Portal</button><button class="btn" onclick="addCohortDlg()">Add cohort</button></div>`;
+  if(!list.length) return h+`<div class="empty"><h3>No cohorts start in ${qLabel(S.quarter)}</h3><p>Add a cohort, or move to another quarter with the arrows.</p><button class="btn" onclick="addCohortDlg()">Add cohort</button></div>`;
+  for(const {g,list:cs} of groupsWithCohorts(list)){
+    const t0=tpl(cs[0].tpl);
+    h+=`<div class="grp-h">${logo(t0,'sm')}<h3>${esc(g)}</h3><span class="facts">${cs.length} cohort${cs.length>1?'s':''}</span></div>`;
+    h+=cs.map(cohortCard).join('');
+  }
+  return h;
+}
+function cohortCard(c){
+  const t=tpl(c.tpl), open=!!U.open[c.id], ip=t.kind==='inperson';
+  const flags=c.sessions.filter(s=>CF.bad.has(s.id)).length, edited=c.sessions.filter(s=>s.dateEdited||s.timeEdited).length, covers=c.sessions.filter(s=>s.fac&&s.fac!==c.fac).length;
+  const tw=twClose(c), w=dowOf(c.start), dowWarn=t.startDow!=null&&w!==t.startDow;
+  let h=`<div class="cohort"><div class="ch k-${t.track||'none'}" onclick="if(!event.target.closest('.ctl'))toggleC('${c.id}')">
+    ${logo(t)}<div style="flex:1;min-width:220px"><h4>${esc(labelOf(c))}</h4><div style="font-size:13px">${esc(t.name)}</div>
+      <div class="facts">${esc(fmtD(cohortStart(c)))} – ${esc(fmtD(c.sessions.map(s=>s.date).sort().pop()))} · ${c.sessions.length} ${ip?'days':'sessions'}${tw?' · testing window closes '+esc(fmtD(tw)):''}</div></div>
+    <div class="ctl"><span class="flag">${flags?`<span class="pill red">${flags} to review</span>`:'<span class="pill" style="background:var(--green-lt);color:var(--green)">No conflicts</span>'}${edited?`<span class="pill blue">${edited} changed</span>`:''}${covers?`<span class="pill blue">${covers} covered</span>`:''}${pubPill(c)}${dowWarn?`<span class="pill gold" title="This template normally starts on a ${DOWL[t.startDow]}">Starts ${DOWL[w]}</span>`:''}</span>
+      <label for="cs-${c.id}">${ip?'Day 1':'Welcome'}</label><input type="date" id="cs-${c.id}" value="${c.start}" ${dtAttrs(`moveCohort('${c.id}',this.value)`)}>
+      <label for="ct-${c.id}">${ip?'Daily start':'Start time'}</label><select id="ct-${c.id}" onchange="retimeCohort('${c.id}',this.value)">${timeOptions(c.time,6*60,20*60,!ip)}</select>
+      <label for="cf-${c.id}">Facilitator</label><select id="cf-${c.id}" onchange="setFac('${c.id}',this.value)">${facOptions(c.fac,c.sessions.map(s=>s.date),'Not assigned')}</select>
+      <button class="btn link" onclick="toggleC('${c.id}')" aria-expanded="${open}">${open?'Hide sessions':'Show sessions'}</button></div></div>`;
+  if(open){
+    const cf=fac(c.fac);
+    h+=`<div class="cbody"><div class="tbl-wrap" style="border:0;border-radius:0"><table><thead><tr><th>${ip?'Day':'Session'}</th><th>Date</th><th>Start</th><th>End</th>${ip?'':'<th>Facilitator</th>'}<th>Notes</th><th></th></tr></thead><tbody>`+
+      c.sessions.map(s=>{const why=[];for(const o of CF.overlaps)if(!o.ack&&(o.x.s.id===s.id||o.y.s.id===s.id)){const ot=o.x.s.id===s.id?o.y:o.x;why.push(`<span class="pill red" title="${esc(ot.s.title)}, ${fmtT(ot.s.time)}–${fmtT(endOf(ot.s))}">${o.facClash?'Facilitator conflict':'Overlaps'} ${esc(labelOf(ot.c))}</span>`);}
+        for(const d of CF.dayFlags)if(!d.ack&&d.x.s.id===s.id)why.push(`<span class="pill gold">${esc(d.why.join('; '))}</span>`);
+        const cover=s.fac&&s.fac!==c.fac;
+        return `<tr><td><strong>${esc(s.title)}</strong> <span class="facts">${s.dur} min</span>${s.dateEdited||s.timeEdited?' <span class="edited">Changed</span>':''}</td>
+        <td><input type="date" value="${s.date}" aria-label="Date for ${esc(s.title)}" ${dtAttrs(`setSess('${c.id}','${s.id}','date',this.value)`)}> <span class="facts">${DOW[dowOf(s.date)]}</span></td>
+        <td><select aria-label="Start time for ${esc(s.title)}" onchange="setSess('${c.id}','${s.id}','time',this.value)">${timeOptions(s.time,6*60,21*60,!ip)}</select></td>
+        <td>${fmtT(endOf(s))}</td>
+        ${ip?'':`<td><select aria-label="Facilitator for ${esc(s.title)}" onchange="setSessFac('${c.id}','${s.id}',this.value)">${facOptions(cover?s.fac:'',[s.date],cf?`Cohort (${cf.name})`:'Cohort (not assigned)')}</select>${cover?' <span class="edited">Covering</span>':''}</td>`}
+        <td><span class="flag">${why.join('')}</span></td>
+        <td style="white-space:nowrap"><button class="btn link" onclick="sessDlg('${c.id}','${s.id}')">Details</button>${s.dateEdited||s.timeEdited||cover?`<button class="btn link" onclick="resetSess('${c.id}','${s.id}')">Reset</button>`:''}</td></tr>`;}).join('')+
+      `</tbody></table></div>
+      <div class="bar" style="padding:10px 16px 0;margin:0">${t.tw?`<label class="facts" style="font-weight:700" for="tw-${c.id}">Testing window closes</label><input type="date" id="tw-${c.id}" value="${tw}" ${dtAttrs(`setTw('${c.id}',this.value)`)}>${c.twOverride?`<button class="btn link" onclick="setTw('${c.id}','')">Use the standard date</button>`:'<span class="facts">14 days after Program Review, on a Thursday</span>'}`:''}
+      <span class="grow"></span><label class="facts" style="font-weight:700" for="ce-${c.id}">Enrollment</label><select id="ce-${c.id}" onchange="coh('${c.id}').enroll=this.value;save();render()"><option ${c.enroll!=='Closed'?'selected':''}>Open</option><option ${c.enroll==='Closed'?'selected':''}>Closed</option></select>
+      ${ip?`<label class="facts" style="font-weight:700" for="cloc-${c.id}">Location</label><input type="text" id="cloc-${c.id}" value="${esc(c.location||'')}" placeholder="City, ST" onchange="coh('${c.id}').location=this.value.trim();save();render()">`:''}
+      <button class="btn link" onclick="rebuild('${c.id}')">Rebuild from pattern</button><button class="btn link" onclick="dupCohort('${c.id}')">Duplicate</button><button class="btn link danger" onclick="delCohort('${c.id}')">Delete</button></div></div>`;
+  }
+  return h+`</div>`;
+}
+function toggleC(id){U.open[id]=!U.open[id];render();}
+function setFac(id,v){const c=coh(id);c.fac=v;c.sessions.forEach(s=>{if(s.fac===v)s.fac='';});save();render();const f=fac(v);
+  if(f){computeConflicts();const n=CF.overlaps.filter(o=>o.facClash&&!o.ack&&(o.x.c.id===id||o.y.c.id===id)).length;toast(n?`${f.name} has ${n} overlapping session${n>1?'s':''} with another cohort`:`${f.name} assigned`);}}
+function setSessFac(cid,sid,v){const c=coh(cid),s=c.sessions.find(x=>x.id===sid);s.fac=(v&&v!==c.fac)?v:'';save();render();if(s.fac)toast(`${fac(s.fac).name} is covering ${s.title}`);}
+function moveCohort(id,v){if(!v||!/^\d{4}-\d{2}-\d{2}$/.test(v))return;const c=coh(id),delta=diffD(c.start,v);if(!delta)return;c.start=v;for(const s of c.sessions)s.date=addD(s.date,delta);save();render();toast(`Cohort moved ${delta>0?delta+' days later':(-delta)+' days earlier'}`);}
+function retimeCohort(id,v){const c=coh(id),t=tpl(c.tpl),delta=toMin(v)-toMin(c.time);c.time=v;let kept=0;
+  for(const s of c.sessions){if(s.timeEdited){kept++;continue;}s.time=t.kind==='inperson'?toT(toMin(s.time)+delta):v;}
+  save();render();toast(kept?`Start time changed. ${kept} session${kept>1?'s':''} set by hand kept their time.`:'Start time changed');}
+function setSess(cid,sid,k,v){if(!v)return;const s=coh(cid).sessions.find(x=>x.id===sid);if(s[k]===v)return;s[k]=v;s[k==='date'?'dateEdited':'timeEdited']=true;save();render();}
+function setTw(id,v){coh(id).twOverride=v||'';save();render();}
+function rebuild(id){const c=coh(id);if(!confirm('Rebuild every session from the program pattern? Dates, times and session facilitators you changed by hand will be replaced.'))return;c.sessions=buildSessions(tpl(c.tpl),c.start,c.time);save();render();toast('Cohort rebuilt from the pattern');}
+function delCohort(id){const c=coh(id);if(!confirm(`Delete ${labelOf(c)}? This removes all of its sessions from the schedule.`))return;S.cohorts=S.cohorts.filter(x=>x.id!==id);closeDlg();save();render();toast('Cohort deleted');}
+function dupCohort(id){const c=coh(id);const d=prompt('First date for the copy (YYYY-MM-DD). The copy keeps this cohort’s pattern, start time, enrollment and facilitator.',addD(c.start,7));if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return;
+  const n=clone(c);n.id=uid('c');const delta=diffD(c.start,d);n.start=d;n.sessions.forEach(s=>{s.id=uid('s');s.date=addD(s.date,delta);});n.twOverride='';S.cohorts.push(n);U.open[n.id]=true;save();render();toast('Cohort copied');}
+function addCohortDlg(){
+  const opts=GROUP_ORDER.concat(['Other']).map(g=>{const ts=S.templates.filter(t=>(t.group===g)||(g==='Other'&&!GROUP_ORDER.includes(t.group)));return ts.length?`<optgroup label="${esc(g)}">${ts.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('')}</optgroup>`:'';}).join('');
+  openDlg('Add cohort',`<div class="form"><div class="f span2"><label for="ac-t">Program</label><select id="ac-t" onchange="acRefresh(true)">${opts}</select></div>
+    <div class="f"><label for="ac-d" id="ac-dl">Welcome session date</label><input type="date" id="ac-d" ${dtAttrs('acRefresh()')}></div>
+    <div class="f"><label for="ac-tm" id="ac-tml">Start time (ET)</label><select id="ac-tm" onchange="acRefresh()"></select></div>
+    <div class="f span2" id="ac-locw"><label for="ac-loc">Location</label><input type="text" id="ac-loc" placeholder="City, ST" oninput="acLabel()"></div>
+    <div class="f"><label for="ac-e">Enrollment</label><select id="ac-e" onchange="acLabel()"><option>Open</option><option>Closed</option></select></div>
+    <div class="f"><label for="ac-f">Facilitator</label><select id="ac-f"></select></div>
+    <div class="f span4"><label>Cohort label</label><div id="ac-label" style="font-weight:700;color:var(--burgundy)"></div></div></div>
+    <div id="ac-prev" style="margin-top:14px"></div>`,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="addCohort()">Add cohort</button>`);
+  const q=S.quarter;U.acDefault=pad(q.y,(q.q-1)*3+1,1);
+  acRefresh(true);
+}
+function acLabel(){const t=tpl(document.getElementById('ac-t').value), d=document.getElementById('ac-d').value;
+  document.getElementById('ac-label').textContent=d?labelOf({tpl:t.id,start:d,location:(document.getElementById('ac-loc').value||'').trim(),enroll:document.getElementById('ac-e').value}):'';}
+function acRefresh(newTpl){
+  const t=tpl(document.getElementById('ac-t').value), ip=t.kind==='inperson', dEl=document.getElementById('ac-d');
+  document.getElementById('ac-dl').textContent=ip?'Day 1 date':t.single?'Session date':'Welcome session date';
+  document.getElementById('ac-tml').textContent=ip?'Daily start (local time)':'Start time (ET)';
+  document.getElementById('ac-locw').hidden=!ip;
+  const tm=document.getElementById('ac-tm'); if(newTpl){tm.innerHTML=timeOptions(t.time,6*60,20*60,!ip);}
+  if(newTpl&&!dEl.value){let d=U.acDefault;if(t.startDow!=null)while(dowOf(d)!==t.startDow)d=addD(d,1);dEl.value=d;}
+  const prev=document.getElementById('ac-prev');const d=dEl.value;
+  if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d)){prev.innerHTML='';acLabel();return;}
+  const ss=buildSessions(t,d,tm.value||t.time);
+  const fs=document.getElementById('ac-f'), keep=fs.value; fs.innerHTML=facOptions(keep,ss.map(s=>s.date),'Not assigned');
+  const warn=t.startDow!=null&&dowOf(d)!==t.startDow?`<div class="notice">${esc(t.name)} normally starts on a ${DOWL[t.startDow]}. ${fmtDay(d)} is a ${DOWL[dowOf(d)]}, so every session lands on a different weekday than usual.</div>`:'';
+  prev.innerHTML=warn+`<div class="tbl-wrap"><table><thead><tr><th>${ip?'Day':'Session'}</th><th>Date</th><th>Time</th></tr></thead><tbody>${ss.map(s=>{const hol=[...holidaysOn(s.date),...dayOffOn(s.date).map(o=>o.label||'Day off')];return `<tr><td>${esc(s.title)}</td><td>${esc(fmtDay(s.date))}${hol.length?` <span class="pill gold">${esc(hol.join('; '))}</span>`:''}</td><td>${fmtT(s.time)}–${fmtT(endOf(s))}</td></tr>`;}).join('')}</tbody></table></div>`;
+  acLabel();
+}
+function addCohort(){
+  const t=tpl(document.getElementById('ac-t').value), d=document.getElementById('ac-d').value, tm=document.getElementById('ac-tm').value;
+  if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d)){toast('Choose a date.');return;}
+  const loc=(document.getElementById('ac-loc').value||'').trim();
+  if(t.kind==='inperson'&&!/^.+,\s*[A-Z]{2}$/.test(loc)){toast('Enter the location as City, ST (for example Austin, TX).');return;}
+  const c={id:uid('c'),tpl:t.id,start:d,time:tm,fac:document.getElementById('ac-f').value,location:t.kind==='inperson'?loc:'',enroll:document.getElementById('ac-e').value,sessions:buildSessions(t,d,tm),twOverride:''};
+  S.cohorts.push(c);U.open[c.id]=true;
+  if(!inQ(c)){S.quarter=quarterOf(cohortStart(c));}
+  save();closeDlg();render();computeConflicts();const n=c.sessions.filter(s=>CF.bad.has(s.id)).length;
+  toast(n?`${labelOf(c)} added. ${n} session${n>1?'s need':' needs'} attention.`:`${labelOf(c)} added`);
+}
+
+/* ---------- Conflicts tab ---------- */
+function vConflicts(){
+  const q=S.quarter, inQd=iso=>{const a=quarterOf(iso);return a.y===q.y&&a.q===q.q;};
+  const ov=CF.overlaps.filter(o=>inQd(o.x.s.date)), dy=CF.dayFlags.filter(d=>inQd(d.x.s.date));
+  const fc=ov.filter(o=>o.facClash), so=ov.filter(o=>!o.facClash), fa=dy.filter(d=>d.avail), dd=dy.filter(d=>!d.avail);
+  let h=`<h2>Conflicts</h2><p class="sub">Overlapping sessions, facilitators scheduled on days they're unavailable, and sessions on holidays, CLEAR days off or weekends. They're allowed: move a session to clear the overlap, or keep it as scheduled and the flag is set aside. A facilitator conflict means one facilitator is on both overlapping sessions.</p><div class="bar">${qnav()}<span class="facts">Suggested times leave a ${S.buffer||0}-minute gap.</span></div>`;
+  if(!ov.length&&!dy.length) return h+`<div class="empty"><h3>No conflicts in ${qLabel(q)}</h3><p>No sessions overlap, and none fall on a holiday, day off, weekend or facilitator day off.</p></div>`;
+  const pair=o=>{const side=(x,y)=>`<div class="side"><div class="ttl">${logo(x.t,'sm')}<strong>${esc(labelOf(x.c))}</strong></div><div>${esc(x.s.title)}</div><div class="facts">${fmtT(x.s.time)}–${fmtT(endOf(x.s))}${fac(x.f)?' · '+esc(fac(x.f).name):''}</div>
+      <div class="acts">${suggestTimes(x,y).map(m=>`<button class="btn small ghost" onclick="moveTo('${x.c.id}','${x.s.id}','${toT(m)}')">Move to ${fmtT(toT(m))}</button>`).join('')}<button class="btn link" onclick="sessDlg('${x.c.id}','${x.s.id}')">Edit</button></div></div>`;
+    return `<div class="cf ${o.ack?'ack':''}"><strong>${esc(fmtDay(o.x.s.date))}${o.facClash?`: ${esc(fac(o.x.f).name)} is facilitating both`:''}</strong>${o.ack?' <span class="pill grey">Kept as scheduled</span>':''}<div class="pair">${side(o.x,o.y)}${side(o.y,o.x)}</div>
+      <div class="acts"><button class="btn link" onclick="ack('${o.key}',${!o.ack})">${o.ack?'Flag again':'Keep both as scheduled'}</button></div></div>`;};
+  const dayCard=d=>`<div class="cf warn ${d.ack?'ack':''}"><div class="ttl">${logo(d.x.t,'sm')}<strong>${esc(fmtDay(d.x.s.date))}: ${esc(d.why.join('; '))}</strong></div>
+      <div>${esc(labelOf(d.x.c))}: ${esc(d.x.s.title)} <span class="facts">${fmtT(d.x.s.time)}–${fmtT(endOf(d.x.s))}</span></div>
+      <div class="acts"><button class="btn small ghost" onclick="sessDlg('${d.x.c.id}','${d.x.s.id}')">${d.avail?'Change facilitator or date':'Move session'}</button><button class="btn link" onclick="ack('${d.key}',${!d.ack})">${d.ack?'Flag again':d.avail?'Keep this facilitator':'Keep it on this day'}</button></div></div>`;
+  if(fc.length) h+=`<h3>Facilitator conflicts (${fc.filter(o=>!o.ack).length} open)</h3>`+fc.map(pair).join('');
+  if(fa.length) h+=`<h3 style="margin-top:18px">Facilitators on days off (${fa.filter(d=>!d.ack).length} open)</h3>`+fa.map(dayCard).join('');
+  if(so.length) h+=`<h3 style="margin-top:18px">Overlapping sessions (${so.filter(o=>!o.ack).length} open)</h3>`+so.map(pair).join('');
+  if(dd.length) h+=`<h3 style="margin-top:18px">Holidays, days off and weekends (${dd.filter(d=>!d.ack).length} open)</h3>`+dd.map(dayCard).join('');
+  return h;
+}
+
+/* ---------- Templates ---------- */
+function vTemplates(){
+  let h=`<h2>Program templates</h2><p class="sub">Each template lists a program's sessions in order, how long each runs, and which day it falls on counted from the Welcome session (day 0). "Next week" places a session on that weekday of the following week. Session lists and lengths come from the Program Agenda Generator. Changes apply to cohorts you add or rebuild afterwards.</p>`;
+  for(const g of GROUP_ORDER.concat(['Other'])){
+    const ts=S.templates.filter(t=>t.group===g||(g==='Other'&&!GROUP_ORDER.includes(t.group)));if(!ts.length)continue;
+    h+=`<div class="grp-h">${logo(ts[0],'sm')}<h3>${esc(g)}</h3></div>`;
+    for(const t of ts){
+      const open=!!U.open['t_'+t.id];
+      h+=`<div class="cohort"><div class="ch k-${t.track||'none'}" onclick="if(!event.target.closest('.ctl'))U.open['t_${t.id}']=!U.open['t_${t.id}'],render()">${logo(t)}<div style="flex:1"><h4>${esc(t.name)}</h4><div class="facts">Label abbreviation ${esc(t.abbr)} · ${t.kind==='inperson'?`${t.days.length} consecutive days, daily start ${fmtT(t.time)} local`:`${t.sessions.length} session${t.sessions.length>1?'s':''}${t.startDow!=null?', usually starting on a '+DOWL[t.startDow]:''}, default start ${fmtT(t.time)} ET`}</div><div class="facts">${patternText(t)}</div></div><button class="btn link">${open?'Close':'Edit'}</button></div>`;
+      if(open) h+=templateEditor(t);
+      h+=`</div>`;
+    }
+  }
+  return h;
+}
+function patternText(t){if(t.kind==='inperson')return t.days.map(d=>d[0]).join(', ');
+  const base=t.startDow!=null?t.startDow:null;
+  return t.sessions.map(s=>{const r=s.rule;if(r.nw)return `${s.tg}: next week ${DOW[r.nw%7]}`;if(base==null)return `${s.tg}: day ${r.d}`;return `${s.tg}: ${DOW[(base+r.d)%7]} (day ${r.d})`;}).join(' · ');}
+function templateEditor(t){
+  const abbr=`<label class="facts" style="font-weight:700">Label abbreviation</label><input type="text" value="${esc(t.abbr)}" style="width:140px" onchange="tpl('${t.id}').abbr=this.value.trim()||tpl('${t.id}').abbr;save();render()">`;
+  if(t.kind==='inperson') return `<div class="cbody" style="padding:12px 16px"><p class="facts">In-person day lengths follow the Agenda Generator agenda for this program. Edit the agenda itself in the Agenda Generator.</p>
+    <div class="bar">${abbr}<label class="facts" style="font-weight:700">Default daily start</label><select onchange="tpl('${t.id}').time=this.value;save();render()">${timeOptions(t.time,6*60,11*60)}</select><span class="grow"></span><button class="btn link" onclick="restoreTpl('${t.id}')">Restore default</button></div></div>`;
+  return `<div class="cbody" style="padding:12px 16px"><div class="bar">${abbr}<label class="facts" style="font-weight:700">Usually starts on</label><select onchange="tpl('${t.id}').startDow=this.value===''?null:+this.value;save();render()"><option value="">Any day</option>${DOWL.map((d,i)=>`<option value="${i}" ${t.startDow===i?'selected':''}>${d}</option>`).join('')}</select>
+    <label class="facts" style="font-weight:700">Default start (ET)</label><select onchange="tpl('${t.id}').time=this.value;save();render()">${timeOptions(t.time,6*60,20*60,true)}</select><span class="grow"></span><button class="btn link" onclick="restoreTpl('${t.id}')">Restore default</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Session</th><th>Agenda Generator name</th><th>Falls on</th><th>Minutes</th><th></th></tr></thead><tbody>${t.sessions.map((s,i)=>`<tr>
+      <td><input type="text" value="${esc(s.title)}" style="width:100%" onchange="tpl('${t.id}').sessions[${i}].title=this.value;save()"></td>
+      <td><input type="text" value="${esc(s.tg)}" style="width:150px" onchange="tpl('${t.id}').sessions[${i}].tg=this.value;save()" title="Must match how the Agenda Generator recognizes this session"></td>
+      <td><select onchange="setRule('${t.id}',${i},this.value)"><option value="d" ${s.rule.nw?'':'selected'}>Day</option><option value="nw" ${s.rule.nw?'selected':''}>Next week</option></select>
+        ${s.rule.nw?`<select onchange="tpl('${t.id}').sessions[${i}].rule={nw:+this.value};save();render()">${[1,2,3,4,5].map(n=>`<option value="${n}" ${s.rule.nw===n?'selected':''}>${DOWL[n]}</option>`).join('')}</select>`:`<input type="number" min="0" max="120" value="${s.rule.d||0}" style="width:70px" onchange="tpl('${t.id}').sessions[${i}].rule={d:+this.value};save();render()">${t.startDow!=null?` <span class="facts">${DOW[(t.startDow+(s.rule.d||0))%7]}</span>`:''}`}</td>
+      <td><input type="number" min="15" max="600" step="15" value="${s.dur}" style="width:80px" onchange="tpl('${t.id}').sessions[${i}].dur=+this.value;save()"></td>
+      <td style="white-space:nowrap"><button class="btn link" ${i?'':'disabled'} onclick="mvRow('${t.id}',${i},-1)" aria-label="Move up">↑</button><button class="btn link" ${i<t.sessions.length-1?'':'disabled'} onclick="mvRow('${t.id}',${i},1)" aria-label="Move down">↓</button><button class="btn link danger" onclick="tpl('${t.id}').sessions.splice(${i},1);save();render()">Remove</button></td></tr>`).join('')}</tbody></table></div>
+    <div style="margin-top:8px"><button class="btn ghost small" onclick="tpl('${t.id}').sessions.push({tg:'',title:'New session',rule:{d:0},dur:60});save();render()">Add session</button></div></div>`;
+}
+function setRule(id,i,v){const s=tpl(id).sessions[i];s.rule=v==='nw'?{nw:2}:{d:0};save();render();}
+function mvRow(id,i,d){const a=tpl(id).sessions;[a[i],a[i+d]]=[a[i+d],a[i]];save();render();}
+function restoreTpl(id){const d=DEFAULT_TEMPLATES.find(t=>t.id===id);if(!d||!confirm('Restore this template to the standard pattern? Existing cohorts are not changed.'))return;const n=clone(d);n.abbr=ABBR[id]||n.code;S.templates[S.templates.findIndex(t=>t.id===id)]=n;save();render();toast('Template restored');}
+
+/* ---------- Settings ---------- */
+function vSettings(){
+  const yrs=[...new Set([S.quarter.y,S.quarter.y+1])];
+  const offs=S.facilitators.flatMap(f=>(f.off||[]).map((o,i)=>({f,o,i}))).sort((a,b)=>a.o.from.localeCompare(b.o.from));
+  return `<h2>Facilitators and days off</h2>
+  <div class="card"><h3>Facilitators</h3><p class="sub">Assign a facilitator to each cohort, and to single sessions when someone covers. If one facilitator has overlapping sessions in two cohorts, both are flagged.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Color</th><th>Cohorts in ${qLabel(S.quarter)}</th><th>Sessions covered</th><th></th></tr></thead><tbody>${S.facilitators.map((f,i)=>`<tr><td><input type="text" value="${esc(f.name)}" onchange="S.facilitators[${i}].name=this.value;save();render()"></td><td><input type="color" value="${esc(f.color)}" onchange="S.facilitators[${i}].color=this.value;save();render()" aria-label="Color for ${esc(f.name)}"></td><td>${S.cohorts.filter(c=>c.fac===f.id&&inQ(c)).length}</td><td>${S.cohorts.filter(c=>inQ(c)).flatMap(c=>c.sessions).filter(s=>s.fac===f.id).length}</td><td><button class="btn link danger" onclick="delFac(${i})">Remove</button></td></tr>`).join('')}</tbody></table></div>
+    <div style="margin-top:8px"><button class="btn ghost small" onclick="S.facilitators.push({id:uid('f'),name:'New facilitator',color:FAC_COLORS[S.facilitators.length%FAC_COLORS.length],off:[]});save();render()">Add facilitator</button></div></div>
+  <div class="card"><h3>Facilitator days off</h3><p class="sub">Dates a facilitator isn't available. They can't be chosen for a cohort or session on those dates, and if they're already assigned, the session is flagged.</p>
+    <div class="bar"><select id="fo-f">${S.facilitators.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('')}</select><label class="facts" style="font-weight:700" for="fo-a">From</label><input type="date" id="fo-a"><label class="facts" style="font-weight:700" for="fo-b">To</label><input type="date" id="fo-b"><input type="text" id="fo-n" placeholder="Note, for example Vacation" style="min-width:200px"><button class="btn small" onclick="addFacOff()">Add</button></div>
+    ${offs.length?`<div class="tbl-wrap"><table><tbody>${offs.map(({f,o,i})=>`<tr><td style="width:160px">${fdot(f)} ${esc(f.name)}</td><td style="width:260px">${esc(fmtDay(o.from))}${o.to&&o.to!==o.from?' – '+esc(fmtDay(o.to)):''}, ${o.from.slice(0,4)}</td><td>${esc(o.note||'')}</td><td style="width:80px"><button class="btn link danger" onclick="delFacOff('${f.id}',${i})">Remove</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="facts">No facilitator days off added yet.</p>'}</div>
+  <div class="card"><h3>CLEAR days off</h3><p class="sub">Office closures and other days to keep clear. Sessions on these days are flagged on the calendar and the Conflicts tab.</p>
+    <div class="bar"><input type="date" id="do-d"><input type="text" id="do-l" placeholder="Label, for example Office closed" style="min-width:240px"><button class="btn small" onclick="addOff()">Add day off</button></div>
+    ${S.daysOff.length?`<div class="tbl-wrap"><table><tbody>${S.daysOff.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(o=>`<tr><td style="width:180px">${esc(fmtDay(o.date))}, ${o.date.slice(0,4)}</td><td>${esc(o.label||'Day off')}</td><td style="width:80px"><button class="btn link danger" onclick="delOff('${o.date}','${esc(o.label||'')}')">Remove</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="facts">No days off added yet.</p>'}</div>
+  <div class="card"><h3>Holidays</h3><p class="sub">US federal holidays are always shown, on the day they're observed.</p>
+    <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" ${S.showCA?'checked':''} onchange="S.showCA=this.checked;for(const k in holCache)delete holCache[k];save();render()"> Also show Canadian holidays</label>
+    <details style="margin-top:10px"><summary class="btn link" style="display:inline">List the holidays for ${yrs.join(' and ')}</summary><div class="tbl-wrap" style="margin-top:8px"><table><tbody>${yrs.flatMap(y=>usHolidays(y).concat(S.showCA?caHolidays(y):[])).sort((a,b)=>a[0].localeCompare(b[0])).map(([d,n])=>`<tr><td style="width:200px">${esc(fmtDay(d))}, ${d.slice(0,4)}</td><td>${esc(n)}</td></tr>`).join('')}</tbody></table></div></details></div>
+  <div class="card"><h3>Overlap suggestions</h3><label style="display:flex;gap:8px;align-items:center">Leave <input type="number" min="0" max="120" step="5" value="${S.buffer}" style="width:70px" onchange="S.buffer=+this.value;save()"> minutes between sessions when suggesting a new start time</label></div>
+  <div class="card"><h3>Backup</h3><p class="sub">The schedule is saved to the Instructor Portal and shared by all staff. Download a backup copy before major changes if you'd like a snapshot to return to.</p>
+    <div class="bar"><button class="btn ghost" onclick="exportJSON()">Download backup</button><label class="btn ghost" style="cursor:pointer">Restore from backup<input type="file" accept=".json" hidden onchange="importJSON(this)"></label><span class="grow"></span><button class="btn link danger" onclick="resetAll()">Start over</button></div></div>`;
+}
+function addFacOff(){const f=fac(document.getElementById('fo-f').value),a=document.getElementById('fo-a').value,b=document.getElementById('fo-b').value||a,n=document.getElementById('fo-n').value.trim();
+  if(!f||!a){toast('Choose a facilitator and a start date.');return;} if(b<a){toast('The end date is before the start date.');return;}
+  f.off.push({from:a,to:b,note:n});save();render();computeConflicts();const hit=CF.dayFlags.filter(d=>d.avail&&!d.ack&&d.x.f===f.id).length;
+  toast(hit?`Added. ${f.name} is already assigned to ${hit} session${hit>1?'s':''} in that time; see Conflicts.`:`Days off added for ${f.name}`);}
+function delFacOff(fid,i){fac(fid).off.splice(i,1);save();render();}
+function delFac(i){const f=S.facilitators[i];if(!confirm(`Remove ${f.name}? Cohorts and sessions assigned to them become unassigned.`))return;S.cohorts.forEach(c=>{if(c.fac===f.id)c.fac='';c.sessions.forEach(s=>{if(s.fac===f.id)s.fac='';});});S.facilitators.splice(i,1);save();render();}
+function addOff(){const d=document.getElementById('do-d').value,l=document.getElementById('do-l').value.trim();if(!d){toast('Choose a date.');return;}S.daysOff.push({date:d,label:l||'CLEAR day off'});save();render();toast('Day off added');}
+function delOff(d,l){S.daysOff=S.daysOff.filter(o=>!(o.date===d&&(o.label||'')===l));save();render();}
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);}
+function exportJSON(){download(`program-schedule-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({format:'clear-program-schedule',...S},null,1),'application/json');}
+async function importJSON(input){const f=input.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(j.format!=='clear-program-schedule'||!Array.isArray(j.cohorts))throw new Error('That file isn’t a Program Scheduler backup.');
+  if(!confirm(`Replace the current schedule with this backup (${j.cohorts.length} cohorts)?`))return;delete j.format;S=j;migrate();save();render();toast('Backup restored');}catch(e){toast(e.message);}}
+function resetAll(){if(!confirm('Delete every cohort, template change, facilitator and day off from the shared schedule, for all staff? Download a backup first if you might need it.'))return;S=freshState();migrate();save();render();}
+
+/* ---------- Publish to the Instructor Portal, and program agendas ----------
+   Both use the Agenda Generator's own code (the hidden agenda engine), so program agendas keep their exact
+   formatting and in-person programs keep their module breakdown. The scheduler is the source of truth for dates:
+   publishing again updates live programs, and confirmed instructors are flagged for change notices. */
+const tgDate=iso=>{const [y,m,d]=iso.split('-');return `${+m}/${+d}/${y}`;};
+const csvCell=v=>/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v);
+function buildCsv(cohorts){
+  const rows=[['WBS #','Name / Title','Type','Start Date','End Date','Start Time','Cohort Label','Cohort ID']];
+  const all=cohorts.flatMap(c=>c.sessions.map(s=>s.date)).sort();
+  rows.push(['1','CL Programs (Program Scheduler)','project',tgDate(all[0]),tgDate(all[all.length-1]),'','','']);
+  const groups=[...new Set(cohorts.map(c=>tpl(c.tpl).tgGroup))];
+  groups.forEach((g,gi)=>{
+    const cs=cohorts.filter(c=>tpl(c.tpl).tgGroup===g).sort((a,b)=>cohortStart(a).localeCompare(cohortStart(b)));
+    const gd=cs.flatMap(c=>c.sessions.map(s=>s.date)).sort();
+    const gw=`1.${gi+1}`;rows.push([gw,g,'group',tgDate(gd[0]),tgDate(gd[gd.length-1]),'','','']);
+    cs.forEach((c,ci)=>{
+      const t=tpl(c.tpl), ds=c.sessions.map(s=>s.date).sort(), cw=`${gw}.${ci+1}`;
+      // The name keeps the Agenda Generator's course code so it matches the right template; the label and ID columns carry the rest.
+      const name=`${c.start.replace(/-/g,'.')} ${t.code}${t.kind==='inperson'&&c.location?' '+c.location.replace(/,\s*/,' '):''} ${c.enroll||'Open'}`;
+      if(t.kind==='inperson'||t.single){rows.push([cw,name,'task',tgDate(ds[0]),tgDate(ds[ds.length-1]),t.kind==='inperson'?c.time:c.sessions[0].time,labelOf(c),c.id]);return;}
+      const tw=twClose(c);
+      rows.push([cw,name,'subgroup',tgDate(ds[0]),tgDate(tw||ds[ds.length-1]),c.time,labelOf(c),c.id]);
+      c.sessions.forEach((s,si)=>rows.push([`${cw}.${si+1}`,s.tg||s.title,'task',tgDate(s.date),tgDate(s.date),s.time,'','']));
+      if(tw){const rv=c.sessions.find(s=>/program review/i.test(s.tg));rows.push([`${cw}.${c.sessions.length+1}`,'Testing Window','task',tgDate(rv?rv.date:ds[ds.length-1]),tgDate(tw),'','','']);}
+    });
+  });
+  return rows.map(r=>r.map(csvCell).join(',')).join('\n');
+}
+// What the Instructor Portal was last sent for a cohort, to show "Changed since publishing".
+const pubSig=c=>JSON.stringify([c.tpl,c.start,c.time,c.enroll,c.location,c.sessions.map(s=>[s.title,s.date,s.time,s.dur])]);
+function pubPill(c){if(!c.pub)return '<span class="pill grey">Not published</span>';
+  return c.pub.sig===pubSig(c)?`<span class="pill" style="background:var(--green-lt);color:var(--green)">Published ${esc(fmtD(c.pub.at.slice(0,10),false))}</span>`:'<span class="pill gold">Changed since publishing</span>';}
+function cohortPicker(cls,checkedFn){
+  const list=S.cohorts.slice().sort((a,b)=>cohortStart(a).localeCompare(cohortStart(b)));
+  return `<div style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 12px">${list.map(c=>{const t=tpl(c.tpl);return `<label style="display:flex;gap:8px;align-items:center;padding:3px 0"><input type="checkbox" class="${cls}" value="${c.id}" ${checkedFn(c)?'checked':''}>${logo(t,'sm')}<span style="flex:1"><strong>${esc(labelOf(c))}</strong> <span class="facts">${esc(t.name)}</span></span>${pubPill(c)}</label>`;}).join('')}</div>`;
+}
+const picked=cls=>[...document.querySelectorAll('.'+cls+':checked')].map(x=>coh(x.value)).filter(Boolean);
+
+function publishDlg(){
+  if(!S.cohorts.length){toast('Add cohorts first.');return;}
+  const open=CF.open;
+  openDlg('Publish to Instructor Portal',`${open?`<div class="notice">${open} item${open>1?'s':''} on the Conflicts tab still need attention. You can publish anyway and adjust later.</div>`:''}
+    <p class="sub">New cohorts arrive in the staff dashboard as drafts, ready to review, open and announce. Cohorts already published are updated in place: dates and times change, instructors' answers stay attached, and confirmed instructors whose schedule changed are flagged for a change notice.</p>
+    <div class="f" style="margin-bottom:10px"><label for="pb-round">Quarter label in the Instructor Portal</label><input type="text" id="pb-round" value="${qLabel(S.quarter)}" style="max-width:160px"></div>
+    ${cohortPicker('pb-c',c=>inQ(c)&&(!c.pub||c.pub.sig!==pubSig(c)))}<div id="pb-out" style="margin-top:12px"></div>`,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" id="pb-go" onclick="publishGo()">Publish</button>`);
+}
+async function publishGo(){
+  const cs=picked('pb-c'); if(!cs.length){toast('Tick at least one cohort.');return;}
+  if(!needEngine())return;
+  const round=document.getElementById('pb-round').value.trim(), out=document.getElementById('pb-out'), btn=document.getElementById('pb-go');
+  let built;
+  try{ ENG.load(buildCsv(cs),round); built=ENG.programs(); }catch(e){ out.innerHTML=`<div class="err">${esc(e.message)}</div>`; return; }
+  if(!built.programs.length){ out.innerHTML=`<div class="err">Nothing could be published.<br>${built.errors.map(esc).join('<br>')}</div>`; return; }
+  btn.disabled=true; out.innerHTML='<p class="facts">Publishing…</p>';
+  try{
+    const r=await apiCall('admin/import-package',{method:'POST',body:JSON.stringify({format:'clear-availability-package',version:1,source:'Program Scheduler',generatedAt:new Date().toISOString(),programs:built.programs})});
+    const at=new Date().toISOString();
+    for(const p of built.programs){const c=coh(p.schedId);if(c)c.pub={at,sig:pubSig(c),round};}
+    save();render();
+    out.innerHTML=`<div class="notice" style="background:var(--green-lt);border-left-color:var(--green)"><strong>Published.</strong> ${r.created.length} new draft${r.created.length===1?'':'s'}, ${r.updated.length} updated. <a href="/admin-dashboard" target="_blank">Open the staff dashboard</a> to review and open new programs.</div>`+
+      [...(r.warnings||[]),...built.errors].map(w=>`<div class="notice">${esc(w)}</div>`).join('');
+    document.getElementById('dlg-f').innerHTML='<button class="btn" onclick="closeDlg()">Done</button>';
+  }catch(e){ out.innerHTML=`<div class="err">${esc(e.message)}</div>`; btn.disabled=false; }
+}
+
+function agendaDlg(){
+  if(!S.cohorts.length){toast('Add cohorts first.');return;}
+  openDlg('Generate program agendas',`<p class="sub">Program agendas use the Agenda Generator's layouts, so they look exactly as they always have. Each opens in a print window with the file name set to the cohort label; choose Save as PDF. Use Agenda on a row for one cohort's file for its Novi event, or All in one document for a combined copy.</p>
+    <div style="max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm)">${S.cohorts.filter(c=>inQ(c)).sort((a,b)=>cohortStart(a).localeCompare(cohortStart(b))).map(c=>{const t=tpl(c.tpl);
+      return `<div style="display:flex;gap:10px;align-items:center;padding:6px 12px;border-bottom:1px solid #EEECEF"><input type="checkbox" class="ag-c" value="${c.id}" checked aria-label="Include ${esc(labelOf(c))}">${logo(t,'sm')}<span style="flex:1"><strong>${esc(labelOf(c))}</strong> <span class="facts">${esc(t.name)}</span></span><button class="btn small ghost" onclick="agendaOne('${c.id}')">Agenda</button></div>`;}).join('')||'<p class="facts" style="padding:10px">No cohorts start in this quarter.</p>'}</div>`,
+    `<button class="btn ghost" onclick="closeDlg()">Close</button><button class="btn" onclick="agendaAll()">All in one document</button>`);
+}
+function printHtml(html,title){
+  const w=window.open('','_blank'); if(!w){toast('Your browser blocked the agenda window. Allow pop-ups for this page and try again.');return;}
+  w.document.write(String(html).replace(/<title>[\s\S]*?<\/title>/,`<title>${esc(title)}</title>`)); w.document.close();
+}
+function agendaOne(id){ if(!needEngine())return; const c=coh(id);
+  try{ ENG.load(buildCsv([c]),qLabel(S.quarter)); printHtml(ENG.agendaHtml(c.id),`${labelOf(c)} Program Agenda`); }catch(e){ toast(e.message); } }
+function agendaAll(){ if(!needEngine())return; const cs=picked('ag-c'); if(!cs.length){toast('Tick at least one cohort.');return;}
+  try{ ENG.load(buildCsv(cs),qLabel(S.quarter)); const r=ENG.allAgendasHtml(); if(!r.count){toast('No agendas could be built.');return;}
+    printHtml(r.html,`${qLabel(S.quarter)} Program Agendas`); if(r.errors.length) toast('Left out: '+r.errors.join('; ')); }catch(e){ toast(e.message); } }
+
+load().then(ok=>{if(ok){render();engineReady();}});
+</script>
+</body>
+</html>
