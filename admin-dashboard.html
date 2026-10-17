@@ -178,6 +178,12 @@ table.quals td{padding:6px 8px}
 tr.grp td{background:#F4F1F5;border-top:2px solid var(--line);padding:8px 12px}
 tr.grp.k-ncit td{border-left:6px solid var(--burgundy)}tr.grp.k-blue td{border-left:6px solid var(--blue)}tr.grp.k-gold td{border-left:6px solid var(--gold)}
 tr.grp .ttl{gap:10px}tr.grp strong{font-size:14px}
+.pgroup{background:#fff;border:1px solid var(--line);border-left:6px solid var(--line);border-radius:var(--radius-lg);padding:14px 16px 16px;margin:0 0 22px}
+.pgroup.k-ncit{border-left-color:var(--burgundy)}.pgroup.k-blue{border-left-color:var(--blue)}.pgroup.k-gold{border-left-color:var(--gold)}
+.pgroup .pg-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.pgroup .pg-h h3{margin:0;font-size:16px;color:var(--burgundy)}
+.pgroup.k-blue .pg-h h3{color:var(--blue)}.pgroup.k-gold .pg-h h3{color:var(--burgundy-dk)}
+.pgroup .tbl-wrap{border-radius:var(--radius-sm)}
 .icsbox{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;background:#FAF7F8;border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 12px;margin-top:12px}
 @media (max-width:820px){.slot{grid-template-columns:1fr}.form{grid-template-columns:1fr 1fr}.log-row{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -295,7 +301,7 @@ async function load(keep=true){
 
 function render(){
   const me=D.me;
-  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/agenda-generator" target="_blank">Agenda Generator</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
+  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/program-scheduler">Program Scheduler</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===U.tab));
   const fn={overview:vOverview,responses:vResponses,selection:vSelection,programs:vPrograms,roster:vRoster,staff:vStaff,log:vLog}[U.tab];
   const y=window.scrollY, ae=document.activeElement, refocus=ae&&ae.type==='search'?{pos:ae.selectionStart}:null;
@@ -319,7 +325,7 @@ function vOverview(){
   const noEmail=act.filter(r=>!(r.emails||[]).length);
   const live=D.programs.filter(p=>p.status!=='archived'&&inQuarter(p));
   let h=`<h2>Overview</h2><p class="sub">Open a program to collect answers, then announce it so instructors know to look. Answers lock automatically after the response date (${(D.config||{}).deadlineDays||30} days before the first live session unless you set one). Confirm instructors on the Selection tab; they see an assignment only after it's confirmed.</p>`;
-  if(!D.programs.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Start on the Programs tab: send the quarter's cohorts from the Program Agenda Generator, or add a program by hand.</p><button class="btn" onclick="U.tab='programs';render()">Go to Programs</button></div>`;
+  if(!D.programs.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Plan the quarter in the Program Scheduler and publish it, or add a program by hand on the Programs tab.</p><button class="btn" onclick="U.tab='programs';render()">Go to Programs</button></div>`;
   if(noEmail.length) h+=`<div class="notice"><strong>${noEmail.length} active instructor${noEmail.length>1?'s have':' has'} no email yet</strong>, so they can't sign in: ${noEmail.slice(0,8).map(r=>esc(r.name)).join('; ')}${noEmail.length>8?'…':''}. <button class="btn link" onclick="U.tab='roster';render()">Add emails</button></div>`;
 
   const openP=live.filter(p=>p.status==='open');
@@ -699,19 +705,19 @@ async function mailGo(kind,mode){
 
 /* ================= Programs ================= */
 function vPrograms(){
-  let h=`<h2>Programs</h2><p class="sub">Each quarter, load the TeamGantt export in the Program Agenda Generator's Quarter batch and choose Send to Instructor Portal; every cohort arrives here with its sessions and calendar file. Add one-off programs by hand. Everything starts as a draft that only staff can see; open it here or on the Overview, then announce it.</p>
-    <div class="bar">${quarterSelect()}<span class="grow"></span><a class="btn" href="/agenda-generator" target="_blank" style="text-decoration:none">Open Agenda Generator</a><button class="btn ghost" onclick="packageDlg()">Import package file</button><button class="btn ghost" onclick="importDlg()">Import spreadsheet</button><button class="btn ghost" onclick="editProgram(null)">New one-off program</button></div>`;
+  let h=`<h2>Programs</h2><p class="sub">Each quarter, plan the cohorts in the Program Scheduler and choose Publish to Instructor Portal; every cohort arrives here as a draft with its sessions. Dates are changed in the scheduler, then published again. Add one-off programs by hand. Open drafts here or on the Overview, then announce them.</p>
+    <div class="bar">${quarterSelect()}<span class="grow"></span><a class="btn" href="/program-scheduler" style="text-decoration:none">Open Program Scheduler</a><a class="btn ghost" href="/program-scheduler#agendas" style="text-decoration:none">Generate program agendas</a><button class="btn ghost" onclick="editProgram(null)">New one-off program</button><button class="btn link" onclick="packageDlg()">Import package file</button><button class="btn link" onclick="importDlg()">Import spreadsheet</button></div>`;
   const list=D.programs.filter(inQuarter);
   const byDate=(a,b)=>String(a.startDate).localeCompare(String(b.startDate))||String(a.cohort||'').localeCompare(String(b.cohort||''));
-  if(!list.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Open the Program Agenda Generator, use Quarter batch to load the TeamGantt export, then choose Send to Instructor Portal.</p></div>`;
-  h+=`<div class="tbl-wrap"><table><thead><tr><th>Program</th><th>Quarter</th><th>Dates</th><th>Format</th><th>Sessions</th><th>Respond by</th><th>Calendar</th><th>Announced</th><th>Status</th><th></th></tr></thead><tbody>`+
-    PGROUPS.map(g=>{const ps=list.filter(p=>pgroupOf(p)===g.k).sort(byDate); if(!ps.length) return '';
-      return `<tr class="grp ${g.t?'k-'+g.t:''}"><td colspan="10"><div class="ttl">${g.logo?`<img class="plogo sm" src="/images/${g.logo}.svg" alt="" onerror="this.remove()">`:''}<strong>${esc(g.l)}</strong><span class="facts">${ps.length} program${ps.length>1?'s':''}</span></div></td></tr>`+ps.map(p=>`<tr><td class="${trkL(p)}"><div class="ttl">${logoImg(p,1)}<div><strong>${esc(p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.cohort)}</div>`:''}${p.source==='agenda-generator'?'<span class="pill src">Agenda Generator</span>':''}</div></div></td><td>${esc(p.quarter)}</td><td style="white-space:nowrap">${esc(fmtRange(p.startDate,p.endDate))}</td><td>${esc(p.format)}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''}</td><td>${answerable(p).length?answerable(p).length+(isIP(p)?' modules':''):'Whole program'}</td>
+  if(!list.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Plan the quarter in the Program Scheduler, then choose Publish to Instructor Portal.</p><a class="btn" href="/program-scheduler" style="text-decoration:none">Open Program Scheduler</a></div>`;
+  const head=`<thead><tr><th style="width:30%">Program</th><th>Quarter</th><th>Dates</th><th>Format</th><th>Sessions</th><th>Respond by</th><th>Announced</th><th>Status</th><th></th></tr></thead>`;
+  h+=PGROUPS.map(g=>{const ps=list.filter(p=>pgroupOf(p)===g.k).sort(byDate); if(!ps.length) return '';
+    return `<section class="pgroup ${g.t?'k-'+g.t:''}"><div class="pg-h">${g.logo?`<img class="plogo sm" src="/images/${g.logo}.svg" alt="" onerror="this.remove()">`:''}<h3>${esc(g.l)}</h3><span class="facts">${ps.length} program${ps.length>1?'s':''}</span></div>
+    <div class="tbl-wrap"><table>${head}<tbody>`+ps.map(p=>`<tr><td><div class="ttl">${logoImg(p,1)}<div><strong>${esc(p.cohort||p.title)}</strong>${p.cohort?`<div class="facts">${esc(p.title)}</div>`:''}${p.source==='agenda-generator'?'<span class="pill src">Program Scheduler</span>':''}</div></div></td><td>${esc(p.quarter)}</td><td style="white-space:nowrap">${esc(fmtRange(p.startDate,p.endDate))}</td><td>${esc(p.format)}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''}</td><td>${answerable(p).length?answerable(p).length+(isIP(p)?' modules':''):'Whole program'}</td>
       <td style="white-space:nowrap">${fmtD(p.deadline)}${p.deadline?`<div class="facts">${p.deadlineMode==='auto'?'automatic':'set by hand'}${p.pastDeadline?', passed':''}</div>`:''}</td>
-      <td>${p.hasIcs?'<span class="okc" title="'+esc(p.icsName)+'">✓ .ics</span>':'<span class="facts">—</span>'}</td>
       <td style="font-size:12px">${p.announcedAt?esc(fmtD(p.announcedAt.slice(0,10))):'<span class="facts">—</span>'}</td>
       <td><select onchange="setStatus('${p.id}',this.value)">${['draft','open','closed','archived'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}</select></td>
-      <td style="white-space:nowrap"><button class="btn link" onclick="editProgram('${p.id}')">Edit</button><button class="btn link" style="color:#9B1C1C" onclick="delProgram('${p.id}')">Delete</button></td></tr>`).join('');}).join('')+`</tbody></table></div>`;
+      <td style="white-space:nowrap"><button class="btn link" onclick="editProgram('${p.id}')">Edit</button><button class="btn link" style="color:#9B1C1C" onclick="delProgram('${p.id}')">Delete</button></td></tr>`).join('')+`</tbody></table></div></section>`;}).join('');
   return h;
 }
 function autoDeadline(p){ const ds=(p.sessions||[]).map(s=>s.date).filter(Boolean).sort(); const first=ds[0]||p.startDate; if(!first) return ''; const d=parseD(first); d.setDate(d.getDate()-((D.config||{}).deadlineDays||30)); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
