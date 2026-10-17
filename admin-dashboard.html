@@ -326,6 +326,7 @@ function vOverview(){
   const unann=openP.filter(p=>!p.announcedAt);
   if(unann.length) h+=`<div class="notice"><strong>${unann.length} open program${unann.length>1?'s haven\'t':' hasn\'t'} been announced.</strong> Instructors won't know to look until you tell them. <button class="btn small" onclick="announceDlg()">Announce by email</button></div>`;
   const drafts=live.filter(p=>p.status==='draft');
+  h+=zoomPanel();
   if(drafts.length) h+=`<div class="notice" style="border-left-color:var(--blue);background:var(--blue-lt)"><strong>${drafts.length} draft${drafts.length>1?'s':''}</strong> only staff can see. Check the dates and times, then open ${drafts.length>1?'them':'it'}. <button class="btn small" onclick="openAllDrafts()">Open all ${drafts.length} drafts</button></div>`;
   const waiting=act.filter(r=>(r.emails||[]).length&&openP.some(p=>!p.locked&&elig(r,p)&&!answeredAny(r.id,p)));
   const cfg=D.config||{};
@@ -356,6 +357,37 @@ function vOverview(){
   }).join('')+`</div>`;
   return h;
 }
+/* ---------- Zoom links ---------- */
+function zoomPanel(){
+  const z=D.zoom||{}, cfg=D.config||{}, rv=z.review||[], ms=z.missing||[], nMiss=ms.reduce((n,x)=>n+x.sessions.length,0);
+  if(!cfg.zoom) return nMiss?`<div class="notice"><strong>${nMiss} session${nMiss>1?'s':''} in programs starting within a week ${nMiss>1?'have':'has'} no Zoom link.</strong> Zoom isn't connected yet, so add links in each program's editor, or connect Zoom using the setup steps.</div>`:'';
+  const last=z.last;
+  let h=`<div class="card"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><div><h3 style="margin:0">Zoom links</h3>
+    <div class="facts">${last?`Last checked ${esc(stamp(last.at))}${last.by?' by '+esc(last.by):''}: ${last.found} added, ${last.review} to review, ${last.waiting} session${last.waiting===1?'':'s'} with no meeting in Zoom yet. Checked automatically every morning.`:'Not checked yet. The daily check runs every morning once the reminder Worker is set up.'}</div></div>
+    <button class="btn ghost" onclick="zoomSync('')">Find Zoom links now</button></div>`;
+  if(rv.length){
+    h+=`<h3 style="margin:14px 0 6px;font-size:14px">Choose the right meeting (${rv.length})</h3><p class="facts" style="margin:0 0 8px">More than one Zoom meeting starts close to these sessions. Pick the one that belongs to each, or paste the link.</p>`;
+    h+=rv.map(r=>`<div class="cf" style="border-left-color:var(--gold)"><strong>${esc(r.program)}</strong><div>${esc(r.title)} <span class="facts">${esc(fmtD(r.date))}, ${esc(r.start)} – ${esc(r.end)} ${esc(r.timezone)}</span></div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">${r.candidates.map(c=>`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn small" onclick="zoomPick(this)" data-o="${esc(JSON.stringify({pid:r.pid,sid:r.sid,meetingId:c.id,join_url:c.join_url,topic:c.topic}))}">Use this meeting</button><span><strong>${esc(c.topic)}</strong> <span class="facts">${esc(zoomTime(c.start))}, ${c.duration} min${c.dt?`, ${c.dt} min from the session start`:''}</span></span></div>`).join('')}</div>
+      <div class="bar" style="margin:8px 0 0"><input type="text" id="zl-${r.sid}" placeholder="Or paste the Zoom link" style="min-width:300px"><button class="btn link" onclick="zoomManual('${r.pid}','${r.sid}')">Save link</button></div></div>`).join('');
+  }
+  if(ms.length){
+    h+=`<h3 style="margin:14px 0 6px;font-size:14px">Missing links in programs starting within a week (${nMiss})</h3>`;
+    h+=ms.map(m=>`<div class="cf"><strong>${esc(m.program)}</strong> <span class="facts">first session ${esc(fmtD(m.first))}</span>${m.sessions.map(s=>`<div class="bar" style="margin:6px 0 0"><span style="min-width:280px">${esc(s.title)} <span class="facts">${esc(fmtD(s.date))}, ${esc(s.start)}</span></span><input type="text" id="zl-${s.sid}" placeholder="Paste the Zoom link" style="min-width:280px"><button class="btn link" onclick="zoomManual('${m.pid}','${s.sid}')">Save link</button></div>`).join('')}</div>`).join('');
+  }
+  return h+`</div>`;
+}
+function zoomTime(iso){ return new Date(iso).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET'; }
+async function zoomSync(pid){
+  toast('Checking Zoom…');
+  try{ const r=await api('admin/zoom/sync',{method:'POST',body:JSON.stringify({pid})}); await load();
+    toast(`Zoom checked: ${r.found} link${r.found===1?'':'s'} added${r.review?`, ${r.review} to review on the Overview`:''}${r.waiting?`, ${r.waiting} session${r.waiting===1?'':'s'} with no meeting yet`:''}`); }
+  catch(e){ toast(e.message); }
+}
+async function zoomPick(btn){ try{ await api('admin/zoom/assign',{method:'POST',body:btn.dataset.o}); await load(); toast('Zoom link saved'); }catch(e){ toast(e.message); } }
+async function zoomManual(pid,sid){ const v=((document.getElementById('zl-'+sid)||{}).value||'').trim(); if(!/^https:\/\//.test(v)){ toast('Paste the full Zoom link, starting with https://'); return; }
+  try{ await api('admin/zoom/assign',{method:'POST',body:JSON.stringify({pid,sid,join_url:v})}); await load(); toast('Zoom link saved'); }catch(e){ toast(e.message); } }
+
 async function openAllDrafts(){
   const list=D.programs.filter(p=>p.status==='draft'&&inQuarter(p));
   if(!confirm(`Open ${list.length} draft program${list.length>1?'s':''} so instructors can see and answer ${list.length>1?'them':'it'}? You can announce them by email next.`)) return;
@@ -490,7 +522,8 @@ function vSelection(){
       <button class="btn" ${dirty?'':'disabled'} onclick="saveAssign('${p.id}')">Save selections</button>
       <button class="btn ghost" ${confirmed.length&&!dirty?'':'disabled'} title="${dirty?'Save selections first':confirmed.length?'':'Confirm and save at least one pick first'}" onclick="selectionDlg('${p.id}')">Email selection notices${toEmail?` (${toEmail})`:''}</button>
       ${(n=>n&&!dirty?`<button class="btn" style="background:var(--warn)" onclick="changeDlg('${p.id}')">Send schedule change notices (${n})</button>`:'')(Object.keys(a.changes||{}).length)}
-      <button class="btn ghost" onclick="composeDlg({audience:'program-confirmed',pid:'${p.id}'})">Email this program's instructors</button></div></div>
+      <button class="btn ghost" onclick="composeDlg({audience:'program-confirmed',pid:'${p.id}'})">Email this program's instructors</button>
+      ${(D.config||{}).zoom&&!isIP(p)&&['open','closed'].includes(p.status)?`<button class="btn ghost" onclick="zoomSync('${p.id}')">Find Zoom links</button>`:''}</div></div>
     <div class="icsbox"><strong>Calendar file</strong>${p.hasIcs?`<span>${esc(p.icsName)} <span class="facts">(${esc(p.icsSource||'')}${p.icsUpdatedAt?', '+esc(stamp(p.icsUpdatedAt)):''})</span>. Selection emails attach each person's own sessions from it.</span>`:`<span class="facts">None uploaded. Selection emails will include a calendar file built from the session dates, times and Zoom links.</span>`}
       <span class="grow" style="flex:1"></span>${p.hasIcs?`<button class="btn link" onclick="downloadIcs('${p.id}')">Download</button>`:''}<label class="btn link" style="cursor:pointer">${p.hasIcs?'Replace':'Upload .ics'}<input type="file" accept=".ics,text/calendar" hidden onchange="uploadIcs('${p.id}',this)"></label></div></div>`;
   h+=`<div class="card">`;
@@ -498,7 +531,7 @@ function vSelection(){
     const picked=s[u.key]||[];
     const avail=active().filter(r=>eff(r.id,p,u.key)==='A'&&!picked.some(e=>e.iid===r.id));
     const label=u.s?u.s.title:'Entire program';
-    h+=`<div class="slot"><div><div class="meta">${esc(label)}</div><div class="facts">${u.s?esc(sTime(p,u.s)):esc(fmtRange(p.startDate,p.endDate))}</div>${u.s&&u.s.zoomLink?`<div class="facts" style="word-break:break-all">${esc(u.s.zoomLink)}</div>`:''}</div>
+    h+=`<div class="slot"><div><div class="meta">${esc(label)}</div><div class="facts">${u.s?esc(sTime(p,u.s)):esc(fmtRange(p.startDate,p.endDate))}</div>${u.s&&!isIP(p)?(u.s.zoomLink?`<div class="facts" style="word-break:break-all" title="${esc(u.s.zoomTopic||'')}">Zoom${u.s.zoomSource==='manual'?' (entered by hand)':''}: ${esc(u.s.zoomLink)}</div>`:'<div class="facts warn">No Zoom link yet</div>'):''}</div>
       <div><div class="picked">${picked.map((e,i)=>{const r=inst(e.iid)||{name:'(removed instructor)'};const v=eff(e.iid,p,u.key);const ms=e.status==='Confirmed'&&!dirty?mailState(p.id,e.iid):null;
         return `<div class="pick ${e.status}"><span class="nm">${esc(r.name)}</span>
           <select onchange="editPick('${p.id}','${u.key}',${i},'role',this.value)">${['Lead','Co-instructor','Backup'].map(x=>`<option ${e.role===x?'selected':''}>${x}</option>`).join('')}</select>
@@ -581,7 +614,7 @@ function remindDlg(){
 function selectionDlg(pid){
   const p=prog(pid), a=D.assignments[pid]||{};
   const ids=[...new Set(Object.values(a.slots||{}).flat().filter(e=>e.status==='Confirmed').map(e=>e.iid))];
-  openDlg('Email selection notices',`${emailSetupNote()}<p class="sub">Each instructor you tick gets their own email listing the sessions they're confirmed for in ${esc(titleOf(p))}, with role, times and Zoom links, plus a calendar file with just their sessions${p.hasIcs?' taken from the uploaded calendar file':' built from the session details (no calendar file uploaded)'}. People already emailed with no changes since are unticked.</p>
+  openDlg('Email selection notices',`${emailSetupNote()}<p class="sub">Each instructor you tick gets a short email confirming they're selected for ${esc(titleOf(p))}, with a View your assignments button. Their dates, times, Zoom links and calendar downloads are on My assignments in the portal. People already emailed with no changes since are unticked.</p>
     <div class="checks">${ids.map(iid=>{const r=inst(iid)||{name:'(removed)',emails:[]};const ms=mailState(pid,iid);const n=Object.values(a.slots||{}).filter(l=>l.some(e=>e.iid===iid&&e.status==='Confirmed')).length;
       return `<label><input type="checkbox" class="sel-i" value="${iid}" ${['new','chg'].includes(ms.code)&&(r.emails||[]).length?'checked':''} ${(r.emails||[]).length?'':'disabled'}><span><strong>${esc(r.name)}</strong> <span class="facts">${n} slot${n>1?'s':''} · ${(r.emails||[])[0]?esc(r.emails[0]):'no email on file'} · </span><span class="mailst ${ms.code}">${esc(ms.text||'')}</span></span></label>`;}).join('')}</div>
     <div class="f"><label for="mail-note" style="font-weight:600;font-size:12px">Personal note (optional, same for everyone ticked)</label><textarea id="mail-note" rows="3" placeholder="For example: Instructor materials will follow two weeks before the first session."></textarea></div>
@@ -592,7 +625,7 @@ function changeDlg(pid){
   const p=prog(pid), a=D.assignments[pid]||{}, ch=a.changes||{};
   const ids=Object.keys(ch);
   if(!ids.length){ toast('No confirmed instructors have schedule changes to send.'); return; }
-  openDlg('Send schedule change notices',`${emailSetupNote()}<p class="sub">These confirmed instructors were emailed before dates, times, Zoom links or titles changed in ${esc(titleOf(p))}. Each gets their current schedule with the changes marked, and an updated calendar file.</p>
+  openDlg('Send schedule change notices',`${emailSetupNote()}<p class="sub">These confirmed instructors were emailed before dates, times, Zoom links or titles changed in ${esc(titleOf(p))}. Each gets their current schedule with the changes marked, and a link to My assignments for updated calendar downloads.</p>
     <div class="checks">${ids.map(iid=>{const r=inst(iid)||{name:'(removed)',emails:[]};return `<label><input type="checkbox" class="chg-i" value="${iid}" ${(r.emails||[]).length?'checked':'disabled'}><span><strong>${esc(r.name)}</strong> <span class="facts">${ch[iid].map(esc).join('; ')}</span></span></label>`;}).join('')}</div>
     <div class="f"><label for="mail-note" style="font-weight:600;font-size:12px">Note explaining the change (optional)</label><textarea id="mail-note" rows="3" placeholder="For example: The Week One Q&A moved to Thursday because of the holiday."></textarea></div><div class="mail-prev" id="mail-prev"></div>`,
     mailFoot('change','Send change notices'));
@@ -712,7 +745,7 @@ function sessRender(){ const p=window._edit;
   document.getElementById('sess-ed').innerHTML=p.sessions.length?`<table class="sess-tbl"><thead><tr><th style="width:150px">Date</th><th>Session title</th><th style="width:105px">Start</th><th style="width:105px">End</th><th style="width:200px">Zoom link</th><th style="width:60px">All attend</th><th style="width:60px"></th></tr></thead><tbody>${p.sessions.map((s,i)=>`<tr>
     <td><input type="date" value="${esc(s.date)}" onchange="window._edit.sessions[${i}].date=this.value;dlRefresh()"></td><td><input value="${esc(s.title)}" onchange="window._edit.sessions[${i}].title=this.value"></td>
     <td><input value="${esc(s.start)}" placeholder="1:00 PM" onchange="window._edit.sessions[${i}].start=this.value"></td><td><input value="${esc(s.end)}" placeholder="3:00 PM" onchange="window._edit.sessions[${i}].end=this.value"></td>
-    <td><input value="${esc(s.zoomLink||'')}" placeholder="https://zoom.us/j/…" onchange="window._edit.sessions[${i}].zoomLink=this.value">${s.endDate?`<div class="facts">Runs to ${esc(fmtD(s.endDate))}</div>`:''}</td>
+    <td><input value="${esc(s.zoomLink||'')}" placeholder="https://zoom.us/j/…" onchange="window._edit.sessions[${i}].zoomLink=this.value">${s.zoomSource==='zoom'?`<div class="facts" title="${esc(s.zoomTopic||'')}">Found in Zoom</div>`:s.zoomSource==='manual'?'<div class="facts">Entered by hand; the Zoom check leaves it alone</div>':''}${s.endDate?`<div class="facts">Runs to ${esc(fmtD(s.endDate))}</div>`:''}</td>
     <td style="text-align:center"><input type="checkbox" ${s.allInstructors?'checked':''} onchange="window._edit.sessions[${i}].allInstructors=this.checked" aria-label="All assigned instructors attend"></td>
     <td><button class="btn link" style="color:#9B1C1C" onclick="window._edit.sessions.splice(${i},1);sessRender();dlRefresh()">Remove</button></td></tr>`).join('')}</tbody></table>`:'<p class="facts">No sessions. Instructors will answer for the entire program.</p>'; }
 function dlRefresh(){ const cb=document.getElementById('e-dlauto'); if(cb&&cb.checked){ syncEdit(); document.getElementById('e-deadline').value=autoDeadline(window._edit); } }
