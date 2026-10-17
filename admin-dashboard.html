@@ -224,7 +224,11 @@ const isIP=p=>/person/i.test(p.format||'');
 // Teaching approvals: no approvals recorded = approved for everything; Workshop Series is open to anyone approved for any workshop.
 const COURSES=[['NCITB','NCIT Basic','NCIT'],['NCITS','NCIT Specialized','NCIT'],['NCITAIT','NCIT AIT','NCIT'],['NCITWS','Workshop Series','NCIT'],['NCITWDDI','Drug Diversion','NCIT'],['NCITWIRSM','Sexual Misconduct','NCIT'],['NCITWCSAP','Communications','NCIT'],['NCITWERI','Ethics','NCIT'],
   ['ELPR','ELPR','Leadership and governance'],['SRASAB','SRA: Staffing a Board','Leadership and governance'],['ACRG','ACRG','Leadership and governance'],['BCT','Board Chair Training','Leadership and governance'],['IRG','Intro to Reg. Governance','Leadership and governance']];
-function elig(r,p){ const q=(r&&r.quals)||[]; if(!q.length) return true; const k=p.courseKey; if(!k||q.includes(k)) return true; return k==='NCITWS'&&q.some(x=>/^NCITW/.test(x)); }
+const DELIV={online:'Online only','in-person':'In person only',both:'Both'};
+function elig(r,p){
+  const d=r&&r.delivery, ip=/person/i.test(p.format||'')&&!/hybrid/i.test(p.format||''), hy=/hybrid/i.test(p.format||'');
+  if(d==='online'&&ip) return false; if(d==='in-person'&&!ip&&!hy) return false;
+  const q=(r&&r.quals)||[]; if(!q.length) return true; const k=p.courseKey; if(!k||q.includes(k)) return true; return k==='NCITWS'&&q.some(x=>/^NCITW/.test(x)); }
 function sTime(p,s){ if(!s.start) return fmtD(s.date)+(s.endDate?' – '+fmtD(s.endDate):'');
   return s.endDate?`${fmtD(s.date)}, ${s.start} – ${fmtD(s.endDate)}, ${s.end} ${p.timezone||''}`:`${fmtD(s.date)}, ${s.start} – ${s.end} ${p.timezone||''}`; }
 function dueText(p){
@@ -402,7 +406,7 @@ function vByInstructor(){
   const progs=D.programs.filter(p=>p.status!=='archived'&&p.status!=='draft'&&inQuarter(p)&&elig(r,p));
   let h=`<p class="sub">Everything one instructor has told you, across programs. Use it alongside their teaching history and evaluation scores when deciding who to select.</p>
     <div class="bar">${quarterSelect()}<label for="isel">Instructor</label><select id="isel" onchange="U.iid=this.value;render()">${list.map(x=>`<option value="${x.id}" ${x.id===U.iid?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
-    <span class="grow"></span><a class="ext" href="/?as=${r.id}" target="_blank">Preview their page ↗</a>${evalLink(r.id)?' &nbsp; '+evalLink(r.id):''}</div>`;
+    <span class="facts">Teaches: <strong>${esc(DELIV[r.delivery]||'not stated')}</strong></span><span class="grow"></span><a class="ext" href="/?as=${r.id}" target="_blank">Preview their page ↗</a>${evalLink(r.id)?' &nbsp; '+evalLink(r.id):''}</div>`;
   if(!progs.length) return h+`<div class="empty">No open or closed programs in this quarter.</div>`;
   const totA=progs.reduce((n,p)=>n+units(p).filter(u=>eff(r.id,p,u.key)==='A').length,0);
   h+=`<div class="card"><div class="stat-row" style="margin:0"><div class="stat"><b>${progs.filter(p=>answeredAll(r.id,p)).length}<small style="font-size:13px;color:var(--muted)">/${progs.length}</small></b><span>programs fully answered</span></div>
@@ -822,7 +826,7 @@ function vRoster(){
   const seg=`<div class="bar"><div class="seg" role="group" aria-label="View"><button aria-pressed="${U.rosterView!=='quals'}" onclick="U.rosterView='list';render()">Contact details</button><button aria-pressed="${U.rosterView==='quals'}" onclick="U.rosterView='quals';render()">Teaching approvals</button></div></div>`;
   if(U.rosterView==='quals') return vQuals(L,seg);
   const withEmail=L.filter(r=>r.active!==false&&(r.emails||[]).length);
-  let h=`<h2>Instructors</h2>${seg}<p class="sub">An instructor can sign in with any email listed here. Separate multiple emails with commas. Inactive instructors can't sign in and don't appear on the Responses tab, but their history is kept.</p>
+  let h=`<h2>Instructors</h2>${seg}<p class="sub">Teaches is the format each instructor said they are available for; it limits the programs they see and are emailed about, the same way teaching approvals do. An instructor can sign in with any email listed here. Separate multiple emails with commas. Inactive instructors can't sign in and don't appear on the Responses tab, but their history is kept.</p>
     <div class="${D.accessSync?'notice':'err'}">${D.accessSync?'Saving this list also updates the CLEAR Instructors Access group in Cloudflare automatically.':'<strong>Access sync isn\'t set up.</strong> After you save, also paste the email list into the CLEAR Instructors Access group in Cloudflare Zero Trust, or instructors won\'t get a login code.'}</div>
     <div class="bar"><input type="search" placeholder="Filter by name or email" value="${esc(U.filter)}" oninput="U.filter=this.value;clearTimeout(window._f);window._f=setTimeout(render,250)"><span class="grow"></span>
     <button class="btn ghost" onclick="copyText('${withEmail.flatMap(r=>r.emails).join(', ')}','Copied ${withEmail.flatMap(r=>r.emails).length} emails')">Copy all active emails</button>
@@ -830,11 +834,12 @@ function vRoster(){
     <button class="btn ghost" onclick="pasteRoster()">Paste names and emails</button><button class="btn ghost" onclick="U.rosterDraft.push({name:'',emails:[],active:true,notes:''});U.rosterDirty=true;render()">Add instructor</button>
     <button class="btn" ${U.rosterDirty?'':'disabled'} onclick="saveRoster()">Save instructors</button></div>`;
   const f=U.filter.toLowerCase();
-  h+=`<div class="tbl-wrap"><table><thead><tr><th style="width:60px">Active</th><th style="width:240px">Name (Last, First)</th><th>Emails</th><th>Notes</th><th style="width:90px">Assigned</th><th style="width:150px"></th></tr></thead><tbody>`+
+  h+=`<div class="tbl-wrap"><table><thead><tr><th style="width:60px">Active</th><th style="width:240px">Name (Last, First)</th><th>Emails</th><th style="width:150px" title="Set by the instructor in the portal; staff can change it here">Teaches</th><th>Notes</th><th style="width:90px">Assigned</th><th style="width:150px"></th></tr></thead><tbody>`+
     L.map((r,i)=>({r,i})).filter(({r})=>!f||r.name.toLowerCase().includes(f)||(r.emails||[]).join(' ').includes(f)).map(({r,i})=>`<tr>
       <td><input type="checkbox" ${r.active!==false?'checked':''} onchange="U.rosterDraft[${i}].active=this.checked;markRoster()" aria-label="Active"></td>
       <td><input type="text" value="${esc(r.name)}" style="width:100%" onchange="U.rosterDraft[${i}].name=this.value;markRoster()"></td>
       <td><input type="text" value="${esc((r.emails||[]).join(', '))}" style="width:100%;${(r.emails||[]).length?'':'border-color:#E0B54A;background:#FFFBF0'}" placeholder="Needs an email to sign in" onchange="U.rosterDraft[${i}].emails=this.value.split(/[,;\\s]+/).filter(Boolean);markRoster()"></td>
+      <td><select title="${esc(r.deliveryBy?'Set by '+r.deliveryBy+(r.deliveryAt?', '+stamp(r.deliveryAt):''):'Not stated yet: sees online and in-person programs')}" onchange="U.rosterDraft[${i}].delivery=this.value;U.rosterDraft[${i}].deliveryEdited=true;markRoster()"><option value="" ${!r.delivery?'selected':''}>Not stated</option>${Object.entries(DELIV).map(([v,l])=>`<option value="${v}" ${r.delivery===v?'selected':''}>${l}</option>`).join('')}</select></td>
       <td><input type="text" value="${esc(r.notes||'')}" style="width:100%" onchange="U.rosterDraft[${i}].notes=this.value;markRoster()"></td>
       <td>${r.id?loadCount(r.id):''}</td>
       <td style="white-space:nowrap">${r.id?`<a href="/?as=${r.id}" target="_blank">Preview page</a>`:''} ${r.id?'':`<button class="btn link" onclick="U.rosterDraft.splice(${i},1);render()">Remove</button>`}</td></tr>`).join('')+`</tbody></table></div>`;
@@ -852,7 +857,7 @@ function vQuals(L,seg){
   const groups=[...new Set(COURSES.map(c=>c[2]))];
   h+=groups.map(g=>`<th colspan="${COURSES.filter(c=>c[2]===g).length}" style="text-align:center">${esc(g)}</th>`).join('')+`<th rowspan="2"></th></tr><tr>`;
   h+=COURSES.map(([k,l])=>`<th class="qh" title="${esc(l)}"><img class="plogo sm" src="/images/${k}.svg" alt="" onerror="this.remove()"><div>${esc(l)}</div><button class="btn link" style="font-size:11px" onclick="qualCol('${k}')">All</button></th>`).join('')+`</tr></thead><tbody>`;
-  h+=rows.map(({r,i})=>{const q=r.quals||[];return `<tr><td><strong>${esc(r.name)}</strong>${q.length?`<div class="facts">${q.length} program${q.length>1?'s':''}</div>`:'<div class="facts warn">Not set: sees everything</div>'}</td>`+
+  h+=rows.map(({r,i})=>{const q=r.quals||[];return `<tr><td><strong>${esc(r.name)}</strong>${q.length?`<div class="facts">${q.length} program${q.length>1?'s':''}</div>`:'<div class="facts warn">Not set: sees everything</div>'}<div class="facts">Teaches: ${esc(DELIV[r.delivery]||'not stated')}</div></td>`+
     COURSES.map(([k,l])=>`<td style="text-align:center"><input type="checkbox" ${q.includes(k)?'checked':''} aria-label="${esc(r.name)}: ${esc(l)}" onchange="qualSet(${i},'${k}',this.checked)"></td>`).join('')+
     `<td style="white-space:nowrap"><button class="btn link" onclick="qualRow(${i},true)">All</button> <button class="btn link" onclick="qualRow(${i},false)">Clear</button></td></tr>`;}).join('');
   return h+`</tbody></table></div>`;
