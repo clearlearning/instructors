@@ -150,6 +150,8 @@ export async function onRequest({ request, env }) {
       return json(await saveDelivery(env, me.instructor.id, body.delivery, me.email, false));
     }
 
+    if (a === 'report' && b && method === 'GET') return await viewReport(env, b, me);
+
     if (a === 'my-ics' && b && method === 'GET') {
       let inst = me.instructor;
       const asId = url.searchParams.get('as');
@@ -215,6 +217,10 @@ export async function onRequest({ request, env }) {
         return json(await zoomSync(env, { pid: body.pid || '', by: me.email }));
       }
       if (b === 'zoom' && c === 'assign' && method === 'POST') return json(await zoomAssign(env, body, me.email));
+
+      if (b === 'reports' && method === 'POST') return json(await publishReports(env, body, me));
+      if (b === 'reports' && method === 'GET') return json(await listReports(env, me));
+      if (b === 'report' && c && method === 'DELETE') return json(await withdrawReport(env, c, me.email));
 
       if (b === 'schedule' && method === 'GET') return json(await getSchedule(env));
       if (b === 'schedule' && method === 'PUT') return json(await putSchedule(env, body, me.email));
@@ -365,7 +371,8 @@ async function portal(env, me, asId) {
   });
   assignments.sort((x, y) => String(x.date).localeCompare(String(y.date)) || toMin(x.start) - toMin(y.start));
 
-  return { me: publicMe(me), instructor: instOut, viewingAs, today, programs, responses, assignments };
+  const reports = (await getJSON(env, 'reports:' + inst.id, [])).map(r => ({ ...r, url: me.origin + '/api/report/' + r.slug }));
+  return { me: publicMe(me), instructor: instOut, viewingAs, today, programs, responses, assignments, reports };
 }
 
 function assignRow(p, slot, s, role) {
@@ -535,6 +542,7 @@ function normalizeProgram(id, p, existing) {
     description: String(p.description || '').slice(0, 4000),
     sessions,
     externalKey: String(p.externalKey || keep('externalKey') || '').slice(0, 200),
+    welcome: cleanWelcome(p.welcome !== undefined ? p.welcome : keep('welcome')),
     courseId,
     source: String(p.source || keep('source') || 'manual').slice(0, 40),
     hasIcs: !!keep('hasIcs'), icsName: keep('icsName') || '', icsUpdatedAt: keep('icsUpdatedAt') || '', icsSource: keep('icsSource') || '',
@@ -1473,6 +1481,82 @@ async function addNote(env, pid, body, by) {
   cur.notes = [...(cur.notes || []), { at: new Date().toISOString(), by, text }];
   await putJSON(env, key, cur); // notes don't change updatedAt, so they never block a selection save
   return { ok: true, notes: cur.notes };
+}
+
+/* ======================= Welcome email details ======================= */
+// In-person welcome emails need venue and contact details the schedule doesn't hold; staff enter them in the program editor.
+const WELCOME_KEYS = ['city', 'dates', 'vname', 'vstreet', 'vcity', 'reg', 'session', 'room', 'parking', 'cname', 'cphone', 'cemail'];
+function cleanWelcome(w) {
+  const out = {};
+  if (w && typeof w === 'object') for (const k of WELCOME_KEYS) { const v = String(w[k] || '').trim().slice(0, 600); if (v) out[k] = v; }
+  return out;
+}
+
+/* ======================= Evaluation reports ======================= */
+// Staff publish each instructor's report from the evaluation report tool. Every report gets an unguessable link;
+// only that instructor (or staff) can open it once signed in.
+function slugId() { const b = new Uint8Array(16); crypto.getRandomValues(b); return [...b].map(x => x.toString(16).padStart(2, '0')).join(''); }
+const normName = s => String(s || '').toLowerCase().replace(/\s*\(.*?\)\s*/g, ' ').replace(/[^a-z,]+/g, ' ').replace(/\s+/g, ' ').replace(/\s*,\s*/, ',').trim();
+async function publishReports(env, body, me) {
+  const list = Array.isArray(body.reports) ? body.reports : [];
+  if (!list.length) throw httpErr(400, 'There are no reports to publish.');
+  if (list.length > 60) throw httpErr(400, 'Publish 60 reports or fewer at a time.');
+  const byName = new Map(me.roster.map(r => [normName(r.name), r]));
+  const published = [], unmatched = [], emailed = [], notEmailed = [];
+  const now = new Date().toISOString();
+  for (const raw of list) {
+    const inst = byName.get(normName(raw.instructor));
+    if (!inst) { unmatched.push(String(raw.instructor || '(no instructor)')); continue; }
+    const html = String(raw.html || '');
+    if (!/<html/i.test(html) || html.length > 900_000) throw httpErr(400, `The report for ${inst.name} isn't a valid report page or is too large.`);
+    const slug = slugId();
+    const meta = { slug, title: String(raw.title || 'Evaluation report').slice(0, 200), cohort: String(raw.cohort || '').slice(0, 300), createdAt: now, by: me.email };
+    await env.IA_KV.put('report:' + slug, JSON.stringify({ ...meta, iid: inst.id, inst: inst.name, html }));
+    const idx = await getJSON(env, 'reports:' + inst.id, []);
+    idx.unshift(meta);
+    await putJSON(env, 'reports:' + inst.id, idx.slice(0, 200));
+    published.push({ inst: inst.name, slug });
+    if (body.notify !== false && env.NOTIFY_FLOW_URL && (inst.emails || []).length) {
+      try {
+        await sendMail(env, { to: [inst.emails[0]], subject: 'A new evaluation report is available in the Instructor Portal',
+          html: emailShell('A new evaluation report is available', `<p>Hello ${H(firstName(inst.name))},</p>
+<p>A new evaluation report is available for you in the Instructor Portal${meta.cohort ? `, covering <strong style="color:#64092c;">${H(meta.cohort)}</strong>` : ''}. It summarizes participant ratings and comments from the module evaluations.</p>
+<p>The report opens in your browser. To keep a copy, use your browser's print option and choose Save as PDF. All of your reports are also listed on the Evaluation reports page of the portal.</p>`, me.origin, { label: 'View your report', href: me.origin + '/api/report/' + slug }) });
+        emailed.push(inst.name);
+      } catch (e) { notEmailed.push(inst.name); }
+    } else if (body.notify !== false) notEmailed.push(inst.name);
+  }
+  if (published.length) await log(env, me.email, 'Published evaluation reports', `${published.length} published${unmatched.length ? ', ' + unmatched.length + ' not matched to the roster' : ''}`);
+  return { ok: true, published, unmatched, emailed, notEmailed };
+}
+async function listReports(env, me) {
+  const out = [];
+  const idxs = await Promise.all(me.roster.map(r => getJSON(env, 'reports:' + r.id, [])));
+  me.roster.forEach((r, i) => idxs[i].forEach(x => out.push({ ...x, iid: r.id, inst: r.name, url: me.origin + '/api/report/' + x.slug })));
+  out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return { reports: out };
+}
+async function withdrawReport(env, slug, by) {
+  const rec = await getJSON(env, 'report:' + slug, null);
+  if (!rec) throw httpErr(404, 'That report no longer exists.');
+  await env.IA_KV.delete('report:' + slug);
+  const idx = (await getJSON(env, 'reports:' + rec.iid, [])).filter(x => x.slug !== slug);
+  await putJSON(env, 'reports:' + rec.iid, idx);
+  await log(env, by, 'Withdrew an evaluation report', `${rec.inst}: ${rec.title}`);
+  return { ok: true };
+}
+async function viewReport(env, slug, me) {
+  const rec = await getJSON(env, 'report:' + slug, null);
+  const allowed = rec && (me.isStaff || (me.instructor && me.instructor.id === rec.iid));
+  if (!allowed) return new Response('<!DOCTYPE html><title>Report not found</title><p style="font-family:Arial,sans-serif;padding:30px">This report isn\'t available. It may have been withdrawn, or it belongs to another instructor.</p>', { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  if (me.instructor && me.instructor.id === rec.iid && !rec.viewedAt) {
+    rec.viewedAt = new Date().toISOString();
+    await env.IA_KV.put('report:' + slug, JSON.stringify(rec));
+    const idx = await getJSON(env, 'reports:' + rec.iid, []);
+    const m = idx.find(x => x.slug === slug); if (m) { m.viewedAt = rec.viewedAt; await putJSON(env, 'reports:' + rec.iid, idx); }
+  }
+  // Reports are static pages: scripts are blocked so a report can't run code in the portal.
+  return new Response(rec.html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "script-src 'none'; object-src 'none'; base-uri 'none'" } });
 }
 
 /* ======================= Program Scheduler ======================= */
