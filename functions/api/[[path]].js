@@ -73,7 +73,14 @@ function courseKeyOf(p) {
 function logoOf(p) { const name = courseKeyOf(p); return name ? LOGO_DIR + name + '.svg' : ''; }
 // Is this instructor approved to teach this program? No approvals recorded = approved for everything.
 // A program with no recognised course is open to everyone. The Workshop Series is open to anyone approved for any workshop.
+const DELIVERY = ['online', 'in-person', 'both'];
+const isInPerson = p => /person/i.test(p.format || '') && !/hybrid/i.test(p.format || '');
+const isHybrid = p => /hybrid/i.test(p.format || '');
 function eligible(inst, prog) {
+  // Delivery preference the instructor stated: online only, in person only, or both (not stated = both).
+  const d = inst && inst.delivery;
+  if (d === 'online' && isInPerson(prog)) return false;
+  if (d === 'in-person' && !isInPerson(prog) && !isHybrid(prog)) return false;
   const q = (inst && inst.quals) || [];
   if (!q.length) return true;
   const key = courseKeyOf(prog);
@@ -126,6 +133,11 @@ export async function onRequest({ request, env }) {
     if (a === 'response' && b && method === 'PUT') {
       if (!me.instructor) throw httpErr(403, 'Your email isn\'t linked to an instructor record, so there\'s nothing to save. Staff can enter answers from the dashboard.');
       return json(await saveResponse(env, me.instructor, b, body, me.email, false));
+    }
+
+    if (a === 'profile' && method === 'PUT') {
+      if (!me.instructor) throw httpErr(403, 'Your email isn\'t linked to an instructor record.');
+      return json(await saveDelivery(env, me.instructor.id, body.delivery, me.email, false));
     }
 
     if (a === 'my-ics' && b && method === 'GET') {
@@ -306,6 +318,7 @@ async function portal(env, me, asId) {
   const all = await listPrograms(env);
   const programs = all.filter(p => (p.status === 'open' || p.status === 'closed') && (!inst || eligible(inst, p))).map(p => withState(p, today));
   if (!inst) return { me: publicMe(me), instructor: null, viewingAs, today, programs, responses: {}, assignments: [] };
+  const instOut = { id: inst.id, name: inst.name, delivery: inst.delivery || '', deliveryAt: inst.deliveryAt || '' };
 
   const rec = await getJSON(env, 'resp:' + inst.id, { programs: {} });
   const responses = {};
@@ -333,7 +346,7 @@ async function portal(env, me, asId) {
   });
   assignments.sort((x, y) => String(x.date).localeCompare(String(y.date)) || toMin(x.start) - toMin(y.start));
 
-  return { me: publicMe(me), instructor: { id: inst.id, name: inst.name }, viewingAs, today, programs, responses, assignments };
+  return { me: publicMe(me), instructor: instOut, viewingAs, today, programs, responses, assignments };
 }
 
 function assignRow(p, slot, s, role) {
@@ -1096,6 +1109,9 @@ function firstName(name) { const s = String(name || ''); return s.includes(',') 
 
 async function saveRoster(env, body, me) {
   const list = Array.isArray(body.roster) ? body.roster : [];
+  // Instructors set their own delivery preference; a staff save only changes it where staff edited it,
+  // so an instructor's change made while staff had the list open isn't overwritten.
+  const prevById = new Map((await getJSON(env, 'roster', [])).map(r => [r.id, r]));
   const seen = new Map();
   const roster = list.map(r => {
     const name = String(r.name || '').trim().slice(0, 120);
@@ -1108,7 +1124,11 @@ async function saveRoster(env, body, me) {
       seen.set(e, name);
     }
     const quals = [...new Set((Array.isArray(r.quals) ? r.quals : []).filter(k => LOGO_NAMES.includes(k)))];
-    return { id: r.id || rid('i'), name, emails, active: r.active !== false, notes: String(r.notes || '').slice(0, 500), quals };
+    const prev = prevById.get(r.id) || {};
+    const delivery = r.deliveryEdited ? (DELIVERY.includes(r.delivery) ? r.delivery : '') : (prev.delivery || '');
+    const deliveryAt = r.deliveryEdited ? new Date().toISOString() : (prev.deliveryAt || '');
+    const deliveryBy = r.deliveryEdited ? me.email + ' (staff)' : (prev.deliveryBy || '');
+    return { id: r.id || rid('i'), name, emails, active: r.active !== false, notes: String(r.notes || '').slice(0, 500), quals, delivery, deliveryAt, deliveryBy };
   });
   roster.sort((x, y) => x.name.localeCompare(y.name));
   await putJSON(env, 'roster', roster);
@@ -1116,6 +1136,18 @@ async function saveRoster(env, body, me) {
   let sync = { configured: false };
   try { sync = await syncAccess(env, roster); } catch (e) { sync = { configured: true, synced: false, message: e.message }; }
   return { ok: true, roster, sync };
+}
+
+async function saveDelivery(env, iid, value, by, staff) {
+  const v = DELIVERY.includes(value) ? value : '';
+  if (!v) throw httpErr(400, 'Choose online, in person, or both.');
+  const roster = await getJSON(env, 'roster', []);
+  const r = roster.find(x => x.id === iid);
+  if (!r) throw httpErr(404, 'That instructor isn\'t on the roster.');
+  Object.assign(r, { delivery: v, deliveryAt: new Date().toISOString(), deliveryBy: by + (staff ? ' (staff)' : '') });
+  await putJSON(env, 'roster', roster);
+  await log(env, by, 'Set delivery preference', `${r.name}: ${v}`);
+  return { ok: true, delivery: v, deliveryAt: r.deliveryAt };
 }
 
 async function syncAccess(env, roster) {
