@@ -807,15 +807,90 @@ function b64utf8(s) {
 }
 
 const H = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/* ---------- Email layout ----------
+   Matches the CLEAR Learning welcome emails: tables, bgcolor attributes and inline styles only, so older
+   Outlook versions (which use Word to display email) keep the formatting. */
+const EF = 'font-family:Arial,Helvetica,sans-serif;';
+const EBODY = EF + 'font-size:14px;line-height:21px;color:#1a1014;';
+const LOGO_CL = 'https://assets-002.noviams.com/novi-file-uploads/clear/logos/CLEAR_Learning_Logo_horizontal__2_.png';
+const SOCIAL = 'https://assets-002.noviams.com/novi-file-uploads/clear/TalentLMS/';
+// Give every paragraph, cell, list and link its own font and colour, since Outlook doesn't inherit styles.
+function outlookify(html) {
+  const addStyle = (tag, base) => (m, attrs) => {
+    const st = (attrs || '').match(/style="([^"]*)"/);
+    const rest = (attrs || '').replace(/\s*style="[^"]*"/, '');
+    return `<${tag}${rest} style="${base}${st ? st[1] : ''}">`;
+  };
+  return String(html)
+    .replace(/<p(\s[^>]*)?>/g, addStyle('p', 'margin:0 0 16px 0;' + EBODY))
+    .replace(/<td(\s[^>]*)?>/g, addStyle('td', EBODY))
+    .replace(/<ul(\s[^>]*)?>/g, addStyle('ul', 'margin:0 0 16px 0;padding-left:24px;' + EBODY))
+    .replace(/<ol(\s[^>]*)?>/g, addStyle('ol', 'margin:0 0 16px 0;padding-left:24px;' + EBODY))
+    .replace(/<li(\s[^>]*)?>/g, addStyle('li', 'margin:0 0 6px 0;' + EBODY))
+    .replace(/<a (href="[^"]*")>/g, '<a $1 style="color:#0144db;text-decoration:underline;">');
+}
+function emailButton(btn) {
+  return `<table cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 8px 0;"><tr><td bgcolor="#64092c" align="center" style="background-color:#64092c;padding:12px 26px;">
+<a href="${H(btn.href)}" style="${EF}font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;display:inline-block;">${H(btn.label)}</a></td></tr></table>`;
+}
 function emailShell(title, inner, origin, button) {
   const btn = button || { label: 'Open the Instructor Portal', href: origin };
-  return `<div style="font-family:'Open Sans',Arial,sans-serif;color:#2B2B2B;max-width:640px;margin:0 auto">
-<div style="background:#64092C;color:#fff;padding:18px 22px;border-radius:8px 8px 0 0"><img src="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png" alt="CLEAR" width="40" height="40" style="float:right;width:40px;height:40px;background:#fff;border-radius:6px;padding:3px"><div style="font-size:12px;opacity:.85;font-weight:600">CLEAR Learning</div><div style="font-size:20px;font-weight:800;margin-top:2px">${H(title)}</div></div>
-<div style="border:1px solid #DEDCE0;border-top:0;padding:20px 22px;border-radius:0 0 8px 8px;font-size:14px;line-height:1.55">${inner}
-<p style="margin:22px 0 6px"><a href="${H(btn.href)}" style="background:#64092C;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:700;display:inline-block">${H(btn.label)}</a></p>
-<p style="font-size:12px;color:#6E6B70;margin-top:16px">Sign in with this email address; you'll get a one-time code by email. Questions: reply to this message or write to clearlearning@clearhq.org.</p></div></div>`;
+  const foot = (txt, extra = '') => `<tr><td align="center" style="${EF}font-size:12px;line-height:17px;color:#ffffff;${extra}">${txt}</td></tr>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${H(title)}</title></head>
+<body style="margin:0;padding:0;background-color:#f5f0f2;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f0f2" style="background-color:#f5f0f2;"><tr><td align="center" bgcolor="#f5f0f2" style="padding:24px 16px;">
+<table width="620" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" align="center" style="width:620px;max-width:620px;background-color:#ffffff;">
+<tr><td bgcolor="#ffffff" align="left" style="padding:24px 32px;"><img src="${LOGO_CL}" alt="CLEAR Learning" width="240" border="0" style="display:block;width:240px;height:auto;"></td></tr>
+<tr><td height="4" bgcolor="#c9933a" style="font-size:0;line-height:0;height:4px;background-color:#c9933a;">&nbsp;</td></tr>
+<tr><td bgcolor="#ffffff" style="padding:32px 32px 8px 32px;${EBODY}">
+<table width="556" cellpadding="0" cellspacing="0" border="0" align="center" style="width:100%;max-width:556px;"><tr><td style="${EBODY}">
+<p style="margin:0 0 20px 0;${EF}font-size:19px;line-height:25px;font-weight:bold;color:#64092c;">${H(title)}</p>
+${outlookify(inner)}
+${emailButton(btn)}
+<p style="margin:24px 0 28px 0;${EF}font-size:12px;line-height:18px;color:#4a3040;">Sign in with this email address; you will receive a one-time code by email. If you have any questions or require assistance, please contact us at <a href="mailto:clearlearning@clearhq.org" style="color:#0144db;font-weight:bold;">clearlearning@clearhq.org</a> or <strong style="color:#64092c;">859-269-1289</strong>.</p>
+</td></tr></table></td></tr>
+<tr><td bgcolor="#64092c" align="center" style="background-color:#64092c;padding:28px 32px;">
+<table width="556" cellpadding="0" cellspacing="0" border="0" align="center">
+${foot('Best regards,', 'font-size:14px;font-weight:bold;padding-bottom:4px;')}
+${foot('Council on Licensure, Enforcement and Regulation', 'font-size:13px;font-weight:bold;padding-bottom:2px;')}
+${foot('Promoting Regulatory Excellence', 'font-style:italic;padding-bottom:14px;')}
+${foot('<a href="https://www.clearhq.org" style="color:#ffffff;text-decoration:none;">www.clearhq.org</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="mailto:clearlearning@clearhq.org" style="color:#ffffff;text-decoration:none;">clearlearning@clearhq.org</a>', 'padding-bottom:4px;')}
+${foot('+1.859.269.1401&nbsp;&nbsp;|&nbsp;&nbsp;108 Wind Haven Dr., Ste. A, Nicholasville, KY 40356', 'padding-bottom:18px;')}
+<tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" align="center"><tr>
+<td style="padding:0 5px;"><a href="https://twitter.com/CLEARHQ"><img src="${SOCIAL}email_x.png" alt="X" width="26" height="26" border="0" style="display:block;"></a></td>
+<td style="padding:0 5px;"><a href="https://facebook.com/CLEARHQ/"><img src="${SOCIAL}email_facebook.png" alt="Facebook" width="26" height="26" border="0" style="display:block;"></a></td>
+<td style="padding:0 5px;"><a href="https://www.linkedin.com/company/council-on-licensure-enforcement-and-regulation-clear-/"><img src="${SOCIAL}Email_linkedin.png" alt="LinkedIn" width="26" height="26" border="0" style="display:block;"></a></td>
+</tr></table></td></tr></table></td></tr>
+</table></td></tr></table></body></html>`;
 }
-function noteBlock(note) { return note ? `<p style="background:#F8EDD3;border-left:4px solid #DDA838;padding:10px 14px;border-radius:4px;white-space:pre-wrap">${H(note)}</p>` : ''; }
+// Staff note: the soft pink box with a gold edge, as a table so Outlook keeps both colours.
+function noteBlock(note) {
+  if (!note) return '';
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px 0;"><tr><td width="4" bgcolor="#c9933a" style="background-color:#c9933a;font-size:0;line-height:0;">&nbsp;</td>
+<td bgcolor="#faf4f6" style="background-color:#faf4f6;padding:14px 18px;">${H(note).replace(/\r?\n/g, '<br>')}</td></tr></table>`;
+}
+// Rich text from the Compose window: keep simple formatting and links, drop everything else (including Word styling).
+function sanitizeRich(html) {
+  let s = String(html || '').slice(0, 60000)
+    .replace(/<(script|style|head|title|xml)[^>]*>[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<(\/?)(div|h[1-6]|blockquote)(\s[^>]*)?>/gi, '<$1p>')
+    .replace(/<(\/?)b(\s[^>]*)?>/gi, '<$1strong>').replace(/<(\/?)i(\s[^>]*)?>/gi, '<$1em>');
+  s = s.replace(/<(\/?)([a-z][a-z0-9:]*)(\s[^>]*)?>/gi, (m, close, tag, attrs) => {
+    tag = tag.toLowerCase();
+    if (!['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'a'].includes(tag)) return '';
+    if (close) return `</${tag}>`;
+    if (tag === 'br') return '<br>';
+    if (tag === 'a') {
+      const h = (attrs || '').match(/href\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i);
+      const url = h ? (h[2] || h[3] || h[4] || '').replace(/&amp;/g, '&') : '';
+      return /^(https:\/\/|mailto:)/i.test(url) ? `<a href="${H(url)}">` : '<a>';
+    }
+    return `<${tag}>`;
+  });
+  s = s.replace(/<a>([\s\S]*?)<\/a>/g, '$1').replace(/<p>\s*(<br>)?\s*<\/p>/g, '').trim();
+  if (!/<(p|ul|ol)>/.test(s)) s = `<p>${s}</p>`;
+  return s;
+}
 function whenText(p, s) {
   if (!s.start) return s.endDate ? `${longDate(s.date)} – ${longDate(s.endDate)}` : longDate(s.date);
   if (s.endDate) return `${longDate(s.date)}, ${s.start} – ${longDate(s.endDate)}, ${s.end} ${tz(p)}`;
@@ -823,7 +898,7 @@ function whenText(p, s) {
 }
 function programLine(p) {
   const n = answerable(p).length, ip = /person/i.test(p.format || '');
-  return `<tr><td style="padding:10px 0;border-bottom:1px solid #EEECEF"><strong style="color:#64092C">${H(p.title)}</strong>${p.cohort ? `<br><span style="color:#6E6B70">${H(p.cohort)}</span>` : ''}
+  return `<tr><td style="padding:10px 0;border-bottom:1px solid #eadfe3;"><strong style="color:#64092c;">${H(p.title)}</strong>${p.cohort ? `<br><span style="color:#4a3040;">${H(p.cohort)}</span>` : ''}
     <br>${H(rangeText(p.startDate, p.endDate))} · ${H(p.format || '')}${p.location && p.location !== 'Virtual' ? ', ' + H(p.location) : ''} · ${n ? n + (ip ? ' module' : ' live session') + (n > 1 ? 's' : '') : 'staffed as a whole program'}
     ${p.deadline ? `<br><strong>Respond by ${H(longDate(p.deadline))}</strong>` : ''}</td></tr>`;
 }
@@ -1249,13 +1324,14 @@ async function customRecipients(env, body, me) {
 }
 async function notifyCustom(env, body, me) {
   const subject = String(body.subject || '').trim().slice(0, 200), text = String(body.body || '').slice(0, 20000);
+  const rich = body.bodyHtml ? sanitizeRich(body.bodyHtml) : '';
   if (!subject) throw httpErr(400, 'Add a subject.');
   if (!text.trim()) throw httpErr(400, 'Write a message.');
   const people = (await customRecipients(env, body, me)).filter(r => (r.emails || []).length);
   const greet = body.greet !== false;
   const build = name => ({
     subject: (body.test ? '[TEST] ' : '') + subject,
-    html: emailShell(subject, `${greet ? `<p>Hello${name ? ' ' + H(firstName(name)) : ''},</p>` : ''}${textToHtml(text)}`, me.origin)
+    html: emailShell(subject, `${greet ? `<p>Hello${name ? ' ' + H(firstName(name)) : ''},</p>` : ''}${rich || textToHtml(text)}`, me.origin)
   });
   const individual = people.length <= 40;
   if (body.preview) return { ok: true, preview: { ...build(individual && people[0] ? people[0].name : ''), count: people.length,
