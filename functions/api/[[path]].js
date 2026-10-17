@@ -19,6 +19,12 @@
      CRON_SECRET            (Secret) shared with the cron Worker; must match its CRON_SECRET
      REMINDER_DAYS          days before the response date to remind non-responders (default 7,2)
 
+   Zoom links (optional; finds the attendee link for each live session from the meetings TalentLMS creates)
+     ZOOM_ACCOUNT_ID        Account ID of the Zoom Server-to-Server OAuth app
+     ZOOM_CLIENT_ID         Client ID of that app
+     ZOOM_CLIENT_SECRET     (Secret) Client Secret of that app
+     ZOOM_USER              the Zoom user TalentLMS creates meetings under (default clearlearning@clearhq.org)
+
    Instructor Staffing Dashboard link (optional)
      STAFFING_DASHBOARD_URL full URL of instructor-staffing.html
 
@@ -110,7 +116,11 @@ export async function onRequest({ request, env }) {
       // An Access service token (the daily cron Worker). It may only run the reminder job, and must also present CRON_SECRET.
       const ok = parts[0] === 'cron' && parts[1] === 'reminders' && env.CRON_SECRET && safeEq(request.headers.get('X-Cron-Secret') || '', env.CRON_SECRET);
       if (!ok) return json({ error: 'Not allowed.' }, 403);
-      return json(await runReminders(env, url));
+      const dry = url.searchParams.get('dry') === '1';
+      let zoom = { configured: zoomConfigured(env) };
+      if (zoom.configured) { try { zoom = await zoomSync(env, { dry, by: 'daily check' }); } catch (e) { zoom = { configured: true, error: e.message }; } }
+      const reminders = await runReminders(env, url);
+      return json({ ...reminders, zoom });
     }
     const email = ident;
 
@@ -199,6 +209,12 @@ export async function onRequest({ request, env }) {
       if (b === 'notify' && c === 'selection' && d && method === 'POST') return json(await notifySelection(env, d, body, me));
       if (b === 'notify' && c === 'change' && d && method === 'POST') return json(await notifyChange(env, d, body, me));
       if (b === 'notify' && c === 'custom' && method === 'POST') return json(await notifyCustom(env, body, me));
+
+      if (b === 'zoom' && c === 'sync' && method === 'POST') {
+        if (!zoomConfigured(env)) throw httpErr(501, 'Zoom isn\'t connected yet. Add ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID and ZOOM_CLIENT_SECRET in the Pages project settings, then redeploy.');
+        return json(await zoomSync(env, { pid: body.pid || '', by: me.email }));
+      }
+      if (b === 'zoom' && c === 'assign' && method === 'POST') return json(await zoomAssign(env, body, me.email));
 
       if (b === 'log' && method === 'GET') return json(await readLog(env));
     }
@@ -416,8 +432,10 @@ async function adminData(env, me) {
     a.changes = scheduleChanges(p, a);
     assignments[p.id] = a;
   });
+  const zoomLast = await getJSON(env, 'zoom:last', null), zoomReview = await getJSON(env, 'zoom:review', { items: [] });
   return {
     me: publicMe(me), today,
+    zoom: { last: zoomLast, review: (zoomReview.items || []).filter(i => { const p = programs.find(x => x.id === i.pid); const s = p && (p.sessions || []).find(x => x.id === i.sid); return s && !s.zoomLink; }), missing: missingLinks(programs, today) },
     programs, roster: me.roster, responses, assignments,
     staff: me.staff, admins: me.admins,
     accessSync: !!(env.CF_API_TOKEN && env.CF_ACCOUNT_ID && env.CF_ACCESS_GROUP_ID),
@@ -426,6 +444,7 @@ async function adminData(env, me) {
       mailbox: env.NOTIFY_MAILBOX || '',
       portalUrl: me.origin,
       staffingUrl: env.STAFFING_DASHBOARD_URL || '',
+      zoom: zoomConfigured(env),
       deadlineDays: DEADLINE_DAYS,
       autoReminders: !!env.CRON_SECRET,
       reminderDays: reminderDays(env)
@@ -463,11 +482,24 @@ function normalizeProgram(id, p, existing) {
       start: normTime(s.start),
       end: normTime(s.end),
       zoomLink: cleanUrl(s.zoomLink),
+      zoomMeetingId: String(s.zoomMeetingId || '').slice(0, 40),
+      zoomSource: ['zoom', 'manual'].includes(s.zoomSource) ? s.zoomSource : '',
+      zoomTopic: String(s.zoomTopic || '').slice(0, 200),
+      zoomAt: String(s.zoomAt || '').slice(0, 30),
+      zoomReplacedAt: String(s.zoomReplacedAt || '').slice(0, 30),
       icsUid: String(s.icsUid || '').slice(0, 200),
       icsUids: (Array.isArray(s.icsUids) ? s.icsUids : []).map(u => String(u).slice(0, 200)).slice(0, 40),
       allInstructors: !!s.allInstructors
     };
   }).filter(s => s.title);
+  // A link typed into the program editor is marked as entered by hand, so the Zoom check never replaces it.
+  if (existing) {
+    const before = new Map((existing.sessions || []).map(s => [s.id, s]));
+    for (const s of sessions) {
+      const ex = before.get(s.id);
+      if (ex && s.zoomLink !== (ex.zoomLink || '') && !p.fromZoom) { s.zoomSource = s.zoomLink ? 'manual' : ''; s.zoomMeetingId = ''; s.zoomTopic = ''; if (ex.zoomLink && s.zoomLink) s.zoomReplacedAt = new Date().toISOString(); }
+    }
+  }
   // Dates come from every session sent, including a Welcome session removed below, so the cohort start and deadline stay right.
   const allDates = sessions.flatMap(s => [s.date, s.endDate]).filter(Boolean).sort();
   const welcomeKept = keepsWelcome(ctx);
@@ -583,7 +615,9 @@ function matchSessions(oldList, newList) {
       || take(o => norm(o.title) === norm(n.title) && o.date === cleanDate(n.date))
       || take(o => norm(o.title) === norm(n.title))
       || take(o => o.date && o.date === cleanDate(n.date) && toMin(o.start) === toMin(normTime(n.start)));
-    return { ...n, id: hit ? hit.id : rid('s') };
+    // Keep a Zoom link already on the session when the incoming agenda has none.
+    const keep = hit && hit.zoomLink && !cleanUrl(n.zoomLink) ? { zoomLink: hit.zoomLink, zoomMeetingId: hit.zoomMeetingId || '', zoomSource: hit.zoomSource || '', zoomTopic: hit.zoomTopic || '' } : {};
+    return { ...n, ...keep, id: hit ? hit.id : rid('s') };
   });
 }
 
@@ -614,6 +648,7 @@ async function importPackage(env, body, me) {
       const dropped = (ex.sessions || []).filter(o => !sessions.some(s => s.id === o.id));
       if (dropped.length) warnings.push(`${ex.title}${ex.cohort ? ' (' + ex.cohort + ')' : ''}: ${dropped.length} session${dropped.length > 1 ? 's' : ''} no longer in the agenda (${dropped.map(s => s.title).join(', ')}). Answers for them are kept but hidden.`);
       p = normalizeProgram(ex.id, {
+        fromZoom: true, // links carried over here are not hand edits
         ...ex, ...pick(raw, ['title', 'cohort', 'format', 'location', 'timezone', 'startDate', 'endDate', 'courseId']),
         quarter: raw.quarter || ex.quarter, sessions,
         deadline: ex.deadline, deadlineMode: ex.deadlineMode, status: ex.status, description: ex.description, externalKey: key
@@ -684,7 +719,9 @@ async function instructorIcs(env, pid, inst, require) {
   if (require && !mine.length) throw httpErr(404, 'There are no confirmed assignments for this program.');
   const whole = mine.some(m => m.slot === PROGRAM_SLOT);
   const sessions = whole ? (prog.sessions || []) : (prog.sessions || []).filter(s => s.allInstructors || mine.some(m => m.slot === s.id));
-  const stored = await env.IA_KV.get('ics:' + pid);
+  // Online programs: built from the session details so it always carries current times and any Zoom links found since.
+  // In-person programs: the Agenda Generator's block-by-block calendar, filtered to the instructor's modules.
+  const stored = isInPerson(prog) ? await env.IA_KV.get('ics:' + pid) : null;
   let ics = stored ? (whole ? stored : filterIcs(stored, sessions)) : null;
   const fromFile = !!ics;
   if (!ics) ics = buildIcs(prog, sessions);
@@ -767,11 +804,12 @@ function b64utf8(s) {
 }
 
 const H = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-function emailShell(title, inner, origin) {
+function emailShell(title, inner, origin, button) {
+  const btn = button || { label: 'Open the Instructor Portal', href: origin };
   return `<div style="font-family:'Open Sans',Arial,sans-serif;color:#2B2B2B;max-width:640px;margin:0 auto">
 <div style="background:#64092C;color:#fff;padding:18px 22px;border-radius:8px 8px 0 0"><img src="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png" alt="CLEAR" width="40" height="40" style="float:right;width:40px;height:40px;background:#fff;border-radius:6px;padding:3px"><div style="font-size:12px;opacity:.85;font-weight:600">CLEAR Learning</div><div style="font-size:20px;font-weight:800;margin-top:2px">${H(title)}</div></div>
 <div style="border:1px solid #DEDCE0;border-top:0;padding:20px 22px;border-radius:0 0 8px 8px;font-size:14px;line-height:1.55">${inner}
-<p style="margin:22px 0 6px"><a href="${H(origin)}" style="background:#64092C;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:700;display:inline-block">Open the Instructor Portal</a></p>
+<p style="margin:22px 0 6px"><a href="${H(btn.href)}" style="background:#64092C;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:700;display:inline-block">${H(btn.label)}</a></p>
 <p style="font-size:12px;color:#6E6B70;margin-top:16px">Sign in with this email address; you'll get a one-time code by email. Questions: reply to this message or write to clearlearning@clearhq.org.</p></div></div>`;
 }
 function noteBlock(note) { return note ? `<p style="background:#F8EDD3;border-left:4px solid #DDA838;padding:10px 14px;border-radius:4px;white-space:pre-wrap">${H(note)}</p>` : ''; }
@@ -874,18 +912,14 @@ async function notifySelection(env, pid, body, me) {
     if (!(inst.emails || []).length) { results.push({ iid, ok: false, error: `${inst.name} has no email address` }); continue; }
     const mine = confirmedFor(assign, iid);
     if (!mine.length) { results.push({ iid, ok: false, error: `${inst.name} has no confirmed slots` }); continue; }
-    const cal = await instructorIcs(env, pid, inst, true);
-    const roleOf = slot => (mine.find(m => m.slot === slot) || {}).role || '';
-    const rows = cal.whole && !(prog.sessions || []).length
-      ? `<tr><td style="padding:8px 0;border-bottom:1px solid #EEECEF"><strong>Entire program</strong><br>${H(rangeText(prog.startDate, prog.endDate))}${prog.location && prog.location !== 'Virtual' ? ', ' + H(prog.location) : ''}</td><td style="padding:8px 0;border-bottom:1px solid #EEECEF;text-align:right">${H(roleOf(PROGRAM_SLOT))}</td></tr>`
-      : cal.sessions.map(s => `<tr><td style="padding:8px 0;border-bottom:1px solid #EEECEF"><strong>${H(s.title)}</strong><br>${H(whenText(prog, s))}${s.zoomLink ? `<br><a href="${H(s.zoomLink)}">${H(s.zoomLink)}</a>` : ''}</td><td style="padding:8px 0;border-bottom:1px solid #EEECEF;text-align:right;white-space:nowrap">${H(roleOf(s.id) || roleOf(PROGRAM_SLOT) || (s.allInstructors ? 'All instructors attend' : ''))}</td></tr>`).join('');
+    const sessions = sessionsFor(prog, mine);
+    const n = sessions.length, ip = isInPerson(prog);
     const subject = (body.test ? '[TEST] ' : '') + `You're confirmed to teach: ${prog.title}${prog.cohort ? ' (' + prog.cohort + ')' : ''}`;
     const html = emailShell("You've been selected to teach", `<p>Hello ${H(firstName(inst.name))},</p>
-<p>Thank you for sharing your availability. You're confirmed for the following in <strong>${H(prog.title)}</strong>${prog.cohort ? `, ${H(prog.cohort)}` : ''}:</p>${noteBlock(body.note)}
-<table style="width:100%;border-collapse:collapse">${rows}</table>
-<p>A calendar file is attached. Open it to add ${cal.sessions.length > 1 || cal.whole ? 'these sessions' : 'this session'} to your calendar${(prog.sessions || []).some(s => s.zoomLink) ? ' with the Zoom links' : ''}. ${(prog.format || '').match(/person/i) ? '' : 'Times are Eastern Time; the portal can show them in your time zone. '}You'll also find this assignment on the My assignments tab of the portal.</p>`, me.origin);
-    if (body.preview) { previewOut = { subject, html, to: inst.emails[0], attachment: cal.name + (cal.fromFile ? ' (filtered from the program\'s calendar file)' : ' (built from the session details; no calendar file uploaded)'), count: ids.length }; break; }
-    await sendMail(env, { to: body.test ? [me.email] : [inst.emails[0]], subject, html, attachments: [{ name: cal.name, base64: b64utf8(cal.ics) }] });
+<p>Thank you for sharing your availability. You're confirmed to teach in <strong>${H(prog.title)}</strong>${prog.cohort ? `, ${H(prog.cohort)}` : ''}${n ? ` (${n} ${ip ? 'module' : 'session'}${n > 1 ? 's' : ''})` : ''}.</p>${noteBlock(body.note)}
+<p>Your ${ip ? 'modules' : 'sessions'}, dates and times are on the My assignments page of the Instructor Portal. ${ip ? '' : 'Zoom links appear there before the first session. '}You can also download calendar files from that page.</p>`, me.origin, { label: 'View your assignments', href: me.origin + '/#/mine' });
+    if (body.preview) { previewOut = { subject, html, to: inst.emails[0], count: ids.length }; break; }
+    await sendMail(env, { to: body.test ? [me.email] : [inst.emails[0]], subject, html });
     results.push({ iid, ok: true });
     if (!body.test) {
       assign.notified = assign.notified || {};
@@ -982,12 +1016,23 @@ function diffSnap(prog, before, after) {
     old.delete(s.id);
     const what = [];
     if (o.date !== s.date || o.endDate !== s.endDate || o.start !== s.start || o.end !== s.end) what.push('date or time');
-    if (o.zoomLink !== s.zoomLink) what.push('Zoom link');
+    if (o.zoomLink && o.zoomLink !== s.zoomLink) what.push('Zoom link'); // a link added for the first time is not a change
     if (o.title !== s.title) what.push('title');
     if (o.location !== s.location && s.id === PROGRAM_SLOT) what.push('location');
     if (what.length) out.push({ id: s.id, kind: 'changed', title: s.title, what, was: o });
   }
   for (const o of old.values()) out.push({ id: o.id, kind: 'removed', title: o.title, was: o });
+  return out;
+}
+// Zoom links aren't in emails, so a link replaced after the instructor's last email is added as a change.
+function withZoomSwaps(prog, mine, n, diffs) {
+  const out = [...diffs];
+  for (const s of sessionsFor(prog, mine)) {
+    if (!s.zoomReplacedAt || s.zoomReplacedAt <= n.at) continue;
+    const x = out.find(d => d.id === s.id);
+    if (x) { if (x.kind === 'changed' && !x.what.includes('Zoom link')) x.what.push('Zoom link'); }
+    else out.push({ id: s.id, kind: 'changed', title: s.title, what: ['Zoom link'], was: { ...s } });
+  }
   return out;
 }
 // For the dashboard: confirmed instructors whose schedule changed after their last email.
@@ -997,7 +1042,7 @@ function scheduleChanges(prog, assign) {
     if (!n || !n.snap) continue;
     const mine = confirmedFor(assign, iid);
     if (!mine.length || slotSig(mine) !== n.sig) continue; // assignment itself changed: a new selection notice covers it
-    const d = diffSnap(prog, n.snap, snapFor(prog, mine));
+    const d = withZoomSwaps(prog, mine, n, diffSnap(prog, n.snap, snapFor(prog, mine)));
     if (d.length) out[iid] = d.map(x => x.kind === 'changed' ? `${x.title}: ${x.what.join(', ')}` : `${x.title}: ${x.kind}`);
   }
   return out;
@@ -1019,7 +1064,7 @@ async function notifyChange(env, pid, body, me) {
     if (!inst || !(inst.emails || []).length) { results.push({ iid, ok: false, error: `${inst ? inst.name : 'Instructor'} has no email address` }); continue; }
     if (!n || !n.snap) { results.push({ iid, ok: false, error: `${inst.name} hasn't been sent a selection notice yet; send that instead` }); continue; }
     if (!mine.length || slotSig(mine) !== n.sig) { results.push({ iid, ok: false, error: `${inst.name}'s assignment changed; send a new selection notice instead` }); continue; }
-    const cur = snapFor(prog, mine), diffs = diffSnap(prog, n.snap, cur);
+    const cur = snapFor(prog, mine), diffs = withZoomSwaps(prog, mine, n, diffSnap(prog, n.snap, cur));
     if (!diffs.length) { results.push({ iid, ok: false, error: `Nothing has changed for ${inst.name} since their last email` }); continue; }
     const byId = new Map(diffs.map(x => [x.id, x]));
     const cell = 'padding:8px 0;border-bottom:1px solid #EEECEF';
@@ -1032,20 +1077,19 @@ async function notifyChange(env, pid, body, me) {
         const w = dx.was, bits = [];
         if (dx.what.includes('date or time')) bits.push('Previously ' + (s.id === PROGRAM_SLOT ? rangeText(w.date, w.endDate) : whenText(prog, w)));
         if (dx.what.includes('location')) bits.push('Previously at ' + (w.location || 'no location'));
-        if (dx.what.includes('Zoom link')) bits.push(w.zoomLink ? 'Zoom link replaced' : 'Zoom link added');
+        if (dx.what.includes('Zoom link')) bits.push('Zoom link replaced');
         if (dx.what.includes('title')) bits.push('Previously titled ' + w.title);
         was = `<br><span style="color:#9B1C1C;font-size:12px">${H(bits.join('. '))}</span>`;
       }
       return `<tr><td style="${cell}"><strong>${H(s.title)}</strong>${flag}<br>${H(when)}${s.zoomLink ? `<br><a href="${H(s.zoomLink)}">${H(s.zoomLink)}</a>` : ''}${was}</td></tr>`;
     }).join('') + diffs.filter(x => x.kind === 'removed').map(x => `<tr><td style="${cell};color:#6E6B70"><s>${H(x.title)}</s> <span style="font-size:11px;font-weight:700">Removed</span><br>${H(x.was.id === PROGRAM_SLOT ? rangeText(x.was.date, x.was.endDate) : whenText(prog, x.was))}</td></tr>`).join('');
-    const cal = await instructorIcs(env, pid, inst, true);
     const subject = (body.test ? '[TEST] ' : '') + `Schedule update: ${prog.title}${prog.cohort ? ' (' + prog.cohort + ')' : ''}`;
     const html = emailShell('Your teaching schedule has changed', `<p>Hello ${H(firstName(inst.name))},</p>
 <p>There has been a change to your schedule for <strong>${H(prog.title)}</strong>${prog.cohort ? `, ${H(prog.cohort)}` : ''}. Your current schedule is below, with the changes marked.</p>${noteBlock(body.note)}
 <table style="width:100%;border-collapse:collapse">${rows}</table>
-<p>An updated calendar file is attached. If your calendar still shows an earlier date, time or link after you open it, delete the old entry.</p>`, me.origin);
-    if (body.preview) { previewOut = { subject, html, to: inst.emails[0], attachment: cal.name, count: ids.length }; break; }
-    await sendMail(env, { to: body.test ? [me.email] : [inst.emails[0]], subject, html, attachments: [{ name: cal.name, base64: b64utf8(cal.ics) }] });
+<p>If you added these sessions to your calendar, update them, or download a new calendar file from My assignments and delete the old entries.</p>`, me.origin, { label: 'View your assignments', href: me.origin + '/#/mine' });
+    if (body.preview) { previewOut = { subject, html, to: inst.emails[0], count: ids.length }; break; }
+    await sendMail(env, { to: body.test ? [me.email] : [inst.emails[0]], subject, html });
     results.push({ iid, ok: true });
     if (!body.test) updates[iid] = { ...n, at: new Date().toISOString(), by: me.email, snap: cur, kind: 'change' };
   }
@@ -1057,6 +1101,125 @@ async function notifyChange(env, pid, body, me) {
     await log(env, me.email, 'Emailed schedule change notices', `${prog.title}: ${Object.keys(updates).length} sent`);
   }
   return { ok: true, results, notified: fresh.notified || {}, changes: scheduleChanges(prog, fresh) };
+}
+
+/* ---------- Zoom links ---------- */
+// Reads the upcoming meetings on the Zoom user TalentLMS creates them under and matches each live session by
+// date, start time and length. Title words only break ties. Nothing is created or changed in Zoom or TalentLMS.
+const ZOOM_WINDOW = 30;   // minutes either side of the session start a meeting may begin
+const ZOOM_SURE = 15;     // a match is automatic when the best meeting starts within this many minutes...
+const ZOOM_MARGIN = 15;   // ...and scores at least this much better than the next one
+let zoomTok = { token: '', exp: 0 };
+function zoomConfigured(env) { return !!(env.ZOOM_ACCOUNT_ID && env.ZOOM_CLIENT_ID && env.ZOOM_CLIENT_SECRET); }
+async function zoomToken(env) {
+  if (zoomTok.token && Date.now() < zoomTok.exp) return zoomTok.token;
+  const r = await fetch(`https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${encodeURIComponent(env.ZOOM_ACCOUNT_ID)}`,
+    { method: 'POST', headers: { Authorization: 'Basic ' + btoa(env.ZOOM_CLIENT_ID + ':' + env.ZOOM_CLIENT_SECRET) } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.access_token) throw httpErr(502, `Zoom didn't accept the app credentials (${j.reason || j.error || r.status}). Check the three ZOOM_ settings and that the app is activated.`);
+  zoomTok = { token: j.access_token, exp: Date.now() + Math.max(60, (j.expires_in || 3600) - 120) * 1000 };
+  return zoomTok.token;
+}
+async function zoomMeetings(env) {
+  const user = env.ZOOM_USER || 'clearlearning@clearhq.org', tok = await zoomToken(env), out = [];
+  let next = '';
+  do {
+    const r = await fetch(`https://api.zoom.us/v2/users/${encodeURIComponent(user)}/meetings?type=upcoming&page_size=300${next ? '&next_page_token=' + encodeURIComponent(next) : ''}`, { headers: { Authorization: 'Bearer ' + tok } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw httpErr(502, `Zoom couldn't list meetings for ${user} (${j.message || r.status}). Check the app's meeting permissions and ZOOM_USER.`);
+    out.push(...(j.meetings || []));
+    next = j.next_page_token || '';
+  } while (next && out.length < 3000);
+  return out.filter(m => m.start_time && m.join_url).map(m => ({ id: String(m.id), topic: String(m.topic || ''), start: Date.parse(m.start_time), duration: +m.duration || 0, join_url: m.join_url }));
+}
+function zonedUtc(date, clock, tz) {
+  const mins = toMin(clock); const [y, m, d] = date.split('-').map(Number);
+  const guess = Date.UTC(y, m - 1, d, Math.floor(mins / 60), mins % 60);
+  const off = ms => { const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(ms));
+    const g = k => +p.find(x => x.type === k).value; return Date.UTC(g('year'), g('month') - 1, g('day'), g('hour') % 24, g('minute'), g('second')) - ms; };
+  let t = guess - off(guess); t = guess - off(t); return t;
+}
+const STOP = new Set(['session', 'sessions', 'live', 'instructor', 'led', 'program', 'online', 'with', 'from', 'that', 'this', 'your', 'cohort', 'open', 'closed', 'ncit', 'clear', 'and', 'the', 'for']);
+const words = s => String(s || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length >= 4 && !STOP.has(w));
+function meetingScore(sess, m) {
+  const dt = Math.abs(m.start - sess.utc) / 60000;
+  if (dt > ZOOM_WINDOW) return null;
+  const dd = Math.abs((m.duration || sess.dur) - sess.dur);
+  const topic = m.topic.toLowerCase(), hits = sess.words.filter(w => topic.includes(w)).length;
+  return { ...m, dt, dd, hits, score: dt * 2 + Math.min(dd, 120) * 0.5 - Math.min(hits, 4) * 6 };
+}
+const tzOf = p => TZIDS[String(p.timezone || 'ET').toUpperCase()] || ET;
+async function zoomSync(env, opts = {}) {
+  const today = todayET(), now = new Date().toISOString();
+  const meetings = await zoomMeetings(env);
+  const all = await listPrograms(env);
+  const taken = new Map();
+  for (const p of all) for (const s of p.sessions || []) if (s.zoomMeetingId) taken.set(s.zoomMeetingId, p.id + '|' + s.id);
+  const progs = all.filter(p => (p.status === 'open' || p.status === 'closed') && !isInPerson(p) && (!opts.pid || p.id === opts.pid));
+  const review = [], found = [];
+  let unchanged = 0, replaced = 0, waiting = 0;
+  for (const p of progs) {
+    let dirty = false;
+    for (const s of p.sessions || []) {
+      if (!s.date || !s.start || !s.end || s.date < today || s.zoomSource === 'manual') continue;
+      const me = p.id + '|' + s.id;
+      const sess = { utc: zonedUtc(s.date, s.start, tzOf(p)), dur: toMin(s.end) - toMin(s.start), words: words(s.title + ' ' + p.title) };
+      const cands = meetings.filter(m => !taken.has(m.id) || taken.get(m.id) === me).map(m => meetingScore(sess, m)).filter(Boolean).sort((a, b) => a.score - b.score);
+      if (!cands.length) { if (!s.zoomLink) waiting++; continue; }
+      const best = cands[0], next = cands[1];
+      const sure = best.dt <= ZOOM_SURE && (!next || next.score - best.score >= ZOOM_MARGIN);
+      if (!sure) {
+        if (!s.zoomLink) review.push({ pid: p.id, sid: s.id, program: label(p), title: s.title, date: s.date, start: s.start, end: s.end, timezone: p.timezone || 'ET',
+          candidates: cands.slice(0, 4).map(c => ({ id: c.id, topic: c.topic, start: new Date(c.start).toISOString(), duration: c.duration, join_url: c.join_url, dt: Math.round(c.dt) })) });
+        continue;
+      }
+      if (s.zoomMeetingId === best.id && s.zoomLink === best.join_url) { unchanged++; continue; }
+      const swap = !!(s.zoomLink && s.zoomLink !== best.join_url);
+      if (swap) replaced++;
+      found.push(`${label(p)}: ${s.title}`);
+      if (!opts.dry) Object.assign(s, { zoomLink: best.join_url, zoomMeetingId: best.id, zoomSource: 'zoom', zoomTopic: best.topic, zoomAt: now }, swap ? { zoomReplacedAt: now } : {});
+      taken.set(best.id, me);
+      dirty = true;
+    }
+    if (dirty && !opts.dry) await putJSON(env, 'program:' + p.id, p); // updatedAt untouched so an open editor isn't blocked
+  }
+  const summary = { ok: true, at: now, meetings: meetings.length, found: found.length, replaced, unchanged, review: review.length, waiting, by: opts.by || '', dryRun: !!opts.dry };
+  if (!opts.dry) {
+    const prev = await getJSON(env, 'zoom:review', { items: [] });
+    const items = opts.pid ? [...(prev.items || []).filter(i => i.pid !== opts.pid), ...review] : review;
+    await putJSON(env, 'zoom:review', { at: now, items });
+    await putJSON(env, 'zoom:last', summary);
+    if (found.length || review.length) await log(env, opts.by || 'system', 'Checked Zoom for session links', `${found.length} found, ${review.length} to review${replaced ? ', ' + replaced + ' replaced' : ''}`);
+  }
+  return summary;
+}
+async function zoomAssign(env, body, by) {
+  const prog = await getJSON(env, 'program:' + body.pid, null);
+  const s = prog && (prog.sessions || []).find(x => x.id === body.sid);
+  if (!s) throw httpErr(404, 'That session no longer exists.');
+  const link = cleanUrl(body.join_url);
+  if (!link) throw httpErr(400, 'Enter the Zoom link, starting with https://');
+  if (s.zoomLink && s.zoomLink !== cleanUrl(body.join_url)) s.zoomReplacedAt = new Date().toISOString();
+  Object.assign(s, body.meetingId
+    ? { zoomLink: link, zoomMeetingId: String(body.meetingId).slice(0, 40), zoomSource: 'zoom', zoomTopic: String(body.topic || '').slice(0, 200), zoomAt: new Date().toISOString() }
+    : { zoomLink: link, zoomMeetingId: '', zoomSource: 'manual', zoomTopic: '', zoomAt: new Date().toISOString() });
+  await putJSON(env, 'program:' + prog.id, prog);
+  const rv = await getJSON(env, 'zoom:review', { items: [] });
+  rv.items = (rv.items || []).filter(i => !(i.pid === prog.id && i.sid === s.id));
+  await putJSON(env, 'zoom:review', rv);
+  await log(env, by, body.meetingId ? 'Matched a Zoom meeting' : 'Entered a Zoom link', `${label(prog)}: ${s.title}`);
+  return { ok: true, session: s };
+}
+// Live online programs whose first session is within a week, with sessions still missing a link.
+function missingLinks(programs, today) {
+  const out = [];
+  for (const p of programs) {
+    if (!(p.status === 'open' || p.status === 'closed') || isInPerson(p)) continue;
+    const first = firstLive(p); if (!first || daysBetween(today, first) > 7) continue;
+    const miss = (p.sessions || []).filter(s => s.date >= today && !s.zoomLink);
+    if (miss.length) out.push({ pid: p.id, program: label(p), first, sessions: miss.map(s => ({ sid: s.id, title: s.title, date: s.date, start: s.start, end: s.end })) });
+  }
+  return out.sort((a, b) => a.first.localeCompare(b.first));
 }
 
 /* ---------- Custom email ---------- */
