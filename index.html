@@ -56,6 +56,12 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .et{color:var(--muted);font-size:12px;white-space:nowrap}
 .shift{display:inline-block;font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-lt);padding:0 7px;border-radius:10px;margin-left:4px}
 
+/* Delivery preference */
+.prefs{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;background:#fff;border:1px solid var(--line)}
+.prefs.unset{background:var(--gold-lt);border-color:var(--gold);border-left-width:4px}
+.prefs .txt{flex:1;min-width:240px}
+.prefs .txt strong{display:block}
+.prefs .txt span{font-size:13px;color:var(--charcoal)}
 /* Intro + filters */
 .intro{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:18px}
 .intro p{margin:0;max-width:62ch;color:var(--charcoal)}
@@ -393,9 +399,28 @@ function render(){
   }
   html += tzBar();
   if (S.view) html += renderDetail(d.programs.find(p=>p.id===S.view));
-  else if (S.tab==='programs') html += renderList(progs);
+  else if (S.tab==='programs') html += prefCard() + renderList(progs);
   else html += renderMine();
   main.innerHTML = html;
+}
+
+/* ---------- Delivery preference ---------- */
+const DELIV=[['online','Online only'],['in-person','In person only'],['both','Both']];
+function prefCard(){
+  const d=S.data.instructor.delivery||'', ro=S.data.viewingAs;
+  return `<div class="prefs ${d?'':'unset'}"><div class="txt"><strong>${d?'Formats you are available to teach':'Which formats are you available to teach?'}</strong><span>${d
+    ?'You see, and receive emails about, programs in the formats you choose. You can change this at any time.'
+    :'Choose one so CLEAR Learning contacts you only about programs you can teach. Until you choose, you will see every program.'}</span></div>
+    <div class="answer" role="group" aria-label="Formats you are available to teach">${DELIV.map(([v,l])=>`<button type="button" class="A" aria-pressed="${d===v}" ${ro?'disabled':''} onclick="setDelivery('${v}')">${l}</button>`).join('')}</div></div>`;
+}
+async function setDelivery(v){
+  if((S.data.instructor.delivery||'')===v) return;
+  if(S.dirty.size && !confirm('You have unsaved answers. Change your formats and discard them?')) return;
+  try{
+    await api('profile',{method:'PUT',body:JSON.stringify({delivery:v})});
+    await load();
+    toast(v==='both'?'Saved. You will see online and in-person programs.':v==='online'?'Saved. You will see online programs only.':'Saved. You will see in-person programs only.');
+  }catch(e){ toast(e.message); }
 }
 
 /* ---------- Card list ---------- */
