@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLEAR Learning Evaluation Dashboard</title>
+<link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+:root{--burgundy:#64092c;--burgundy-light:#8a1e4a;--gold:#dda838;--gold-faint:#fdf6e3;--blue:#084d78;--blue-light:#0a6191;--charcoal:#484848;--light-bg:#f7f5f2;--white:#fff;--border:#e0dcd6;--text:#333;--text-light:#6b6b6b;--success:#2e7d4f;--success-faint:#f0f9f4;--shadow:0 2px 12px rgba(100,9,44,.08);--shadow-lg:0 8px 32px rgba(100,9,44,.12)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Open Sans',sans-serif;background:var(--light-bg);color:var(--text);min-height:100vh}
+.header{background:linear-gradient(135deg,var(--burgundy),var(--burgundy-light));color:var(--white);padding:20px 40px;display:flex;align-items:center;gap:20px;box-shadow:0 4px 20px rgba(100,9,44,.25)}
+.header-icon img{width:80px;height:auto;border-radius:4px;box-shadow:0 4px 8px rgba(0,0,0,.3);padding:8px;background:#fff}
+.header h1{font-size:22px;font-weight:700;letter-spacing:.5px}
+.header p{font-size:13px;opacity:.85;margin-top:2px}
+.container{max-width:1400px;margin:0 auto;padding:28px 40px 60px}
+.card{background:var(--white);border-radius:12px;box-shadow:var(--shadow);margin-bottom:24px;overflow:hidden}
+.card-hdr{padding:16px 28px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--charcoal),#5a5a5a);color:var(--white)}
+.card-body{padding:24px 28px}
+.card-flush{padding:0}
+
+/* Config panel */
+.cfg-panel{background:var(--white);border-radius:12px;box-shadow:var(--shadow);padding:28px 32px;margin-bottom:24px;border-left:4px solid var(--gold)}
+.cfg-panel h2{font-size:16px;font-weight:700;color:var(--burgundy);margin-bottom:6px}
+.cfg-panel p{font-size:13px;color:var(--text-light);margin-bottom:20px;line-height:1.6}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.cfg-group label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:5px}
+.cfg-group input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Open Sans',sans-serif}
+.cfg-group input:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(221,168,56,.15)}
+.cfg-note{font-size:12px;color:var(--text-light);margin-top:10px}
+
+/* Status bar */
+.status-bar{background:var(--white);border-radius:12px;box-shadow:var(--shadow);padding:16px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.status-item{display:flex;align-items:center;gap:8px;font-size:13px}
+.status-dot{width:10px;height:10px;border-radius:50%;background:#ccc;flex-shrink:0}
+.status-dot.loading{background:var(--gold);animation:pulse 1s infinite}
+.status-dot.ok{background:var(--success)}
+.status-dot.err{background:#c62828}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-label{font-weight:600;color:var(--charcoal)}
+.status-meta{color:var(--text-light);font-size:12px}
+.status-bar .spacer{flex:1}
+.reload-btn{background:0 0;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--text-light);cursor:pointer;font-family:'Open Sans',sans-serif;transition:.2s}
+.reload-btn:hover{border-color:var(--burgundy);color:var(--burgundy)}
+
+.data-summary{display:flex;gap:16px;flex-wrap:wrap;padding:16px 28px;background:var(--gold-faint);border:1px solid var(--gold);border-radius:12px;margin-bottom:24px;align-items:center}
+.stat{display:flex;flex-direction:column;align-items:center;padding:0 16px;border-right:1px solid rgba(221,168,56,.3)}
+.stat:last-child{border-right:0}
+.stat-val{font-size:22px;font-weight:700;color:var(--burgundy)}
+.stat-lbl{font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px}
+.vtabs{display:flex;gap:4px;border-bottom:2px solid var(--border);padding:0 4px;margin-bottom:0}
+.vtab{padding:12px 24px;border-radius:8px 8px 0 0;font-size:14px;font-weight:600;cursor:pointer;border:1px solid transparent;border-bottom:0;background:0 0;color:var(--text-light);transition:.2s;font-family:'Open Sans',sans-serif;position:relative}
+.vtab:hover{background:#f0ede8;color:var(--charcoal)}
+.vtab.active{background:var(--white);color:var(--burgundy);border-color:var(--border);z-index:1}
+.vtab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--white)}
+.tc{display:none}.tc.active{display:block}
+.fp{background:var(--white);border-radius:0 12px 12px 12px;padding:28px 32px;box-shadow:var(--shadow);margin-bottom:24px}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:16px}
+.fgl{display:block;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.fgi{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Open Sans',sans-serif;color:var(--text);background:var(--white);transition:border-color .2s}
+.fgi:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(221,168,56,.15)}
+.ms{position:relative;width:100%}
+.mst{width:100%;padding:9px 32px 9px 11px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Open Sans',sans-serif;color:var(--text);background:var(--white);cursor:pointer;text-align:left;transition:border-color .2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;-webkit-appearance:none;appearance:none}
+.mst::after{content:'';position:absolute;right:12px;top:50%;transform:translateY(-50%);border-left:5px solid transparent;border-right:5px solid transparent;border-top:5px solid var(--text-light);pointer-events:none}
+.mst:hover,.mst.open{border-color:var(--gold);box-shadow:0 0 0 3px rgba(221,168,56,.15)}
+.mst .ph{color:var(--text-light)}
+.msd{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-lg);z-index:100;max-height:280px;overflow-y:auto}
+.msd.open{display:block}
+.mss{width:calc(100% - 16px);margin:8px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:'Open Sans',sans-serif}
+.mss:focus{outline:0;border-color:var(--gold)}
+.mso{display:flex;align-items:center;gap:10px;padding:7px 14px;cursor:pointer;font-size:13px;transition:background .15s}
+.mso:hover{background:var(--gold-faint)}
+.mso.hid{display:none}
+.mso input[type=checkbox]{accent-color:var(--burgundy);width:15px;height:15px;cursor:pointer;flex-shrink:0}
+.mso label{cursor:pointer;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msa{display:flex;gap:8px;padding:8px 14px;border-top:1px solid var(--border);background:#faf9f7;border-radius:0 0 8px 8px;position:sticky;bottom:0}
+.msa button{background:0 0;border:0;font-size:12px;font-family:'Open Sans',sans-serif;color:var(--blue);cursor:pointer;font-weight:600;padding:2px 4px}
+.msa button:hover{text-decoration:underline}
+.br{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--border)}
+.btn{padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;font-family:'Open Sans',sans-serif;cursor:pointer;border:0;transition:.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-p{background:var(--burgundy);color:var(--white)}.btn-p:hover{background:var(--burgundy-light);box-shadow:var(--shadow)}
+.btn-s{background:var(--white);color:var(--charcoal);border:1px solid var(--border)}.btn-s:hover{border-color:var(--charcoal)}
+.btn-e{background:var(--blue);color:var(--white)}.btn-e:hover{background:var(--blue-light);box-shadow:var(--shadow)}
+.btn-sm{padding:6px 14px;font-size:12px}
+.fsm{font-size:12px;color:var(--text-light);margin-left:auto}
+table{width:100%;border-collapse:collapse}
+thead th{background:#f9f7f4;padding:11px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);text-align:center;border-bottom:2px solid var(--border)}
+thead th:first-child{text-align:left}
+tbody td{padding:10px 14px;font-size:13px;text-align:center;border-bottom:1px solid #f0ede8}
+tbody td:first-child{text-align:left;font-weight:600;color:var(--burgundy)}
+tbody tr:hover{background:#fdfcfa}
+.orow td{background:var(--gold-faint)!important;font-weight:700!important;color:var(--charcoal)!important;border-top:2px solid var(--gold)}
+.sb{display:inline-block;padding:3px 10px;border-radius:12px;font-weight:600;font-size:12px}
+.sh{background:#e8f5e9;color:#2e7d32}.sm{background:#fff8e1;color:#b8860b}.sl{background:#fce1ec;color:#c62828}.sn{background:#f0f0f0;color:#757575}
+.ct td{text-align:left;font-size:13px}.ct td:first-child{font-weight:400}
+.cbc{width:36px;text-align:center!important}.cbc input[type=checkbox]{accent-color:var(--burgundy);width:15px;height:15px;cursor:pointer}
+.cex td:not(.cbc){opacity:.35;text-decoration:line-through;color:var(--text-light)!important;font-weight:400!important}
+.cna td:not(.cbc){opacity:.35;text-decoration:line-through;color:#999!important;font-style:italic}
+.csr{display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.csi{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Open Sans',sans-serif}
+.csi:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(221,168,56,.15)}
+.cc{font-size:12px;color:var(--text-light);white-space:nowrap}
+.itabs{display:flex;gap:4px;flex-wrap:wrap;padding:0 4px;margin-bottom:0}
+.itab{padding:10px 18px;border-radius:8px 8px 0 0;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);border-bottom:0;background:#f0ede8;color:var(--text-light);transition:.2s;font-family:'Open Sans',sans-serif}
+.itab:hover{background:#e8e4de}
+.itab.active{background:var(--white);color:var(--burgundy);border-color:var(--border);position:relative}
+.itab.active::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--white)}
+.ebar{display:none;margin-bottom:24px;padding:16px 24px;background:var(--white);border-radius:12px;box-shadow:var(--shadow)}.ebar.visible{display:block}
+.ag{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:24px}
+.mc{background:var(--white);border-radius:12px;box-shadow:var(--shadow);padding:20px 24px}
+.mc h3{font-size:13px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.bcr{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bl{font-size:12px;font-weight:600;color:var(--charcoal);min-width:120px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt{flex:1;height:22px;background:#f0ede8;border-radius:4px;overflow:hidden}
+.bf{height:100%;border-radius:4px;transition:width .5s;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:11px;font-weight:700;color:var(--white);min-width:40px}
+.hidden{display:none!important}
+.empty{text-align:center;padding:48px 20px;color:var(--text-light)}
+.empty .icon{font-size:40px;margin-bottom:12px}
+.empty h3{font-size:15px;color:var(--charcoal);margin-bottom:6px}
+.spinner-wrap{text-align:center;padding:48px 20px}
+.spinner{display:inline-block;width:36px;height:36px;border:4px solid var(--border);border-top-color:var(--burgundy);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:800px){.container{padding:20px}.header{padding:16px 20px}.fg{grid-template-columns:1fr 1fr}.cfg-grid{grid-template-columns:1fr}}
+@media print{.header{padding:16px 20px}.cfg-panel,.status-bar,.fp,.ebar,.btn,.vtabs,.data-summary,.csr,.itabs{display:none!important}.tc{display:block!important}.container{padding:0 20px}.card{box-shadow:none;border:1px solid #ddd}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-icon"><img src="https://assets-002.noviams.com/novi-file-uploads/clear/graphics/CLEAR_Learning_New.png" alt="CLEAR Learning Logo"></div>
+  <div><h1>CLEAR Learning Evaluation Dashboard</h1><p>Live data from SurveyMonkey · Filter, analyze, and export module evaluation data</p></div>
+</div>
+<div class="container">
+
+  <!-- CONFIG -->
+  <div class="cfg-panel" id="cfgPanel">
+    <h2>Connect to SurveyMonkey</h2>
+    <p>Enter your Cloudflare Worker proxy URL, auth token, and the SurveyMonkey Survey IDs for your ILT and Async evaluation surveys. Settings are saved to localStorage.</p>
+    <div class="cfg-grid">
+      <div class="cfg-group" style="grid-column:1/-1">
+        <label>Worker Proxy URL</label>
+        <input type="text" id="cfgProxy" placeholder="https://clear-lms-proxy.avance.workers.dev">
+      </div>
+      <div class="cfg-group" style="grid-column:1/-1">
+        <label>Auth Token (X-Auth-Token)</label>
+        <input type="password" id="cfgToken" placeholder="your-auth-token">
+      </div>
+      <div class="cfg-group">
+        <label>ILT Survey ID</label>
+        <input type="text" id="cfgILT" placeholder="e.g. 123456789">
+      </div>
+      <div class="cfg-group">
+        <label>Async Survey ID</label>
+        <input type="text" id="cfgAsync" placeholder="e.g. 987654321">
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <button class="btn btn-p" onclick="saveConfig()">Save &amp; Load Data</button>
+      <button class="btn btn-s" onclick="toggleCfg(false)">Cancel</button>
+    </div>
+    <p class="cfg-note">💡 Find your Survey IDs in the SurveyMonkey URL when editing a survey: surveymonkey.com/create/?sm=<strong>SURVEY_ID</strong></p>
+  </div>
+
+  <!-- CORRECTIONS -->
+  <div class="cfg-panel hidden" id="corrPanel" style="border-left-color:var(--blue)">
+    <h2>Data Corrections</h2>
+    <p>Override incorrect custom-variable values (e.g. the wrong instructor entered on a survey link) without touching the raw SurveyMonkey data. Rules are stored in your Worker's KV store, so they apply for every user on every device.</p>
+
+    <div style="background:var(--gold-faint);border:1px solid var(--gold);border-radius:8px;padding:12px 16px;margin-bottom:20px">
+      <label class="fgl" style="margin-bottom:6px">Paste a SurveyMonkey link to auto-fill the match fields</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" class="fgi" id="corrLink" placeholder="https://www.surveymonkey.com/r/...?course=...&Instructor=...">
+        <button class="btn btn-s btn-sm" onclick="parseCorrLink()" style="white-space:nowrap">Parse Link</button>
+      </div>
+    </div>
+
+    <h3 style="font-size:13px;color:var(--charcoal);margin-bottom:10px">Match these custom variables (leave a field blank to match any value)</h3>
+    <div class="cfg-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="cfg-group"><label>Program (course)</label><input type="text" class="fgi" id="cmCourse"></div>
+      <div class="cfg-group"><label>Version</label><input type="text" class="fgi" id="cmVersion"></div>
+      <div class="cfg-group"><label>Method</label><input type="text" class="fgi" id="cmMethod"></div>
+      <div class="cfg-group"><label>Module Name</label><input type="text" class="fgi" id="cmModule"></div>
+      <div class="cfg-group"><label>Instructor</label><input type="text" class="fgi" id="cmInstructor"></div>
+      <div class="cfg-group"><label>Cohort</label><input type="text" class="fgi" id="cmCohort"></div>
+    </div>
+
+    <h3 style="font-size:13px;color:var(--charcoal);margin:16px 0 10px">Then override</h3>
+    <div class="cfg-grid" style="grid-template-columns:200px 1fr">
+      <div class="cfg-group">
+        <label>Field to Override</label>
+        <select class="fgi" id="corrField">
+          <option value="instructor">Instructor</option>
+          <option value="cohort">Cohort</option>
+          <option value="course">Program (course)</option>
+          <option value="version">Version</option>
+          <option value="method">Method</option>
+          <option value="module_name">Module Name</option>
+        </select>
+      </div>
+      <div class="cfg-group"><label>Corrected Value</label><input type="text" class="fgi" id="corrValue" placeholder="e.g. Thompson, Eric"></div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center;margin-top:6px">
+      <button class="btn btn-p" onclick="addCorrection()">Add Correction Rule</button>
+      <button class="btn btn-s" onclick="toggleCorr(false)">Close</button>
+    </div>
+
+    <h3 style="font-size:13px;color:var(--charcoal);margin:24px 0 10px">Active Rules</h3>
+    <div id="corrList"></div>
+    <p class="cfg-note" id="corrStatus"></p>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar hidden" id="statusBar">
+    <div class="status-item">
+      <div class="status-dot" id="dotILT"></div>
+      <span class="status-label">ILT</span>
+      <span class="status-meta" id="metaILT">—</span>
+    </div>
+    <div class="status-item">
+      <div class="status-dot" id="dotAsync"></div>
+      <span class="status-label">Async</span>
+      <span class="status-meta" id="metaAsync">—</span>
+    </div>
+    <div class="spacer"></div>
+    <button class="reload-btn" onclick="reloadData()">↺ Refresh Data</button>
+    <button class="reload-btn" onclick="toggleCorr(true)">🛠 Corrections</button>
+    <button class="reload-btn" onclick="toggleCfg(true)">⚙ Settings</button>
+  </div>
+
+  <div class="data-summary hidden" id="dsum"></div>
+
+  <div class="hidden" id="main">
+    <div class="vtabs">
+      <button class="vtab active" onclick="sw('a')">📊 Analyze</button>
+      <button class="vtab" onclick="sw('i')">👩‍🏫 Instructor Reports</button>
+    </div>
+    <!-- ANALYZE -->
+    <div class="tc active" id="va">
+      <div class="fp">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h2 style="font-size:16px;font-weight:700;color:var(--burgundy)">Filters</h2>
+          <span class="fsm" id="afs"></span>
+        </div>
+        <div class="fg" id="afg"></div>
+        <div class="br">
+          <button class="btn btn-p" onclick="runA()">Apply Filters</button>
+          <button class="btn btn-s" onclick="resetF('a')">Reset</button>
+        </div>
+      </div>
+      <div id="ar"></div>
+    </div>
+    <!-- INSTRUCTOR REPORTS -->
+    <div class="tc" id="vi">
+      <div class="fp">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h2 style="font-size:16px;font-weight:700;color:var(--burgundy)">Report Filters</h2>
+          <span class="fsm" id="ifs"></span>
+        </div>
+        <div style="background:var(--gold-faint);border:1px solid var(--gold);border-radius:8px;padding:12px 16px;margin-bottom:16px">
+          <p style="font-size:13px;line-height:1.5;color:var(--text)"><strong>Note:</strong> Instructor and Cohort names are pulled from the data. Select at least one Instructor and one Cohort to generate reports for the Master Instructor File. A separate PDF and XLSX will be generated for each selected instructor.</p>
+        </div>
+        <div class="fg" id="ifg"></div>
+        <div class="br">
+          <button class="btn btn-p" onclick="runI()">Generate Report</button>
+          <button class="btn btn-s" onclick="resetF('i')">Reset</button>
+        </div>
+      </div>
+      <div class="ebar" id="iebar">
+        <h3 style="font-size:15px;color:var(--burgundy);margin-bottom:12px">Next Steps</h3>
+        <div style="background:var(--gold-faint);border:1px solid var(--gold);border-radius:8px;padding:12px 16px;margin-bottom:16px">
+          <ol style="margin:0 0 0 18px;font-size:13px;line-height:1.8">
+            <li>Review the report below and deselect any comments you do not wish to include.</li>
+            <li>Click <strong>Publish to Instructor Portal</strong> to post each instructor's report to their portal and email them a link, or <strong>Download PDF</strong> for files.</li>
+            <li>Click <strong>Download XLSX</strong> for the master instructor file update.</li>
+            <li>Click <strong>Update Master Instructor File</strong> to navigate to the next step.</li>
+          </ol>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn btn-p" onclick="xPortal()">Publish to Instructor Portal</button>
+          <button class="btn btn-e" onclick="xPDF()">📄 Download PDF</button>
+          <button class="btn btn-e" onclick="xXLSX()">📗 Download XLSX</button>
+          <a href="https://clearlearning.github.io/automation/evaldataupdater.html" target="_blank" rel="noopener noreferrer" class="btn btn-e" style="text-decoration:none">🔗 Update Master Instructor File</a>
+        </div>
+      </div>
+      <div id="pubOut" style="margin:-6px 0 14px"></div>
+      <div id="itc"></div>
+      <div id="irc"></div>
+      <details class="card" style="margin-top:18px" ontoggle="if(this.open)loadPublished()"><summary style="cursor:pointer;padding:16px 24px;font-weight:700;color:var(--burgundy)">Reports published to the Instructor Portal</summary><div class="card-body" id="pubList" style="padding:0 24px 18px"></div></details>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Constants ────────────────────────────────────────────────────────────────
+const RK=['rInstructor','rStyle','rContent','rCoverage','rUsefulness'];
+const AL=['Instructor','Style','Content','Coverage','Usefulness'];
+const SL=['Style','Content','Coverage','Usefulness'];
+const SK=RK.slice(1);
+const NA=/^(na|n\/a|none|no comments?|n\/a\.|na\.|none\.)$/i;
+
+// Rating text → numeric (matches the Excel formula logic)
+const SCALE={'Excellent':5,'Very Good':4,'Good':3,'Needs Improvement':2,'Fair':2,'Poor':1};
+
+// SurveyMonkey Q1 matrix row label patterns → internal key
+const Q1_MAP={
+  'instructor was':    'rInstructor',
+  'style of delivery': 'rStyle',
+  'content of':        'rContent',
+  'amount of material':'rCoverage',
+  'usefulness':        'rUsefulness'
+};
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let PROXY='', TOKEN='', SURVEY_ILT='', SURVEY_ASYNC='';
+let iltD=[], asnD=[], allD=[];
+let rawILT=[], rawAsync=[], qMapILT={}, qMapAsync={};
+let CORR=[];
+const MS={};
+let IR={}, IAT=null, IEX={};
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', ()=>{
+  PROXY   = localStorage.getItem('eval_proxy')  || '';
+  TOKEN   = localStorage.getItem('eval_token')  || '';
+  SURVEY_ILT   = localStorage.getItem('eval_ilt_id')  || '';
+  SURVEY_ASYNC = localStorage.getItem('eval_async_id') || '';
+  if(PROXY && TOKEN && SURVEY_ILT && SURVEY_ASYNC){
+    $('cfgProxy').value=PROXY; $('cfgToken').value=TOKEN;
+    $('cfgILT').value=SURVEY_ILT; $('cfgAsync').value=SURVEY_ASYNC;
+    toggleCfg(false);
+    loadAllData();
+  }
+});
+
+// ─── Config ───────────────────────────────────────────────────────────────────
+function saveConfig(){
+  PROXY        = $('cfgProxy').value.trim().replace(/\/$/,'');
+  TOKEN        = $('cfgToken').value.trim();
+  SURVEY_ILT   = $('cfgILT').value.trim();
+  SURVEY_ASYNC = $('cfgAsync').value.trim();
+  if(!PROXY||!TOKEN||!SURVEY_ILT||!SURVEY_ASYNC){ alert('Please fill in all four fields.'); return; }
+  localStorage.setItem('eval_proxy',  PROXY);
+  localStorage.setItem('eval_token',  TOKEN);
+  localStorage.setItem('eval_ilt_id', SURVEY_ILT);
+  localStorage.setItem('eval_async_id', SURVEY_ASYNC);
+  toggleCfg(false);
+  loadAllData();
+}
+
+function toggleCfg(show){
+  $('cfgPanel').style.display = show ? '' : 'none';
+  $('statusBar').classList.toggle('hidden', show);
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+async function smFetch(path){
+  const res = await fetch(`${PROXY}/surveymonkey${path}`, {headers:{'X-Auth-Token':TOKEN}});
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// Fetch ALL responses, paginating automatically (100 per page)
+async function fetchAllResponses(surveyId){
+  let page=1, all=[];
+  while(true){
+    const data = await smFetch(`/surveys/${surveyId}/responses/bulk?per_page=100&page=${page}&sort_by=date_modified&sort_order=DESC`);
+    const batch = data.data || [];
+    all = all.concat(batch);
+    if(batch.length < 100) break;
+    page++;
+  }
+  return all;
+}
+
+// ─── Load Data ────────────────────────────────────────────────────────────────
+async function loadAllData(){
+  $('statusBar').classList.remove('hidden');
+  $('dsum').classList.add('hidden');
+  $('main').classList.add('hidden');
+
+  setStatus('ILT','loading','Loading…');
+  setStatus('Async','loading','Loading…');
+
+  // Fetch corrections + both surveys' details + responses in parallel
+  const [corrRes, iltDetails, asyncDetails, iltResponses, asyncResponses] = await Promise.allSettled([
+    loadCorrections(),
+    smFetch(`/surveys/${SURVEY_ILT}/details`),
+    smFetch(`/surveys/${SURVEY_ASYNC}/details`),
+    fetchAllResponses(SURVEY_ILT),
+    fetchAllResponses(SURVEY_ASYNC)
+  ]);
+
+  // Process ILT
+  if(iltDetails.status==='fulfilled' && iltResponses.status==='fulfilled'){
+    qMapILT = buildQMap(iltDetails.value);
+    rawILT  = iltResponses.value;
+  } else {
+    rawILT=[]; qMapILT={};
+    setStatus('ILT','err','Failed to load');
+    console.error('ILT error:', iltDetails.reason || iltResponses.reason);
+  }
+
+  // Process Async
+  if(asyncDetails.status==='fulfilled' && asyncResponses.status==='fulfilled'){
+    qMapAsync = buildQMap(asyncDetails.value);
+    rawAsync  = asyncResponses.value;
+  } else {
+    rawAsync=[]; qMapAsync={};
+    setStatus('Async','err','Failed to load');
+    console.error('Async error:', asyncDetails.reason || asyncResponses.reason);
+  }
+
+  normalizeAll();
+
+  if(rawILT.length || iltDetails.status==='fulfilled') setStatus('ILT','ok',`${iltD.length} responses`);
+  if(rawAsync.length || asyncDetails.status==='fulfilled') setStatus('Async','ok',`${asnD.length} responses`);
+
+  if(allD.length){ bfui(); sm(); }
+}
+
+async function reloadData(){
+  iltD=[]; asnD=[]; allD=[]; rawILT=[]; rawAsync=[];
+  $('dsum').classList.add('hidden');
+  $('main').classList.add('hidden');
+  $('ar').innerHTML='';
+  $('irc').innerHTML='';
+  $('iebar').classList.remove('visible');
+  await loadAllData();
+}
+
+function setStatus(type, state, meta){
+  const dot = $(type==='ILT'?'dotILT':'dotAsync');
+  const m   = $(type==='ILT'?'metaILT':'metaAsync');
+  dot.className = 'status-dot ' + (state==='loading'?'loading':state==='ok'?'ok':'err');
+  m.textContent = meta;
+}
+
+// ─── Corrections (KV-backed, shared across users/devices) ────────────────────
+// A correction rule looks like:
+// { match: {course,version,method,module_name,instructor,cohort}, override: {field, value} }
+// Any match field left blank matches any value. Rules are re-applied every time
+// raw SurveyMonkey data is normalized, so they never touch the source records.
+
+const CV_KEYS = {
+  course:      ['course','Course'],
+  version:     ['version','Version'],
+  method:      ['method','Method'],
+  module_name: ['module_name','Module_Name'],
+  instructor:  ['Instructor','instructor'],
+  cohort:      ['Cohort','cohort']
+};
+
+function getCV(cv, f){
+  for(const k of (CV_KEYS[f]||[f])){
+    if(cv[k]!=null && String(cv[k]).trim()!=='') return String(cv[k]).trim();
+  }
+  return '';
+}
+function setCV(cv, f, val){
+  (CV_KEYS[f]||[f]).forEach(k=>{ cv[k]=val; });
+}
+
+function matchRule(cv, rule){
+  for(const f of Object.keys(CV_KEYS)){
+    const want = rule.match[f];
+    if(want && getCV(cv,f).toLowerCase() !== want.toLowerCase()) return false;
+  }
+  return true;
+}
+
+function applyCorrections(rawCv){
+  const cv = {...(rawCv||{})};
+  CORR.forEach(rule=>{ if(matchRule(cv,rule)) setCV(cv, rule.override.field, rule.override.value); });
+  return cv;
+}
+
+async function loadCorrections(){
+  try{
+    const res = await fetch(`${PROXY}/kv?key=eval_corrections`, {headers:{'X-Auth-Token':TOKEN}});
+    if(res.ok){
+      const d = await res.json();
+      CORR = Array.isArray(d.value) ? d.value : [];
+    } else {
+      CORR = [];
+    }
+  }catch(e){
+    console.error('Could not load corrections from KV:', e);
+    CORR = [];
+  }
+  renderCorrList();
+}
+
+async function saveCorrectionsToKV(){
+  const s = $('corrStatus');
+  try{
+    const res = await fetch(`${PROXY}/kv`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Auth-Token':TOKEN},
+      body: JSON.stringify({key:'eval_corrections', value: CORR})
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    if(s) s.textContent = 'Saved — visible to all users on next load.';
+  }catch(e){
+    console.error('Could not save corrections to KV:', e);
+    if(s) s.textContent = '⚠ Could not save to shared KV storage — check the /kv route on your Worker. Changes applied for this session only.';
+    else alert('Could not save corrections to KV storage — see console.');
+  }
+}
+
+function toggleCorr(show){
+  $('corrPanel').classList.toggle('hidden', !show);
+  if(show){ $('corrStatus').textContent=''; renderCorrList(); }
+}
+
+function parseCorrLink(){
+  const raw = $('corrLink').value.trim();
+  if(!raw) return;
+  try{
+    const url = new URL(raw);
+    const p = url.searchParams;
+    $('cmCourse').value     = p.get('course')||p.get('Course')||'';
+    $('cmVersion').value    = p.get('version')||p.get('Version')||'';
+    $('cmMethod').value     = p.get('method')||p.get('Method')||'';
+    $('cmModule').value     = p.get('module_name')||p.get('Module_Name')||'';
+    $('cmInstructor').value = p.get('Instructor')||p.get('instructor')||'';
+    $('cmCohort').value     = p.get('Cohort')||p.get('cohort')||'';
+  }catch(e){
+    alert('Could not parse that as a URL. Paste the full survey link including https://');
+  }
+}
+
+function addCorrection(){
+  const match = {
+    course:      $('cmCourse').value.trim(),
+    version:     $('cmVersion').value.trim(),
+    method:      $('cmMethod').value.trim(),
+    module_name: $('cmModule').value.trim(),
+    instructor:  $('cmInstructor').value.trim(),
+    cohort:      $('cmCohort').value.trim()
+  };
+  const hasMatch = Object.values(match).some(v=>v);
+  const field = $('corrField').value;
+  const value = $('corrValue').value.trim();
+  if(!hasMatch){ alert('Enter at least one match value (e.g. Instructor or Cohort) so this rule only applies to the intended responses.'); return; }
+  if(!value){ alert('Enter the corrected value.'); return; }
+
+  CORR.push({match, override:{field, value}, created:new Date().toISOString()});
+  saveCorrectionsToKV();
+  renderCorrList();
+  ['cmCourse','cmVersion','cmMethod','cmModule','cmInstructor','cmCohort','corrValue','corrLink'].forEach(id=>{ $(id).value=''; });
+
+  if(allD.length){ normalizeAll(); sm(); bfui(); rerenderActive(); }
+}
+
+function removeCorrection(i){
+  if(!confirm('Remove this correction rule? Reports will revert to the original SurveyMonkey values for matching responses.')) return;
+  CORR.splice(i,1);
+  saveCorrectionsToKV();
+  renderCorrList();
+  if(allD.length){ normalizeAll(); sm(); bfui(); rerenderActive(); }
+}
+
+function renderCorrList(){
+  const c = $('corrList');
+  if(!c) return;
+  if(!CORR.length){ c.innerHTML = '<p style="font-size:13px;color:var(--text-light)">No correction rules yet.</p>'; return; }
+  const FL = {course:'Program',version:'Version',method:'Method',module_name:'Module',instructor:'Instructor',cohort:'Cohort'};
+  let h = '<div class="card-flush"><table><thead><tr><th style="text-align:left">Match</th><th style="text-align:left">Override</th><th></th></tr></thead><tbody>';
+  CORR.forEach((r,i)=>{
+    const mparts = Object.entries(r.match).filter(([,v])=>v).map(([k,v])=>`${FL[k]}: ${esc(v)}`).join(', ') || '(any response)';
+    h += `<tr><td style="text-align:left;font-size:12px">${mparts}</td><td style="text-align:left;font-size:12px"><strong>${FL[r.override.field]}</strong> → ${esc(r.override.value)}</td><td class="cbc"><button class="btn btn-s btn-sm" onclick="removeCorrection(${i})">Remove</button></td></tr>`;
+  });
+  h += '</tbody></table></div>';
+  c.innerHTML = h;
+}
+
+function rerenderActive(){
+  if($('ar').innerHTML) runA();
+  if(Object.keys(IR).length) runI();
+}
+
+// ─── Survey → Question Map ────────────────────────────────────────────────────
+// Returns { questionId: { heading, rows: {rowId: text}, choices: {choiceId: text} } }
+function buildQMap(details){
+  const map={};
+  (details.pages||[]).forEach(p=>(p.questions||[]).forEach(q=>{
+    map[q.id]={
+      heading: q.headings?.[0]?.heading || '',
+      family:  q.family,
+      rows:    Object.fromEntries((q.answers?.rows||[]).map(r=>[r.id,r.text])),
+      choices: Object.fromEntries((q.answers?.choices||[]).map(c=>[c.id,c.text]))
+    };
+  }));
+  return map;
+}
+
+// ─── Normalize ────────────────────────────────────────────────────────────────
+function normalizeAll(){
+  iltD = (rawILT||[]).filter(r=>r.response_status==='completed').map(r=>normalizeResponse(r, qMapILT, 'ILT'));
+  asnD = (rawAsync||[]).filter(r=>r.response_status==='completed').map(r=>normalizeResponse(r, qMapAsync, 'Async'));
+  allD = [...iltD, ...asnD];
+}
+
+// ─── Normalize Response ───────────────────────────────────────────────────────
+// Converts a SurveyMonkey bulk response into the same flat object the old tool used
+function normalizeResponse(r, qMap, source){
+  const cv = applyCorrections(r.custom_variables || {});
+
+  const g = k => String(cv[k] || cv[k.toLowerCase()] || cv[k.charAt(0).toUpperCase()+k.slice(1)] || '').trim();
+
+  let ver = g('version'); if(ver==='0') ver='';
+
+  let d = null;
+  const raw = r.date_modified || r.date_created;
+  if(raw){ d = new Date(raw); if(isNaN(d)) d=null; }
+
+  const ratings = {};
+  let comment = '';
+
+  (r.pages||[]).forEach(page=>{
+    (page.questions||[]).forEach(rq=>{
+      const qInfo = qMap[rq.id];
+      if(!qInfo) return;
+
+      if(qInfo.family==='matrix' || qInfo.family==='rating_scale'){
+        (rq.answers||[]).forEach(a=>{
+          const rowLabel = (a.row_id && qInfo.rows[a.row_id]) || '';
+          const weight = parseInt(a.choice_metadata?.weight);
+          const val = (!isNaN(weight) && weight > 0) ? weight : null;
+          const rowLower = rowLabel.toLowerCase();
+          for(const [pattern, key] of Object.entries(Q1_MAP)){
+            if(rowLower.includes(pattern)){ ratings[key] = val; break; }
+          }
+        });
+      }
+
+      if(qInfo.family==='open_ended'){
+        const txt = (rq.answers||[]).map(a=>a.text||'').join(' ').trim();
+        if(txt) comment = txt;
+      }
+    });
+  });
+
+  return {
+    _s:   source,
+    _d:   d,
+    _co:  cv.course || cv.Course || '',
+    _v:   ver,
+    _m:   cv.method || cv.Method || '',
+    _mod: cv.module_name || cv.Module_Name || '',
+    _c:   comment,
+    _ch:  cv.Cohort || cv.cohort || '',
+    _i:   source==='ILT' ? (cv.Instructor || cv.instructor || '') : '',
+    _na:  NA.test(comment.trim()),
+    rInstructor: source==='ILT' ? (ratings.rInstructor ?? null) : null,
+    rStyle:      ratings.rStyle      ?? null,
+    rContent:    ratings.rContent    ?? null,
+    rCoverage:   ratings.rCoverage   ?? null,
+    rUsefulness: ratings.rUsefulness ?? null
+  };
+}
+
+// ─── Summary Stats ────────────────────────────────────────────────────────────
+function sm(){
+  if(!allD.length) return;
+  const s=$('dsum'); s.classList.remove('hidden');
+  const u=k=>new Set(allD.map(r=>r[k]).filter(Boolean)).size;
+  s.innerHTML=`
+    <div class="stat"><span class="stat-val">${allD.length.toLocaleString()}</span><span class="stat-lbl">Total</span></div>
+    <div class="stat"><span class="stat-val">${iltD.length.toLocaleString()}</span><span class="stat-lbl">ILT</span></div>
+    <div class="stat"><span class="stat-val">${asnD.length.toLocaleString()}</span><span class="stat-lbl">Async</span></div>
+    <div class="stat"><span class="stat-val">${u('_co')}</span><span class="stat-lbl">Programs</span></div>
+    <div class="stat"><span class="stat-val">${u('_ch')}</span><span class="stat-lbl">Cohorts</span></div>
+    <div class="stat"><span class="stat-val">${u('_mod')}</span><span class="stat-lbl">Modules</span></div>`;
+  $('main').classList.remove('hidden');
+}
+
+// ─── Filter Definitions ───────────────────────────────────────────────────────
+const FD={a:[
+  {k:'_s', l:'Source',     id:'Src',t:'single',fx:['ILT','Async']},
+  {k:'_co',l:'Program',   id:'Co', t:'multi'},
+  {k:'_v', l:'Version',   id:'V',  t:'multi'},
+  {k:'_m', l:'Method',    id:'M',  t:'multi'},
+  {k:'_ch',l:'Cohort',    id:'Ch', t:'multi'},
+  {k:'_i', l:'Instructor',id:'I',  t:'multi'},
+  {k:'_mod',l:'Module',   id:'Mod',t:'multi'},
+  {k:'_df',l:'Date From', id:'DF', t:'date'},
+  {k:'_dt',l:'Date To',   id:'DT', t:'date'}
+],i:[
+  {k:'_co',l:'Program',   id:'Co', t:'multi'},
+  {k:'_v', l:'Version',   id:'V',  t:'multi'},
+  {k:'_m', l:'Method',    id:'M',  t:'multi'},
+  {k:'_ch',l:'Cohort',    id:'Ch', t:'multi'},
+  {k:'_i', l:'Instructor',id:'I',  t:'multi'},
+  {k:'_mod',l:'Module',   id:'Mod',t:'multi'},
+  {k:'_df',l:'Date From', id:'DF', t:'date'},
+  {k:'_dt',l:'Date To',   id:'DT', t:'date'}
+]};
+
+function bfui(){['a','i'].forEach(p=>{
+  const g=$(p==='a'?'afg':'ifg');g.innerHTML='';
+  FD[p].forEach(d=>{
+    const fid=p+d.id;const div=document.createElement('div');div.className='filter-group';
+    div.innerHTML=`<label class="fgl">${d.l}</label>`;
+    if(d.t==='single'){const vals=d.fx||uq(allD.map(r=>r[d.k]));
+      div.innerHTML+=`<select class="fgi" id="${fid}"><option value="">All</option>${vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}</select>`}
+    else if(d.t==='date'){div.innerHTML+=`<input type="date" class="fgi" id="${fid}">`}
+    else{const vals=uq(allD.map(r=>r[d.k]));
+      if(!MS[fid])MS[fid]={sel:new Set(),av:[]};
+      MS[fid].av=vals;MS[fid].sel=new Set([...MS[fid].sel].filter(v=>vals.includes(v)));
+      div.innerHTML+=`<div class="ms" id="${fid}_w"><button type="button" class="mst" id="${fid}_t"><span class="ph">All</span></button>
+      <div class="msd" id="${fid}_d"><input type="text" class="mss" placeholder="Search..." oninput="msSr('${fid}',this.value)">
+      <div id="${fid}_o"></div><div class="msa"><button type="button" onclick="msA('${fid}',1)">Select All</button><button type="button" onclick="msA('${fid}',0)">Clear All</button></div></div></div>`;
+      g.appendChild(div);setTimeout(()=>{bmo(fid);smt(fid);uml(fid)},0);return}
+    g.appendChild(div)})})}
+
+function bmo(k){const c=$(k+'_o');if(!c)return;const{av,sel}=MS[k];c.innerHTML='';
+  av.forEach((v,i)=>{const d=document.createElement('div');d.className='mso';d.setAttribute('data-s',v.toLowerCase());
+  const id=k+'_'+i;d.innerHTML=`<input type="checkbox" id="${id}" value="${esc(v)}" ${sel.has(v)?'checked':''}><label for="${id}">${esc(v)}</label>`;
+  d.querySelector('input').onchange=function(){if(this.checked)sel.add(v);else sel.delete(v);uml(k)};c.appendChild(d)})}
+
+function smt(k){const t=$(k+'_t'),d=$(k+'_d');if(!t||!d)return;
+  const nt=t.cloneNode(true);t.parentNode.replaceChild(nt,t);
+  nt.onclick=e=>{e.stopPropagation();
+  document.querySelectorAll('.msd.open').forEach(x=>{if(x!==d)x.classList.remove('open')});
+  document.querySelectorAll('.mst.open').forEach(x=>{if(x!==nt)x.classList.remove('open')});
+  d.classList.toggle('open');nt.classList.toggle('open');
+  if(d.classList.contains('open')){const s=d.querySelector('.mss');if(s){s.value='';msSr(k,'');s.focus()}}}}
+
+document.addEventListener('click',e=>{if(!e.target.closest('.ms')){
+  document.querySelectorAll('.msd.open').forEach(d=>d.classList.remove('open'));
+  document.querySelectorAll('.mst.open').forEach(t=>t.classList.remove('open'))}});
+
+function uml(k){const t=$(k+'_t');if(!t)return;const{sel,av}=MS[k];
+  if(!sel.size||sel.size===av.length)t.innerHTML='<span class="ph">All</span>';
+  else if(sel.size<=2)t.textContent=[...sel].sort().join(', ');
+  else t.textContent=sel.size+' selected'}
+
+function msSr(k,q){const ql=q.toLowerCase();
+  document.querySelectorAll('#'+k+'_o .mso').forEach(o=>o.classList.toggle('hid',ql&&!o.getAttribute('data-s').includes(ql)))}
+
+function msA(k,sa){const{sel,av}=MS[k];if(sa)av.forEach(v=>sel.add(v));else sel.clear();
+  document.querySelectorAll('#'+k+'_o input[type=checkbox]').forEach(c=>c.checked=!!sa);uml(k)}
+
+function uq(a){return[...new Set(a.filter(v=>v!=null&&v!==''))].sort()}
+
+function gf(p){return allD.filter(row=>{if(!row._mod)return false;
+  for(const d of FD[p]){const fid=p+d.id;
+    if(d.t==='single'){const v=$(fid)?.value;if(v&&row[d.k]!==v)return false}
+    else if(d.t==='multi'){const m=MS[fid];if(m&&m.sel.size>0&&m.sel.size<m.av.length){if(!m.sel.has(row[d.k]||''))return false}}
+    else if(d.t==='date'){const v=$(fid)?.value;if(v&&d.id==='DF'){if(!row._d||row._d<new Date(v+'T00:00:00'))return false}
+    if(v&&d.id==='DT'){if(!row._d||row._d>new Date(v+'T23:59:59'))return false}}}return true})}
+
+function resetF(p){FD[p].forEach(d=>{const fid=p+d.id;
+  if(d.t==='single'||d.t==='date'){const e=$(fid);if(e)e.value=''}
+  else{const m=MS[fid];if(m){m.sel.clear();bmo(fid);uml(fid)}}});
+  $(p==='a'?'afs':'ifs').textContent='';
+  if(p==='a')$('ar').innerHTML='';
+  else{$('irc').innerHTML='';$('iebar').classList.remove('visible');$('itc').innerHTML='';IR={};IAT=null;IEX={}}}
+
+function sw(v){document.querySelectorAll('.vtab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
+  const i=v==='a'?0:1;document.querySelectorAll('.vtab')[i].classList.add('active');
+  $(v==='a'?'va':'vi').classList.add('active')}
+
+// ─── ANALYZE ──────────────────────────────────────────────────────────────────
+function runA(){const f=gf('a');$('afs').textContent=f.length+' response'+(f.length!==1?'s':'')+' match';
+  if(!f.length){$('ar').innerHTML=`<div class="card"><div class="card-body"><div class="empty"><div class="icon">🔍</div><h3>No responses match</h3><p>Try adjusting filters.</p></div></div></div>`;return}
+  const hi=f.some(r=>r._s==='ILT'),lb=hi?AL:SL,ks=hi?RK:SK;
+  let h='';h+=bst(f,lb,ks,'Module','_mod');
+  if(uq(f.map(r=>r._co)).length>1)h+=bst(f,lb,ks,'Program','_co');
+  if(uq(f.map(r=>r._ch)).length>1)h+=bst(f,lb,ks,'Cohort','_ch');
+  if(uq(f.map(r=>r._v)).length>1)h+=bst(f,lb,ks,'Version','_v');
+  const il=f.filter(r=>r._s==='ILT'&&r._i);
+  if(uq(il.map(r=>r._i)).length>1)h+=bst(il,AL,RK,'Instructor','_i');
+  h+=bch(f);h+=bcm(f,'a',true);
+  $('ar').innerHTML=h;wcb('a')}
+
+function bst(data,labels,keys,gl,gk){const gs={};data.forEach(r=>{const g=r[gk]||'(Blank)';(gs[g]=gs[g]||[]).push(r)});
+  const ns=Object.keys(gs).sort();let gt=keys.map(()=>({s:0,c:0}));
+  const rows=ns.map(n=>{const rs=gs[n];const avgs=keys.map((k,i)=>{const v=rs.map(r=>r[k]).filter(x=>x!=null);
+  const a=v.length?v.reduce((a,b)=>a+b,0)/v.length:null;if(v.length){gt[i].s+=v.reduce((a,b)=>a+b,0);gt[i].c+=v.length}return a});
+  const va=avgs.filter(x=>x!=null);return{n,c:rs.length,avgs,o:va.length?va.reduce((a,b)=>a+b,0)/va.length:null}});
+  const ga=gt.map(t=>t.c?t.s/t.c:null),gv=ga.filter(x=>x!=null),go=gv.length?gv.reduce((a,b)=>a+b,0)/gv.length:null;
+  let h=`<div class="card"><div class="card-hdr">📊 Scores by ${gl}</div><div class="card-flush"><table><thead><tr><th>${gl}</th><th>N</th>${labels.map(l=>`<th>${l}</th>`).join('')}<th>Overall</th></tr></thead><tbody>`;
+  rows.forEach(r=>{h+=`<tr><td>${esc(r.n)}</td><td>${r.c}</td>${r.avgs.map(a=>`<td>${bdg(a)}</td>`).join('')}<td>${bdg(r.o)}</td></tr>`});
+  h+=`<tr class="orow"><td>All ${gl}s</td><td>${data.length}</td>${ga.map(a=>`<td>${bdg(a)}</td>`).join('')}<td>${bdg(go)}</td></tr></tbody></table></div></div>`;return h}
+
+function bch(f){let h='<div class="ag">';
+  const bc=(t,k,c,mx)=>{const m={};f.forEach(r=>{const k2=r[k]||'(Blank)';m[k2]=(m[k2]||0)+1});return brc(t,m,c,mx)};
+  h+=bc('Responses by Program','_co','#64092c');h+=bc('Responses by Method','_m','#084d78');h+=bc('Responses by Cohort (Top 10)','_ch','#dda838',10);
+  h+='</div>';return h}
+
+function brc(title,data,color,max){const e=Object.entries(data).sort((a,b)=>b[1]-a[1]);const d=max?e.slice(0,max):e;const mx=d[0]?.[1]||1;
+  let h=`<div class="mc"><h3>${title}</h3>`;
+  d.forEach(([l,c])=>{h+=`<div class="bcr"><span class="bl" title="${esc(l)}">${esc(l)}</span><div class="bt"><div class="bf" style="width:${Math.max(8,c/mx*100)}%;background:${color}">${c}</div></div></div>`});
+  if(max&&e.length>max)h+=`<div style="font-size:11px;color:var(--text-light);text-align:right;margin-top:4px">+${e.length-max} more</div>`;
+  h+='</div>';return h}
+
+// ─── COMMENTS ─────────────────────────────────────────────────────────────────
+function bcm(filtered,pfx,showExtra){const cmts=[];
+  filtered.forEach(r=>{const c=r._c;if(c&&c.length>1&&c!=='-'&&c!=='.'&&c!=='\u2014'&&c!=='\u2013')
+  cmts.push({mod:r._mod,ch:r._ch,inst:r._i,src:r._s,
+  dt:r._d?r._d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'',
+  txt:c,na:r._na})});
+  if(!cmts.length)return`<div class="card"><div class="card-hdr">💬 Comments</div><div class="card-body"><div class="empty" style="padding:24px"><p>No comments.</p></div></div></div>`;
+  let h=`<div class="card"><div class="card-hdr" style="flex-direction:column;align-items:flex-start">💬 Comments (${cmts.length})<div style="font-weight:400;font-size:12px;margin-top:8px;opacity:.85">Deselect to exclude. NA/None/No Comment auto-deselected.</div></div>
+  <div class="card-body" style="padding:12px 28px"><div class="csr"><input type="text" class="csi" id="${pfx}cs" placeholder="Search comments..." oninput="fcs('${pfx}')">
+  <span class="cc" id="${pfx}cc"></span><button class="btn btn-sm btn-s" onclick="tac('${pfx}',1)">Select All</button><button class="btn btn-sm btn-s" onclick="tac('${pfx}',0)">Deselect All</button></div></div>
+  <div class="card-flush"><table class="ct" id="${pfx}ct"><thead><tr><th class="cbc"><input type="checkbox" id="${pfx}ta" checked></th><th style="text-align:left">Module</th>`;
+  if(showExtra)h+=`<th style="text-align:left">Cohort</th><th>Source</th>`;
+  h+=`<th>Date</th><th style="text-align:left">Comment</th></tr></thead><tbody>`;
+  cmts.forEach((c,i)=>{const cl=c.na?'cna cex':'',ck=c.na?'':'checked';
+  h+=`<tr id="${pfx}r${i}" class="${cl}" data-t="${esc(c.txt.toLowerCase())}"><td class="cbc"><input type="checkbox" class="${pfx}cb" data-i="${i}" ${ck}></td><td>${esc(c.mod)}</td>`;
+  if(showExtra)h+=`<td style="font-weight:400;color:var(--text)">${esc(c.ch)}</td><td style="font-size:11px">${c.src}</td>`;
+  h+=`<td style="white-space:nowrap;font-weight:400;color:var(--text-light)">${c.dt}</td><td style="font-weight:400;color:var(--text);font-style:italic">${esc(c.txt)}</td></tr>`});
+  h+='</tbody></table></div></div>';return h}
+
+function wcb(pfx){const ta=$(pfx+'ta');if(!ta)return;
+  ta.onchange=function(){document.querySelectorAll('.'+pfx+'cb').forEach(cb=>{const r=$(pfx+'r'+cb.dataset.i);
+  if(r.style.display==='none')return;cb.checked=ta.checked;r.classList.toggle('cex',!cb.checked)});ucc(pfx)};
+  document.querySelectorAll('.'+pfx+'cb').forEach(cb=>{cb.onchange=function(){
+  const r=$(pfx+'r'+this.dataset.i);r.classList.toggle('cex',!this.checked);sta(pfx);ucc(pfx)}}); ucc(pfx)}
+
+function fcs(pfx){const q=$(pfx+'cs').value.toLowerCase();
+  document.querySelectorAll('#'+pfx+'ct tbody tr').forEach(r=>{r.style.display=(!q||(r.getAttribute('data-t')||'').includes(q))?'':'none'});ucc(pfx)}
+
+function tac(pfx,s){document.querySelectorAll('.'+pfx+'cb').forEach(cb=>{const r=$(pfx+'r'+cb.dataset.i);
+  if(r.style.display==='none')return;cb.checked=!!s;r.classList.toggle('cex',!s)});
+  const ta=$(pfx+'ta');if(ta)ta.checked=!!s;ucc(pfx)}
+
+function ucc(pfx){const vis=document.querySelectorAll('#'+pfx+'ct tbody tr:not([style*="display: none"])');
+  const sel=[...vis].filter(r=>{const cb=r.querySelector('.'+pfx+'cb');return cb&&cb.checked});
+  const e=$(pfx+'cc');if(e)e.textContent=`${sel.length} of ${vis.length} selected`}
+
+function sta(pfx){const ta=$(pfx+'ta');if(!ta)return;const cbs=document.querySelectorAll('.'+pfx+'cb');
+  const ac=[...cbs].every(c=>c.checked),nc=[...cbs].every(c=>!c.checked);ta.checked=ac;ta.indeterminate=!ac&&!nc}
+
+// ─── INSTRUCTOR REPORTS ───────────────────────────────────────────────────────
+function runI(){const f=gf('i');$('ifs').textContent=f.length+' response'+(f.length!==1?'s':'')+' match';
+  if(!f.length){$('irc').innerHTML=`<div class="card"><div class="card-body"><div class="empty"><div class="icon">🔍</div><h3>No responses match</h3><p>Try adjusting filters.</p></div></div></div>`;
+  $('iebar').classList.remove('visible');$('itc').innerHTML='';IR={};IAT=null;IEX={};return}
+  const bi={};f.forEach(r=>{const inst=r._i||'(No Instructor)';(bi[inst]=bi[inst]||[]).push(r)});
+  const ins=Object.keys(bi).sort();IR={};IEX={};
+  ins.forEach(n=>{const rows=bi[n];const chs=uq(rows.map(r=>r._ch));const cs=chs.length===1?chs[0]:chs.join(', ');
+  IR[n]=brd(rows,n==='(No Instructor)'?'':n,cs)});
+  IAT=ins[0];rit();rsr(IR[IAT]);$('iebar').classList.add('visible');wcb('i')}
+
+function brd(f,inst,coh){const mods={};f.forEach(r=>(mods[r._mod]=mods[r._mod]||[]).push(r));
+  const mn=Object.keys(mods).sort();const hi=f.some(r=>r._s==='ILT');const lb=hi?AL:SL,ks=hi?RK:SK;
+  let gt=ks.map(()=>({s:0,c:0}));
+  const mode=arr=>{const m={};arr.filter(Boolean).forEach(v=>m[v]=(m[v]||0)+1);let best='',bestC=0;
+  for(const[k,c]of Object.entries(m)){if(c>bestC){best=k;bestC=c}}return best};
+  const tr=mn.map(m=>{const rs=mods[m];const avgs=ks.map((k,i)=>{const v=rs.map(r=>r[k]).filter(x=>x!=null);
+  const a=v.length?v.reduce((a,b)=>a+b,0)/v.length:null;if(v.length){gt[i].s+=v.reduce((a,b)=>a+b,0);gt[i].c+=v.length}return a});
+  const va=avgs.filter(x=>x!=null);
+  return{mod:m,c:rs.length,avgs,o:va.length?va.reduce((a,b)=>a+b,0)/va.length:null,
+  course:mode(rs.map(r=>r._co)),version:mode(rs.map(r=>r._v)),method:mode(rs.map(r=>r._m)),cohort:mode(rs.map(r=>r._ch))}});
+  const ga=gt.map(t=>t.c?t.s/t.c:null),gv=ga.filter(x=>x!=null),go=gv.length?gv.reduce((a,b)=>a+b,0)/gv.length:null;
+  const cmts=[];f.forEach(r=>{const c=r._c;if(c&&c.length>1&&c!=='-'&&c!=='.'&&c!=='\u2014'&&c!=='\u2013')
+  cmts.push({mod:r._mod,dt:r._d?r._d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'',txt:c,na:r._na})});
+  const dataCourse=uq(f.map(r=>r._co));const dataVersion=uq(f.map(r=>r._v));const dataMethod=uq(f.map(r=>r._m));
+  return{tr,ga,go,cmts,tot:f.length,inst,coh,lb,ks,hi,mn,
+  meta:{instructor:inst,cohort:coh,
+  course:dataCourse.join(', ')||'',version:dataVersion.join(', ')||'',method:dataMethod.join(', ')||'',
+  modules:mn.join(', ')||'',dateFrom:$('iDF')?.value||'',dateTo:$('iDT')?.value||'',
+  generatedDate:new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}}}
+
+function rit(){const c=$('itc');const ns=Object.keys(IR).sort();
+  if(ns.length<=1){c.innerHTML='';return}
+  c.innerHTML='<div class="itabs">'+ns.map(n=>`<button class="itab${n===IAT?' active':''}" onclick="sit('${esc(n).replace(/'/g,"\\'")}')">${esc(n)}</button>`).join('')+'</div>'}
+
+function sit(n){if(IAT)IEX[IAT]=gex();IAT=n;rit();rsr(IR[n]);rex(n);wcb('i')}
+
+function rsr(rd){let h='';
+  if(rd.inst||rd.coh){h+=`<div style="background:var(--white);border-radius:12px;padding:14px 24px;margin-bottom:16px;box-shadow:var(--shadow);display:flex;align-items:center;gap:20px;flex-wrap:wrap">`;
+  if(rd.inst)h+=`<div><span style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px">Instructor:</span> <span style="font-size:15px;font-weight:700;color:var(--burgundy)">${esc(rd.inst)}</span></div>`;
+  if(rd.coh)h+=`<div><span style="font-size:12px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px">Cohort:</span> <span style="font-size:15px;font-weight:700;color:var(--blue)">${esc(rd.coh)}</span></div>`;
+  h+='</div>'}
+  h+=`<div class="card"><div class="card-hdr">📊 Evaluation Scores by Module</div><div class="card-flush"><table><thead><tr><th>Module</th><th>N</th>${rd.lb.map(l=>`<th>${l}</th>`).join('')}<th>Overall</th></tr></thead><tbody>`;
+  rd.tr.forEach(r=>{h+=`<tr><td>${esc(r.mod)}</td><td>${r.c}</td>${r.avgs.map(a=>`<td>${bdg(a)}</td>`).join('')}<td>${bdg(r.o)}</td></tr>`});
+  h+=`<tr class="orow"><td>All Modules</td><td>${rd.tot}</td>${rd.ga.map(a=>`<td>${bdg(a)}</td>`).join('')}<td>${bdg(rd.go)}</td></tr></tbody></table></div></div>`;
+  if(rd.cmts.length){
+  h+=`<div class="card"><div class="card-hdr" style="flex-direction:column;align-items:flex-start">💬 Open-Ended Comments (${rd.cmts.length})<div style="font-weight:400;font-size:12px;margin-top:8px;opacity:.85">Deselect to exclude from exports. NA/None/No Comment auto-deselected.</div></div>
+  <div class="card-body" style="padding:12px 28px"><div class="csr"><input type="text" class="csi" id="ics" placeholder="Search comments..." oninput="fcs('i')">
+  <span class="cc" id="icc"></span><button class="btn btn-sm btn-s" onclick="tac('i',1)">Select All</button><button class="btn btn-sm btn-s" onclick="tac('i',0)">Deselect All</button></div></div>
+  <div class="card-flush"><table class="ct" id="ict"><thead><tr><th class="cbc"><input type="checkbox" id="ita" checked></th><th style="text-align:left">Module</th><th>Date</th><th style="text-align:left">Comment</th></tr></thead><tbody>`;
+  rd.cmts.forEach((c,i)=>{const cl=c.na?'cna cex':'',ck=c.na?'':'checked';
+  h+=`<tr id="ir${i}" class="${cl}" data-t="${esc(c.txt.toLowerCase())}"><td class="cbc"><input type="checkbox" class="icb" data-i="${i}" ${ck}></td><td>${esc(c.mod)}</td><td style="white-space:nowrap;font-weight:400;color:var(--text-light)">${c.dt}</td><td style="font-weight:400;color:var(--text);font-style:italic">${esc(c.txt)}</td></tr>`});
+  h+='</tbody></table></div></div>'}else{
+  h+=`<div class="card"><div class="card-hdr">💬 Comments</div><div class="card-body"><div class="empty" style="padding:24px"><p>No comments.</p></div></div></div>`}
+  $('irc').innerHTML=h}
+
+function gex(){const ex=new Set();document.querySelectorAll('.icb').forEach(cb=>{if(!cb.checked)ex.add(parseInt(cb.dataset.i))});return ex}
+function rex(n){const ex=IEX[n];if(!ex||!ex.size)return;
+  ex.forEach(i=>{const cb=document.querySelector(`.icb[data-i="${i}"]`);if(cb){cb.checked=false;const r=$('ir'+i);if(r)r.classList.add('cex')}});sta('i')}
+function gic(rd){return rd.cmts.filter((c,i)=>{const cb=document.querySelector(`.icb[data-i="${i}"]`);return cb?cb.checked:!c.na})}
+
+// ─── PDF ──────────────────────────────────────────────────────────────────────
+function bpdf(rd,cmts){const{jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const pw=doc.internal.pageSize.getWidth();
+  doc.setFillColor(100,9,44);doc.rect(0,0,pw,22,'F');doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
+  doc.text(rd.inst?'Evaluation Report \u2014 '+rd.inst:'Evaluation Report',14,14);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('Generated '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}),pw-14,14,{align:'right'});
+  doc.setTextColor(72,72,72);doc.setFontSize(10);let y=30;
+  if(rd.inst){doc.setFont('helvetica','bold');doc.text('Instructor: '+rd.inst,14,y);y+=6;doc.setFont('helvetica','normal')}
+  if(rd.coh){doc.setFont('helvetica','bold');doc.text('Cohort: '+rd.coh,14,y);y+=6;doc.setFont('helvetica','normal')}
+  doc.text('Filters: '+ft(rd),14,y);doc.text('Total Responses: '+rd.tot,14,y+6);
+  const hd=[['Module','N',...rd.lb,'Overall']];
+  const bd=rd.tr.map(r=>[r.mod,r.c,...r.avgs.map(a=>a!=null?a.toFixed(2):'N/A'),r.o!=null?r.o.toFixed(2):'N/A']);
+  bd.push(['All Modules',rd.tot,...rd.ga.map(a=>a!=null?a.toFixed(2):'N/A'),rd.go!=null?rd.go.toFixed(2):'N/A']);
+  doc.autoTable({startY:y+14,head:hd,body:bd,styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[72,72,72],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[249,247,244]},
+  didParseCell:function(d){if(d.row.index===bd.length-1){d.cell.styles.fontStyle='bold';d.cell.styles.fillColor=[253,246,227]}}});
+  if(cmts.length){const bm={};cmts.forEach(c=>(bm[c.mod]=bm[c.mod]||[]).push(c));
+  let cy=doc.lastAutoTable.finalY+12;if(cy>doc.internal.pageSize.getHeight()-30){doc.addPage();cy=20}
+  doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(100,9,44);
+  doc.text('Open-Ended Comments ('+cmts.length+')',14,cy);const ms=Object.keys(bm).sort();
+  if(rd.tr.length>1){let sy=cy+4;ms.forEach(m=>{if(sy>doc.internal.pageSize.getHeight()-30){doc.addPage();sy=20}
+  doc.autoTable({startY:sy,head:[[{content:m,colSpan:2,styles:{fillColor:[100,9,44],textColor:255,fontStyle:'bold',fontSize:9}}]],
+  body:bm[m].map(c=>[c.dt,c.txt]),styles:{fontSize:8,cellPadding:3},headStyles:{fillColor:[100,9,44],textColor:255,fontStyle:'bold'},
+  alternateRowStyles:{fillColor:[249,247,244]},columnStyles:{0:{cellWidth:28},1:{cellWidth:'auto',fontStyle:'italic'}}});sy=doc.lastAutoTable.finalY+6})}
+  else{doc.autoTable({startY:cy+4,head:[['Module','Date','Comment']],body:cmts.map(c=>[c.mod,c.dt,c.txt]),styles:{fontSize:8,cellPadding:3},
+  headStyles:{fillColor:[72,72,72],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[249,247,244]},
+  columnStyles:{0:{cellWidth:30},1:{cellWidth:28},2:{cellWidth:'auto',fontStyle:'italic'}}})}}
+  return doc}
+
+function xPDF(){const ns=Object.keys(IR).sort();if(!ns.length)return;
+  if(IAT)IEX[IAT]=gex();let dl=0;
+  ns.forEach(n=>{const rd=IR[n],ex=IEX[n]||new Set(),cmts=rd.cmts.filter((c,i)=>!ex.has(i));
+  const doc=bpdf(rd,cmts);const pfx=(rd.coh||'Evaluation_Report').replace(/\s+/g,'_');
+  const sfx=rd.inst?'_'+rd.inst.replace(/,/g,'').replace(/\s+/g,'_'):'';
+  setTimeout(()=>doc.save(pfx+sfx+'.pdf'),dl);dl+=400})}
+
+// ─── XLSX ─────────────────────────────────────────────────────────────────────
+function bxl(rd,cmts){const wb=XLSX.utils.book_new();const m=rd.meta;
+  const sd=[['_META_INSTRUCTOR',m.instructor||''],['_META_COHORT',m.cohort||''],['_META_COURSE',m.course],
+  ['_META_VERSION',m.version],['_META_METHOD',m.method],['_META_MODULES',m.modules],
+  ['_META_DATE_FROM',m.dateFrom],['_META_DATE_TO',m.dateTo],['_META_GENERATED',m.generatedDate],
+  ['_META_RESPONSES',rd.tot],[],
+  ['Cohort Name','Course','Version','Method','Module','Responses','Instructor','Style','Content','Coverage','Usefulness','Overall Avg']];
+  rd.tr.forEach(r=>{const rv=x=>x!=null?Math.round(x*100)/100:'';
+  const vals=[null,null,null,null,null];
+  rd.ks.forEach((k,i)=>{const pos=RK.indexOf(k);if(pos>=0)vals[pos]=r.avgs[i]});
+  sd.push([r.cohort||rd.coh||'',r.course||'',r.version||'',r.method||'',r.mod,r.c,...vals.map(rv),rv(r.o)])});
+  const gvals=[null,null,null,null,null];
+  rd.ks.forEach((k,i)=>{const pos=RK.indexOf(k);if(pos>=0)gvals[pos]=rd.ga[i]});
+  const rv=x=>x!=null?Math.round(x*100)/100:'';
+  sd.push(['','','','','All Modules',rd.tot,...gvals.map(rv),rv(rd.go)]);
+  const ws1=XLSX.utils.aoa_to_sheet(sd);
+  ws1['!cols']=[{wch:24},{wch:10},{wch:10},{wch:10},{wch:10},{wch:12},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Scores');
+  const cd=[['Module','Date','Comment']];cmts.forEach(c=>cd.push([c.mod,c.dt,c.txt]));
+  const ws2=XLSX.utils.aoa_to_sheet(cd);ws2['!cols']=[{wch:16},{wch:14},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Comments');return wb}
+
+function xXLSX(){const ns=Object.keys(IR).sort();if(!ns.length)return;
+  if(IAT)IEX[IAT]=gex();
+  ns.forEach((n,i)=>{const rd=IR[n],ex=IEX[n]||new Set(),cmts=rd.cmts.filter((c,j)=>!ex.has(j));
+  const wb=bxl(rd,cmts);const fn='Evaluation_Report_'+(rd.inst||'NoInstructor').replace(/\s+/g,'_')+'.xlsx';
+  setTimeout(()=>XLSX.writeFile(wb,fn),i*400)})}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function bdg(v){if(v==null)return'<span class="sb sn">N/A</span>';const d=v.toFixed(2);
+  if(v>=3.5)return`<span class="sb sh">${d}</span>`;if(v>=2.5)return`<span class="sb sm">${d}</span>`;return`<span class="sb sl">${d}</span>`}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function $(id){return document.getElementById(id)}
+function ft(rd){const p=[],m=rd.meta;if(m.course)p.push('Course: '+m.course);
+  if(m.version)p.push('Version: '+m.version);if(m.method)p.push('Method: '+m.method);
+  if(m.modules)p.push('Modules: '+m.modules);if(m.dateFrom)p.push('From: '+m.dateFrom);
+  if(m.dateTo)p.push('To: '+m.dateTo);if(m.instructor)p.push('Instructor: '+m.instructor);
+  if(m.cohort)p.push('Cohort: '+m.cohort);return p.length?p.join('  |  '):'None (all data)'}
+
+// ─── Publish to the Instructor Portal ─────────────────────────────────────────
+// This page is hosted in the Instructor Portal (staff only). Publishing stores each instructor's report as a
+// page in the portal, gives it a private link, and emails the instructor. Reports match the PDF content:
+// scores by module and the comments left selected above.
+function rptBadge(v){if(v==null)return '<span style="color:#8a7d82">N/A</span>';const bg=v>=4.5?'#e3f1e8':v>=3.5?'#fdf6e3':'#fbe9ec',fg=v>=4.5?'#1f6b3f':v>=3.5?'#7a5410':'#9b1c1c';
+  return `<span style="display:inline-block;min-width:44px;padding:2px 8px;border-radius:10px;background:${bg};color:${fg};font-weight:700">${v.toFixed(2)}</span>`;}
+function rptHtml(rd,cmts){
+  const gen=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const byMod={};cmts.forEach(c=>(byMod[c.mod]=byMod[c.mod]||[]).push(c));
+  const head=`<tr><th>Module</th><th>N</th>${rd.lb.map(l=>`<th>${esc(l)}</th>`).join('')}<th>Overall</th></tr>`;
+  const rows=rd.tr.map(r=>`<tr><td>${esc(r.mod)}</td><td>${r.c}</td>${r.avgs.map(a=>`<td>${rptBadge(a)}</td>`).join('')}<td>${rptBadge(r.o)}</td></tr>`).join('')+
+    `<tr class="all"><td>All Modules</td><td>${rd.tot}</td>${rd.ga.map(a=>`<td>${rptBadge(a)}</td>`).join('')}<td>${rptBadge(rd.go)}</td></tr>`;
+  const cm=!cmts.length?'<p class="muted">No comments were included in this report.</p>':Object.keys(byMod).sort().map(m=>`<h3>${esc(m)}</h3><table class="cmt"><tbody>${byMod[m].map(c=>`<tr><td class="dt">${esc(c.dt)}</td><td><em>${esc(c.txt)}</em></td></tr>`).join('')}</tbody></table>`).join('');
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluation Report${rd.inst?' - '+esc(rd.inst):''}${rd.coh?' - '+esc(rd.coh):''}</title>
+<link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f0f2;font-family:Arial,Helvetica,sans-serif;color:#1a1014}
+.wrap{max-width:1000px;margin:24px auto;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.logo{padding:22px 32px}.logo img{width:220px;height:auto;display:block}.bar{height:4px;background:#c9933a}
+.hdr{background:#64092c;color:#fff;padding:18px 32px}.hdr h1{margin:0;font-size:22px}.hdr .gen{font-size:12px;opacity:.85;margin-top:4px}
+.body{padding:24px 32px 32px}.meta{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:6px}.meta div{font-size:14px}.meta strong{color:#64092c}
+.muted{color:#4a3040;font-size:13px}h2{color:#64092c;font-size:17px;margin:26px 0 10px;border-bottom:2px solid #c9933a;padding-bottom:4px}h3{color:#64092c;font-size:14px;margin:18px 0 6px}
+table{border-collapse:collapse;width:100%}th{background:#484848;color:#fff;font-size:12px;padding:8px;text-align:center}th:first-child{text-align:left}
+td{border-bottom:1px solid #eadfe3;padding:8px;font-size:13px;text-align:center}td:first-child{text-align:left;font-weight:700}
+tr.all td{background:#fdf6e3;font-weight:700}.cmt td{text-align:left;font-weight:400}.cmt td.dt{width:120px;color:#4a3040;white-space:nowrap}
+.note{margin-top:28px;font-size:12px;color:#4a3040}.print{display:inline-block;margin-top:8px}
+@media print{body{background:#fff}.wrap{box-shadow:none;margin:0;max-width:none}.hdr,tr.all td,th{-webkit-print-color-adjust:exact;print-color-adjust:exact}tr{break-inside:avoid}}
+</style></head><body><div class="wrap">
+<div class="logo"><img src="https://assets-002.noviams.com/novi-file-uploads/clear/logos/CLEAR_Learning_Logo_horizontal__2_.png" alt="CLEAR Learning"></div><div class="bar"></div>
+<div class="hdr"><h1>Evaluation Report${rd.inst?' — '+esc(rd.inst):''}</h1><div class="gen">Generated ${esc(gen)}</div></div>
+<div class="body"><div class="meta">${rd.inst?`<div><strong>Instructor:</strong> ${esc(rd.inst)}</div>`:''}${rd.coh?`<div><strong>Cohort:</strong> ${esc(rd.coh)}</div>`:''}<div><strong>Total responses:</strong> ${rd.tot}</div></div>
+<p class="muted">Filters: ${esc(ft(rd))}</p>
+<h2>Evaluation scores by module</h2><table><thead>${head}</thead><tbody>${rows}</tbody></table>
+<p class="muted">Ratings: Excellent 5, Very Good 4, Good 3, Needs Improvement or Fair 2, Poor 1.</p>
+<h2>Open-ended comments (${cmts.length})</h2>${cm}
+<p class="note">To keep a copy, use your browser's print option and choose Save as PDF. Questions about this report: clearlearning@clearhq.org.</p>
+</div></div></body></html>`;
+}
+async function xPortal(){
+  const ns=Object.keys(IR).sort().filter(n=>n!=='(No Instructor)');
+  if(!ns.length){alert('There are no instructor reports to publish. Reports without an instructor can\u2019t be published.');return;}
+  if(IAT)IEX[IAT]=gex();
+  if(!confirm(`Publish ${ns.length} report${ns.length>1?'s':''} to the Instructor Portal?\n\n${ns.join('\n')}\n\nEach instructor gets an email with a link to their report. Only the comments left selected are included.`))return;
+  const reports=ns.map(n=>{const rd=IR[n],ex=IEX[n]||new Set(),cmts=rd.cmts.filter((c,i)=>!ex.has(i));
+    return {instructor:rd.inst||n,cohort:rd.coh||'',title:`Evaluation Report${rd.coh?' - '+rd.coh:''}`,html:rptHtml(rd,cmts)};});
+  const out=$('pubOut'); if(out) out.innerHTML='<p style="font-size:13px">Publishing…</p>';
+  try{
+    const r=await fetch('/api/admin/reports',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({reports,notify:true})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error||('The portal returned '+r.status+'.'));
+    const msg=[`Published ${j.published.length} report${j.published.length===1?'':'s'}.`];
+    if(j.emailed.length) msg.push(`Emailed: ${j.emailed.join('; ')}.`);
+    if(j.notEmailed.length) msg.push(`Not emailed (no email address, or email isn\u2019t set up): ${j.notEmailed.join('; ')}.`);
+    if(j.unmatched.length) msg.push(`Not published, because these names don\u2019t match an instructor on the Instructor Portal roster: ${j.unmatched.join('; ')}. Fix the name with a data correction or on the Instructors tab, then publish again.`);
+    if(out) out.innerHTML=msg.map(m=>`<p style="font-size:13px;margin:4px 0">${esc(m)}</p>`).join('');
+    loadPublished();
+  }catch(e){ if(out) out.innerHTML=`<p style="font-size:13px;color:#9b1c1c">${esc(e.message)}</p>`; else alert(e.message); }
+}
+async function loadPublished(){
+  const box=$('pubList'); if(!box) return;
+  box.innerHTML='<p style="font-size:13px">Loading…</p>';
+  try{const r=await fetch('/api/admin/reports',{credentials:'same-origin'});const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);
+    if(!j.reports.length){box.innerHTML='<p style="font-size:13px">No reports have been published yet.</p>';return;}
+    box.innerHTML=`<table><thead><tr><th style="text-align:left">Instructor</th><th style="text-align:left">Report</th><th>Published</th><th>Viewed</th><th></th></tr></thead><tbody>${j.reports.map(x=>`<tr><td>${esc(x.inst)}</td><td style="text-align:left"><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></td><td>${esc(new Date(x.createdAt).toLocaleDateString())}</td><td>${x.viewedAt?esc(new Date(x.viewedAt).toLocaleDateString()):'Not yet'}</td><td><button class="btn btn-sm btn-s" onclick="withdrawRpt('${x.slug}')">Withdraw</button></td></tr>`).join('')}</tbody></table>`;
+  }catch(e){box.innerHTML=`<p style="font-size:13px;color:#9b1c1c">Couldn\u2019t load published reports: ${esc(String(e.message||e))}</p>`;}
+}
+async function withdrawRpt(slug){ if(!confirm('Withdraw this report? The instructor will no longer be able to open it.'))return;
+  try{const r=await fetch('/api/admin/report/'+slug,{method:'DELETE',credentials:'same-origin'});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.status);loadPublished();}catch(e){alert(e.message);} }
+</script>
+</body>
+</html>
