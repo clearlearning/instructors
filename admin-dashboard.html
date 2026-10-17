@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{
   --burgundy:#64092C; --burgundy-dk:#4A0620; --gold:#DDA838; --gold-lt:#F8EDD3;
@@ -214,6 +216,7 @@ tr.grp .ttl{gap:10px}tr.grp strong{font-size:14px}
   </nav>
 </header>
 <main id="main"><div class="loading">Loading dashboard…</div></main>
+<iframe id="welengine" src="/welcome-emails?engine=1" title="Welcome email engine" hidden aria-hidden="true" tabindex="-1" onload="welcomeReady()"></iframe>
 
 <dialog id="dlg"><div class="dlg-head"><h3 id="dlg-title"></h3><button onclick="closeDlg()" aria-label="Close">×</button></div><div class="dlg-body" id="dlg-body"></div><div class="dlg-foot" id="dlg-foot"></div></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -356,7 +359,7 @@ function vOverview(){
     const next={draft:['open','Open for responses'],open:['closed','Close responses'],closed:['open','Reopen']}[p.status];
     return `<div class="card"><div class="ph ${trk(p)}" style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
       <div class="ttl">${logoImg(p)}<div><h3>${esc(p.title)}</h3>${p.cohort?`<strong style="font-size:13px">${esc(p.cohort)}</strong>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))}${p.format?' · '+esc(p.format):''} · ${answerable(p).length?answerable(p).length+(isIP(p)?' modules':' sessions'):'whole program'}<br>${esc(dueText(p))}</div></div></div>
-      <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end"><span class="pill ${p.status}">${p.status}</span>${p.status==='open'&&p.pastDeadline?'<span class="pill locked">Answers locked</span>':''}</div></div>
+      <div style="display:flex;gap:4px;flex-direction:column;align-items:flex-end"><span class="pill ${p.status}">${p.status}</span>${p.status==='open'&&p.pastDeadline?'<span class="pill locked">Answers locked</span>':''}${kitBadge(p)}</div></div>
       <div class="stat-row">
         <div class="stat"><b>${responded}</b><span>${responded===1?'response':'responses'} received</span></div>
         <div class="stat"><b>${staffed}<small style="font-size:13px;color:var(--muted)">/${n}</small></b><span>${n===1?'confirmed':(isIP(p)?'modules':'sessions')+' confirmed'}</span><div class="meter gold"><span style="width:${n?staffed/n*100:0}%"></span></div></div>
@@ -371,6 +374,131 @@ function vOverview(){
   }).join('')+`</div>`;
   return h;
 }
+/* ================= Cohort kits =================
+   Survey links (SurveyMonkey custom variables), QR codes for in-person modules, and the welcome email,
+   built from the program's sessions and confirmed instructors. The welcome email uses the welcome email
+   tool's own templates (loaded in a hidden frame). */
+const SURVEY={ilt:'https://www.surveymonkey.com/r/PWGNPFP',async:'https://www.surveymonkey.com/r/HDBBWGG'};
+const KIT_CFG={
+  '126':{course:'NCITB',version:'US',mode:'rules',rules:[[/investigative/i,'M03'],[/interview/i,'M06'],[/report writing/i,'M09'],[/testif/i,'M10']],async:['M01','M02','M04','M05','M07','M08'],welcome:'ncitb_vt'},
+  '128':{course:'NCITB',version:'CAN',mode:'rules',rules:[[/investigative/i,'M03'],[/interview/i,'M06'],[/report writing/i,'M09'],[/testif/i,'M10']],async:['M01','M02','M04','M05','M07','M08'],welcome:'ncitb_vt'},
+  '129':{course:'NCITS',mode:'rules',rules:[[/cmrt|cognitive/i,'AIS-S1'],[/\bbaq\b|behavio/i,'AIS-S2'],[/module review/i,'AIA-S1'],[/observation/i,'IRD-S1'],[/module review/i,'IRD-S2']],async:['M01','M02','M03'],welcome:'ncits_vt'},
+  'ip-ncit-b-us':{course:'NCITB',version:'US',mode:'modules',ipt:true,welcome:'ncitb_ipt'},
+  'ip-ncit-b-can':{course:'NCITB',version:'CAN',mode:'modules',ipt:true,welcome:'ncitb_ipt'},
+  'ip-ncit-s':{course:'NCITS',mode:'modules',ipt:true,welcome:'ncits_ipt'},
+  'ip-ncit-ait':{course:'NCITAIT',mode:'modules',ipt:true,welcome:'ncit_ait'},
+  '142':{course:'ACRG',mode:'modules',async:['M01','M02','M03'],welcome:'acrg_vt'},
+  '138':{course:'ELPR',mode:'modules',async:['M01','M02','M03','M04'],welcome:'elpr_vt'},
+  '147':{course:'SRASAB',mode:'modules'},
+  '165':{course:'BCT',mode:'order',welcome:'gmfyb'},
+  '169':{course:'NCITW',version:'DDI',mode:'ws'},
+  '143':{course:'NCITW',version:'IRSM',mode:'ws'},
+  '146':{course:'NCITW',version:'Comms',mode:'ws'},
+  '157':{course:'NCITW',version:'Ethics',mode:'ws'},
+  'ncit-workshop-series':{course:'NCITW',mode:'series'}
+};
+const WELCOME_PREFIX={ncitb_ipt:'bi_',ncits_ipt:'si_',ncit_ait:'ait_'};
+const IPT_FIELDS=[['city','City, State/Province','e.g. Lansing, Michigan'],['dates','Program dates','Filled in from the program dates if left blank'],['vname','Venue name','e.g. MSU Union Building'],['vstreet','Street address','e.g. 49 Abbot Rd'],['vcity','City, State/Province, Zip/Postal code','e.g. East Lansing, MI 48824'],['reg','Registration opens','e.g. 7:30 AM EST'],['session','Session begins','e.g. 8:00 AM EST'],['room','Training room','e.g. Lake Huron room'],['parking','Parking, meals and transit information','e.g. All parking arrangements will be your responsibility. Lunch will be provided on the days of training.'],['cname','Contact name',''],['cphone','Contact phone',''],['cemail','Contact email','']];
+const clockMin=t=>{const m=String(t||'').match(/^(\d{1,2}):(\d{2})\s*([AP])M$/i);return m?(+m[1]%12+(/p/i.test(m[3])?12:0))*60+ +m[2]:0;};
+const bySessionTime=(a,b)=>a.date.localeCompare(b.date)||clockMin(a.start)-clockMin(b.start);
+function surveyUrl(base,o){const q=new URLSearchParams();['course','version','method','module_name','Instructor','Cohort'].forEach(k=>{if(o[k])q.append(k,o[k]);});return base+'?'+q.toString();}
+const LONGM=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOWS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const longD=iso=>{const d=parseD(iso);return d?`${LONGM[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`:'';};
+const dayLongD=iso=>{const d=parseD(iso);return d?`${DOWS[d.getDay()]}, ${longD(iso)}`:'';};
+function seriesVersion(t){t=t.toLowerCase();return /drug diversion|\bddi\b/.test(t)?'DDI':/sexual|\birsm\b/.test(t)?'IRSM':/communicat/.test(t)?'Comms':/ethic/.test(t)?'Ethics':'';}
+const wsCode=t=>/\b(two|2)\b/i.test(t)?'WS2':'WS1';
+// One survey link per confirmed instructor per instructor-led session, plus the self-paced module links.
+function kitPlan(p){
+  const cfg=KIT_CFG[p.courseId]; if(!cfg) return {supported:false};
+  const slots=(D.assignments[p.id]||{}).slots||{};
+  const conf=k=>(slots[k]||[]).filter(e=>e.status==='Confirmed').map(e=>inst(e.iid)).filter(Boolean);
+  const whole=conf(PS), ss=answerable(p).slice().sort(bySessionTime), cohort=p.cohort||p.title;
+  const rows=[], missing=[], rules=(cfg.rules||[]).slice();
+  ss.forEach((s,idx)=>{
+    let code='', version=cfg.version||'', coh=cohort;
+    if(cfg.mode==='rules'){const i=rules.findIndex(r=>r[0].test(s.title));if(i<0)return;code=rules[i][1];rules.splice(i,1);}
+    else if(cfg.mode==='modules'){const m=s.title.match(/module\s*(\d+)/i);code='M'+String(m?+m[1]:idx+1).padStart(2,'0');}
+    else if(cfg.mode==='order'){code='M'+String(idx+1).padStart(2,'0');}
+    else if(cfg.mode==='ws'){code=wsCode(s.title);}
+    else if(cfg.mode==='series'){version=seriesVersion(s.title);if(!version)return;code=wsCode(s.title);
+      // Each workshop in a series has its own cohort code, e.g. 2027.03.11 NCIT W IRSM Open.
+      coh=/NCIT W Series/i.test(cohort)?cohort.replace(/NCIT W Series/i,'NCIT W '+version):`${String(p.startDate||'').replace(/-/g,'.')} NCIT W ${version} Open`;}
+    const people=conf(s.id).length?conf(s.id):whole, method=cfg.ipt?'IPT-ILT':'V-ILT';
+    if(!people.length){missing.push(`${s.title} (${fmtD(s.date)})`);return;}
+    people.forEach(r=>rows.push({type:method,module:code,version,session:s.title,date:s.date,instructor:r.name,cohort:coh,qr:!!cfg.ipt,
+      url:surveyUrl(SURVEY.ilt,{course:cfg.course,version,method,module_name:code,Instructor:r.name,Cohort:coh})}));
+  });
+  (cfg.async||[]).forEach(code=>rows.push({type:'Async',module:code,version:cfg.version||'',session:'Self-paced module',date:'',instructor:'',cohort,qr:false,
+    url:surveyUrl(SURVEY.async,{course:cfg.course,version:cfg.version||'',method:'Async',module_name:code,Cohort:cohort})}));
+  const ilt=rows.filter(r=>r.type!=='Async').length;
+  return {supported:true,cfg,rows,missing,ready:!missing.length&&ilt>0};
+}
+// Values for the welcome email tool's fields, from the program's sessions and its in-person details.
+function welcomeValues(p,key){
+  const warn=[], all=(p.sessions||[]).slice().sort(bySessionTime);
+  const review=all.filter(s=>/program review/i.test(s.title)).pop(), wel=all.find(s=>s.allInstructors||/^\s*welcome/i.test(s.title));
+  if(key==='ncitb_vt'||key==='ncits_vt'){ if(!review){warn.push('No Program Review session, so the completion due date is left blank.');return {v:{},warn};} return {v:{[key+'_due']:longD(review.date)},warn}; }
+  if(key==='acrg_vt'||key==='elpr_vt'){ const px=key==='acrg_vt'?'acrg_':'elpr_vt_';
+    if(!wel){warn.push('No Welcome session found, so its date, time and link are left blank.');return {v:{},warn};}
+    if(!wel.zoomLink) warn.push('The Welcome session has no Zoom link yet, so the link is left blank.');
+    return {v:{[px+'date']:dayLongD(wel.date),[px+'time']:`${wel.start} - ${wel.end} Eastern`,[px+'link']:wel.zoomLink||''},warn}; }
+  const px=WELCOME_PREFIX[key];
+  if(px){ const w=p.welcome||{}, v={};
+    const dates=p.startDate===p.endDate?longD(p.startDate):(()=>{const a=parseD(p.startDate),b=parseD(p.endDate);return a&&b?`${LONGM[a.getMonth()]} ${a.getDate()} to ${LONGM[b.getMonth()]} ${b.getDate()}, ${b.getFullYear()}`:'';})();
+    IPT_FIELDS.forEach(([k])=>{ let val=w[k]||''; if(k==='city'&&!val)val=p.location||''; if(k==='dates'&&!val)val=dates; v[px+k]=val; });
+    const blank=IPT_FIELDS.filter(([k])=>!v[px+k]).map(f=>f[1]);
+    if(blank.length) warn.push(`In-person details not entered yet: ${blank.join(', ')}. Add them under Welcome email details in the program editor.`);
+    return {v,warn}; }
+  return {v:{},warn};
+}
+let WEL=null;
+function welcomeReady(){try{WEL=document.getElementById('welengine').contentWindow.welcomeEngine||null;}catch(e){WEL=null;}}
+function qrDataUrl(text){const box=document.createElement('div');new QRCode(box,{text,width:512,height:512,colorDark:'#111111',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  const c=box.querySelector('canvas');if(c&&c.toDataURL)try{return c.toDataURL('image/png');}catch(e){}const im=box.querySelector('img');return im&&im.src?im.src:'';}
+const safeName=s=>String(s||'').replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim().slice(0,90);
+function linksPage(p,plan,qr){
+  const grp=[['IPT-ILT','In-person instructor-led (QR code)'],['V-ILT','Virtual instructor-led'],['Async','Self-paced modules']];
+  const e=esc;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Survey links: ${e(p.cohort||p.title)}</title><link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<style>body{font-family:Arial,Helvetica,sans-serif;color:#1a1014;margin:32px;max-width:1000px}h1{color:#64092c;font-size:22px;margin:0 0 4px}h2{color:#64092c;font-size:16px;margin:26px 0 8px;border-bottom:2px solid #c9933a;padding-bottom:4px}
+.sub{color:#4a3040;font-size:13px;margin:0 0 18px}table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #eadfe3;padding:8px;text-align:left;vertical-align:middle;font-size:13px}th{background:#faf4f6;color:#64092c}
+a{color:#0144db;word-break:break-all}img{width:110px;height:110px}@media print{body{margin:12mm}tr{break-inside:avoid}}</style></head><body>
+<h1>Survey links</h1><p class="sub">${e(p.title)}, ${e(p.cohort||'')}. ${e(fmtRange(p.startDate,p.endDate))}. Generated ${e(new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}))}.</p>
+${grp.map(([k,l])=>{const rs=plan.rows.filter(r=>r.type===k);if(!rs.length)return '';return `<h2>${l}</h2><table><thead><tr><th>Module</th><th>Session</th><th>Instructor</th><th>Link</th>${k==='IPT-ILT'?'<th>QR code</th>':''}</tr></thead><tbody>${rs.map(r=>`<tr><td><strong>${e(r.module)}</strong>${r.version&&p.courseId==='ncit-workshop-series'?' '+e(r.version):''}</td><td>${e(r.session)}${r.date?'<br><span style="color:#4a3040">'+e(fmtD(r.date))+'</span>':''}</td><td>${e(r.instructor||'—')}</td><td><a href="${e(r.url)}">${e(r.url)}</a></td>${k==='IPT-ILT'?`<td>${qr[r.url]?`<img src="${qr[r.url]}" alt="QR code for ${e(r.module)}">`:''}</td>`:''}</tr>`).join('')}</tbody></table>`;}).join('')}
+</body></html>`;
+}
+async function downloadKit(pid){
+  const p=prog(pid), plan=kitPlan(p);
+  if(!plan.supported){toast('Cohort kits aren’t set up for this program.');return;}
+  if(typeof JSZip==='undefined'||typeof QRCode==='undefined'){toast('The kit tools didn’t load. Reload the page and try again.');return;}
+  if(plan.missing.length&&!confirm(`${plan.missing.length} session${plan.missing.length>1?'s have':' has'} no confirmed instructor, so ${plan.missing.length>1?'they are':'it is'} left out of the survey links:\n\n${plan.missing.join('\n')}\n\nDownload the kit anyway?`))return;
+  const warn=[], zip=new JSZip(), base=safeName(p.cohort||p.title), dir=zip.folder(base), qr={};
+  plan.rows.filter(r=>r.qr).forEach(r=>{qr[r.url]=qrDataUrl(r.url);});
+  dir.file(`Survey Links - ${base}.html`,linksPage(p,plan,qr));
+  const csv=[['Type','Module','Version','Session','Date','Instructor','Cohort','Link']].concat(plan.rows.map(r=>[r.type,r.module,r.version,r.session,r.date,r.instructor,r.cohort,r.url]))
+    .map(r=>r.map(v=>/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v)).join(',')).join('\n');
+  dir.file(`Survey Links - ${base}.csv`,csv);
+  const qrs=plan.rows.filter(r=>r.qr&&qr[r.url]);
+  if(qrs.length){const f=dir.folder('QR Codes');const used={};qrs.forEach(r=>{let n=safeName(`${r.module} ${r.instructor}`);used[n]=(used[n]||0)+1;if(used[n]>1)n+=' '+used[n];f.file(n+'.png',qr[r.url].split(',')[1],{base64:true});});}
+  const key=plan.cfg.welcome;
+  if(key){
+    if(!WEL)welcomeReady();
+    if(!WEL)warn.push('The welcome email tool didn’t load, so the welcome email is missing from this kit.');
+    else{const {v,warn:w}=welcomeValues(p,key);warn.push(...w);
+      try{const r=WEL.build(key,v);const lbl=safeName(WEL.label(key));
+        dir.file(`Welcome Email - ${lbl} (TalentLMS).txt`,r.combined);
+        dir.file(`Welcome Email - ${lbl} (preview).html`,`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(r.subject)}</title></head><body style="margin:0">${r.body}</body></html>`);
+        if(/\[[A-Z_]{4,}\]/.test(r.body))warn.push('The welcome email still has blank fields, shown in [BRACKETS]. Fill them in before using it.');
+      }catch(e){warn.push('The welcome email couldn’t be built: '+e.message);}}
+  }
+  if(warn.length)dir.file('READ ME - items to check.txt',warn.map(w=>'- '+w).join('\n'));
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Cohort Kit - ${base}.zip`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
+  toast(warn.length?`Kit downloaded. ${warn.length} item${warn.length>1?'s':''} to check; see READ ME in the kit.`:'Cohort kit downloaded');
+}
+function kitBadge(p){const k=kitPlan(p);if(!k.supported||p.status==='draft')return '';return k.ready?'<span class="pill" style="background:var(--avail-lt);color:var(--avail);text-transform:none">Kit ready</span>':'';}
+
 /* ---------- Zoom links ---------- */
 function zoomPanel(){
   const z=D.zoom||{}, cfg=D.config||{}, rv=z.review||[], ms=z.missing||[], nMiss=ms.reduce((n,x)=>n+x.sessions.length,0);
@@ -537,7 +665,8 @@ function vSelection(){
       <button class="btn ghost" ${confirmed.length&&!dirty?'':'disabled'} title="${dirty?'Save selections first':confirmed.length?'':'Confirm and save at least one pick first'}" onclick="selectionDlg('${p.id}')">Email selection notices${toEmail?` (${toEmail})`:''}</button>
       ${(n=>n&&!dirty?`<button class="btn" style="background:var(--warn)" onclick="changeDlg('${p.id}')">Send schedule change notices (${n})</button>`:'')(Object.keys(a.changes||{}).length)}
       <button class="btn ghost" onclick="composeDlg({audience:'program-confirmed',pid:'${p.id}'})">Email this program's instructors</button>
-      ${(D.config||{}).zoom&&!isIP(p)&&['open','closed'].includes(p.status)?`<button class="btn ghost" onclick="zoomSync('${p.id}')">Find Zoom links</button>`:''}</div></div>
+      ${(D.config||{}).zoom&&!isIP(p)&&['open','closed'].includes(p.status)?`<button class="btn ghost" onclick="zoomSync('${p.id}')">Find Zoom links</button>`:''}
+      ${(k=>k.supported?`<button class="btn ${k.ready?'':'ghost'}" ${dirty?'disabled title="Save selections first"':''} onclick="downloadKit('${p.id}')" title="${k.ready?'Survey links, QR codes and the welcome email for this cohort':esc(k.missing.length+' session'+(k.missing.length===1?'':'s')+' still need a confirmed instructor')}">Download cohort kit</button>`:'')(kitPlan(p))}</div></div>
     <div class="icsbox"><strong>Calendar file</strong>${p.hasIcs?`<span>${esc(p.icsName)} <span class="facts">(${esc(p.icsSource||'')}${p.icsUpdatedAt?', '+esc(stamp(p.icsUpdatedAt)):''})</span>. Selection emails attach each person's own sessions from it.</span>`:`<span class="facts">None uploaded. Selection emails will include a calendar file built from the session dates, times and Zoom links.</span>`}
       <span class="grow" style="flex:1"></span>${p.hasIcs?`<button class="btn link" onclick="downloadIcs('${p.id}')">Download</button>`:''}<label class="btn link" style="cursor:pointer">${p.hasIcs?'Replace':'Upload .ics'}<input type="file" accept=".ics,text/calendar" hidden onchange="uploadIcs('${p.id}',this)"></label></div></div>`;
   h+=`<div class="card">`;
@@ -780,6 +909,8 @@ function editProgram(pid){
     <div class="f span4"><label for="e-description">Description for instructors (optional)</label><textarea id="e-description" rows="3">${esc(p.description)}</textarea></div></div>
     <datalist id="dl-titles">${titles.map(x=>`<option value="${esc(x)}">`).join('')}</datalist><datalist id="dl-format"><option value="Virtual (Zoom)"><option value="In-Person"><option value="Hybrid"></datalist>`;
   body+=`<h3 style="margin-top:18px">Live sessions or modules</h3><p class="sub" style="margin-bottom:8px">Leave this empty for a program staffed as a whole. Start and end dates fill in from the sessions if left blank. Zoom links go into selection emails and calendar files. A Welcome session is removed automatically except in ACRG, ELPR and SRA: Staffing a Board, where all instructors assigned to the cohort attend it. Tick "All attend" for any other session every assigned instructor attends; it is not offered for selection.</p><div id="sess-ed"></div><button class="btn ghost small" onclick="sessAdd()" style="margin-top:8px">Add session</button>`;
+  if(pid&&isIP(p)) body+=`<h3 style="margin-top:18px">Welcome email details</h3><p class="sub" style="margin-bottom:8px">Used to fill in this program's welcome email in the cohort kit, matching the welcome email tool. City and program dates fill in automatically if left blank.</p>
+    <div class="form">${IPT_FIELDS.map(([k,l,ph])=>`<div class="f ${k==='parking'?'span4':'span2'}"><label for="ew-${k}">${esc(l)}</label>${k==='parking'?`<textarea id="ew-${k}" rows="2" placeholder="${esc(ph)}">${esc((p.welcome||{})[k]||'')}</textarea>`:`<input id="ew-${k}" type="text" value="${esc((p.welcome||{})[k]||'')}" placeholder="${esc(ph)}">`}</div>`).join('')}</div>`;
   if(pid) body+=`<div class="icsbox"><strong>Calendar file</strong>${p.hasIcs?`<span>${esc(p.icsName)} <span class="facts">(${esc(p.icsSource||'')})</span></span><span style="flex:1"></span><button class="btn link" onclick="downloadIcs('${pid}')">Download</button><button class="btn link" style="color:#9B1C1C" onclick="removeIcs('${pid}')">Remove</button>`:`<span class="facts">None. Upload the program's .ics so selection emails attach it.</span><span style="flex:1"></span>`}<label class="btn link" style="cursor:pointer">${p.hasIcs?'Replace':'Upload .ics'}<input type="file" accept=".ics,text/calendar" hidden onchange="uploadIcs('${pid}',this).then(()=>{closeDlg();editProgram('${pid}')})"></label></div>`;
   else body+=`<p class="facts" style="margin-top:12px">You can upload the program's calendar file (.ics) after you save.</p>`;
   openDlg(pid?'Edit program':'New one-off program',body,
@@ -803,6 +934,7 @@ async function saveProgram(pid){
   p.deadlineMode=document.getElementById('e-dlauto')&&document.getElementById('e-dlauto').checked?'auto':'manual';
   p.trackSet=document.getElementById('e-track').value;
   p.logoSet=document.getElementById('e-logo').value;
+  if(document.getElementById('ew-city')){p.welcome={};IPT_FIELDS.forEach(([k])=>{const v=(document.getElementById('ew-'+k).value||'').trim();if(v)p.welcome[k]=v;});}
   if(pid&&p.sessions.length<prog(pid).sessions.length&&!confirm('You removed sessions. Instructor answers for those sessions will no longer show. Save anyway?')) return;
   const id=pid||'p_'+crypto.randomUUID().replace(/-/g,'').slice(0,10);
   try{ const r=await api('admin/program/'+id,{method:'PUT',body:JSON.stringify({program:p,baseUpdatedAt:pid?prog(pid).updatedAt:undefined})});
