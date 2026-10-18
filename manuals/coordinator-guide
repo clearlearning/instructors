@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instructor Portal: Program Coordinator Guide | CLEAR Learning</title>
+<link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--burgundy:#64092C;--burgundy-dk:#4A0620;--gold:#C9933A;--gold-lt:#F8EDD3;--blue:#084D78;--blue-lt:#E2EDF4;--ink:#1A1014;--charcoal:#484848;--muted:#6E6B70;--line:#E4DCE0;--soft:#FAF4F6;--bg:#F5F0F2;--green:#1F6B3F;--green-lt:#E3F1E8;--red:#9B1C1C}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Open Sans",Arial,sans-serif;font-size:15.5px;line-height:1.65}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.top{background:#fff}
+.top-in{max-width:1240px;margin:0 auto;padding:22px 32px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.top img{width:230px;height:auto;display:block}
+.top .tag{font-size:13px;color:var(--muted);font-weight:600}
+.goldbar{height:4px;background:var(--gold)}
+.hero{background:var(--burgundy);color:#fff}
+.hero-in{max-width:1240px;margin:0 auto;padding:34px 32px 30px}
+.hero small{display:block;font-weight:700;font-size:13px;letter-spacing:.02em;opacity:.85}
+.hero h1{margin:4px 0 8px;font-size:34px;line-height:1.15;font-weight:800;letter-spacing:-.01em}
+.hero p{margin:0;max-width:72ch;opacity:.93}
+.layout{max-width:1240px;margin:0 auto;padding:28px 32px 80px;display:grid;grid-template-columns:250px minmax(0,1fr);gap:32px;align-items:start}
+nav.toc{position:sticky;top:20px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 8px;font-size:13.5px;max-height:calc(100vh - 40px);overflow:auto}
+nav.toc strong{display:block;padding:2px 12px 8px;color:var(--burgundy);font-size:13px}
+nav.toc a{display:block;padding:5px 12px;border-radius:6px;text-decoration:none;color:var(--charcoal)}
+nav.toc a:hover{background:var(--soft);color:var(--burgundy)}
+nav.toc a.sub{padding-left:24px;font-size:13px;color:var(--muted)}
+main{min-width:0}
+section{background:#fff;border:1px solid var(--line);border-radius:12px;padding:28px 32px;margin-bottom:22px}
+h2{margin:0 0 6px;color:var(--burgundy);font-size:24px;line-height:1.25}
+h3{margin:26px 0 8px;color:var(--burgundy);font-size:18px}
+h4{margin:18px 0 6px;font-size:15.5px;color:var(--ink)}
+p{margin:0 0 12px;max-width:80ch}
+.lead{font-size:16.5px;color:var(--charcoal)}
+ul,ol{margin:0 0 14px;padding-left:22px;max-width:80ch}
+li{margin-bottom:6px}
+.ui{font-weight:700;color:var(--burgundy-dk);white-space:nowrap}
+.path{font-family:Consolas,"Courier New",monospace;font-size:14px;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.note,.tip,.warn{border-radius:8px;padding:12px 16px;margin:14px 0;max-width:84ch}
+.note{background:var(--blue-lt);border-left:4px solid var(--blue)}
+.tip{background:var(--gold-lt);border-left:4px solid var(--gold)}
+.warn{background:#FBE9EC;border-left:4px solid var(--red)}
+.note strong,.tip strong,.warn strong{display:block;margin-bottom:2px}
+table{border-collapse:collapse;width:100%;margin:10px 0 16px;font-size:14.5px}
+th{background:var(--soft);color:var(--burgundy);text-align:left;font-size:13px;padding:9px 12px;border-bottom:2px solid var(--gold)}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl{overflow-x:auto}
+
+/* Process graphic */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0 8px;counter-reset:stage}
+.stage{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px;background:#fff;display:flex;flex-direction:column;gap:6px;counter-increment:stage}
+.stage::before{content:counter(stage);position:absolute;top:-12px;left:12px;width:26px;height:26px;border-radius:50%;background:var(--burgundy);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #fff}
+.stage h4{margin:8px 0 0;font-size:15px;color:var(--burgundy)}
+.stage .tool{font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-lt);border-radius:10px;padding:1px 9px;align-self:flex-start}
+.stage .tool.ins{color:var(--green);background:var(--green-lt)}
+.stage .tool.auto{color:#7A5410;background:var(--gold-lt)}
+.stage p{font-size:13.5px;margin:0;color:var(--charcoal)}
+.stage .was{margin-top:auto;font-size:12.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:7px}
+.stage .was b{color:var(--red);font-weight:700}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--charcoal);margin-top:6px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+/* Tool map */
+.tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:14px 0}
+.toolcard{border:1px solid var(--line);border-top:5px solid var(--burgundy);border-radius:10px;padding:14px 16px;background:#fff}
+.toolcard.b{border-top-color:var(--blue)}.toolcard.g{border-top-color:var(--gold)}.toolcard.n{border-top-color:var(--green)}
+.toolcard h4{margin:0 0 4px;color:var(--burgundy)}
+.toolcard p{font-size:14px;margin:0 0 6px}
+.toolcard .who{font-size:12.5px;color:var(--muted)}
+
+/* Steps */
+ol.steps{list-style:none;padding-left:0;counter-reset:st}
+ol.steps>li{counter-increment:st;position:relative;padding-left:40px;margin-bottom:12px}
+ol.steps>li::before{content:counter(st);position:absolute;left:0;top:1px;width:26px;height:26px;border-radius:50%;background:var(--gold-lt);color:var(--burgundy);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:1px solid var(--gold)}
+
+.timeline{border-left:3px solid var(--gold);margin:12px 0 16px 8px;padding-left:20px}
+.timeline div{position:relative;margin-bottom:12px}
+.timeline div::before{content:"";position:absolute;left:-28px;top:6px;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--burgundy)}
+.timeline b{color:var(--burgundy)}
+
+.foot{text-align:center;color:var(--muted);font-size:13px;padding:10px 0 0}
+/* ---------- Drawn screen mockups (figures) ---------- */
+figure.mock{margin:18px 0 10px}
+.frame{position:relative;border:1px solid #CFC6CB;border-radius:10px;background:#F3F3F5;box-shadow:0 6px 18px rgba(74,6,32,.10)}
+.chrome{display:flex;align-items:center;gap:6px;background:#ECE7EA;border-bottom:1px solid #DDD5D9;border-radius:10px 10px 0 0;padding:7px 12px;font-size:11.5px;color:#6E6B70}
+.chrome i{width:10px;height:10px;border-radius:50%;background:#D5CCD1;display:inline-block}
+.chrome span{margin-left:10px;background:#fff;border:1px solid #DDD5D9;border-radius:10px;padding:1px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen{position:relative;padding:16px;font-size:13px;line-height:1.5;color:#2B2B2B;pointer-events:none;user-select:none;overflow-x:auto}
+figure.mock figcaption{font-size:13px;color:#6E6B70;margin-top:8px}
+figure.mock figcaption b{color:#64092C}
+.co{position:absolute;top:-11px;left:-11px;width:26px;height:26px;border-radius:50%;background:#DDA838;color:#4A0620;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25);z-index:5;font-style:normal}
+.co.r{left:auto;right:-11px}
+.anc{position:relative}
+ol.key{list-style:none;padding:0;margin:12px 0 4px;display:grid;gap:7px;max-width:80ch}
+ol.key li{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:start;font-size:14px;margin:0}
+ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:#4A0620;font-size:12px;display:flex;align-items:center;justify-content:center}
+.screen .app-top{background:#64092C;color:#fff;margin:-16px -16px 14px;padding:11px 16px 0;border-radius:0}
+.screen .app-top .t{font-weight:800;font-size:15px}
+.screen .app-top .t small{display:block;font-size:10.5px;opacity:.8;font-weight:600}
+.screen .tabs2{display:flex;gap:2px;margin-top:9px;flex-wrap:wrap}
+.screen .tabs2 span{padding:5px 11px;font-weight:600;font-size:11.5px;opacity:.8;border-radius:6px 6px 0 0}
+.screen .tabs2 span.on{background:#F3F3F5;color:#64092C;opacity:1}
+.screen .tabs2 .n{display:inline-block;background:#fff;color:#9B1C1C;border-radius:8px;padding:0 6px;margin-left:4px;font-size:10.5px}
+.screen .card{background:#fff;border:1px solid #DEDCE0;border-radius:10px;padding:13px 15px;margin-bottom:10px}
+.screen .ph{margin:-13px -15px 11px;padding:11px 15px;border-radius:10px 10px 0 0;background:#FAF7F8;border-top:6px solid #64092C;display:flex;gap:10px;align-items:center}
+.screen .ph.gold{border-top-color:#DDA838}.screen .ph.blue{border-top-color:#084D78}
+.screen .ph h3{margin:0;color:#64092C;font-size:14.5px}
+.screen .facts{font-size:11.5px;color:#6E6B70}
+.screen .warnt{font-size:11.5px;color:#9A5B00;font-weight:700}
+.screen .btn{display:inline-block;border-radius:6px;padding:5px 10px;font-weight:700;font-size:11.5px;background:#64092C;color:#fff;white-space:nowrap;border:1px solid #64092C}
+.screen .btn.ghost{background:#fff;color:#64092C}
+.screen .btn.dis{background:#CFCBD0;border-color:#CFCBD0}
+.screen .btn.lnk{background:none;border-color:transparent;color:#084D78;padding:5px 4px}
+.screen .lg{width:32px;height:32px;border-radius:7px;background:#64092C;color:#fff;font-weight:800;font-size:9.5px;display:flex;align-items:center;justify-content:center;flex:none;text-align:center;line-height:1.1}
+.screen .lg.gold{background:#DDA838;color:#4A0620}.screen .lg.blue{background:#084D78}.screen .lg.s{width:20px;height:20px;font-size:7px;border-radius:4px}
+.screen .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:9px;white-space:nowrap}
+.screen .pill.green{background:#E3F1E8;color:#1F6B3F}.screen .pill.gold{background:#F8EDD3;color:#7A5410}.screen .pill.grey{background:#EEECEF;color:#6E6B70}.screen .pill.red{background:#FDECEA;color:#B42318}.screen .pill.blue{background:#E2EDF4;color:#084D78}.screen .pill.open{background:#E3F1E8;color:#1F6B3F;text-transform:uppercase}
+.screen .bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.screen .grow{flex:1}
+.screen .sel{border:1px solid #DEDCE0;border-radius:5px;background:#fff;padding:2px 7px;font-size:11.5px;white-space:nowrap}
+.screen .inp{border:1px solid #DEDCE0;border-radius:5px;padding:4px 8px;font-size:12px;background:#fff;display:inline-block;min-width:100px}
+.screen .lbl{font-size:11px;font-weight:700;color:#484848;display:block;margin-bottom:2px}
+.screen .cb{width:14px;height:14px;border:1.5px solid #9C8F95;border-radius:3px;flex:none;display:inline-block;position:relative;vertical-align:-2px}
+.screen .cb.on{background:#64092C;border-color:#64092C}
+.screen .cb.on::after{content:"";position:absolute;left:3.5px;top:.5px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.screen .row{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #F1EEF0}
+.screen .dlg{max-width:580px;margin:4px auto;background:#fff;border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.22)}
+.screen .dlg-h{padding:11px 15px;border-bottom:1px solid #DEDCE0;font-weight:700;color:#64092C;display:flex;justify-content:space-between}
+.screen .dlg-b{padding:13px 15px}
+.screen .dlg-f{padding:9px 15px;border-top:1px solid #DEDCE0;background:#FAF7F8;display:flex;justify-content:flex-end;gap:7px;border-radius:0 0 10px 10px}
+.screen .backdrop{background:rgba(30,10,18,.35);margin:-16px;padding:20px 14px}
+.screen table.t{border-collapse:collapse;width:100%;font-size:11.5px;margin:0}
+.screen table.t th{background:#FAF7F8;color:#484848;font-size:11px;padding:6px 8px;text-align:left;border-bottom:1px solid #DEDCE0;white-space:nowrap}
+.screen table.t td{padding:6px 8px;border-bottom:1px solid #EEECEF;vertical-align:middle}
+.screen .note2{background:#F8EDD3;border-left:4px solid #DDA838;padding:8px 11px;border-radius:0;margin-bottom:10px;font-size:12px}
+.screen .err2{background:#FBE9EC;border-left:4px solid #9B1C1C;padding:8px 11px;border-radius:0;margin-bottom:10px;font-size:12px}
+
+@media (max-width:1000px){.layout{grid-template-columns:1fr}nav.toc{position:static;max-height:none}.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.tools{grid-template-columns:1fr}}
+@media (max-width:600px){.flow{grid-template-columns:1fr}section{padding:22px 20px}.hero h1{font-size:27px}.layout,.top-in,.hero-in{padding-left:18px;padding-right:18px}}
+@media print{figure.mock{break-inside:avoid}.frame{box-shadow:none}.co,ol.key li b.n,.screen *{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{background:#fff;font-size:11pt}nav.toc{display:none}.layout{display:block;padding:0}section{border:0;padding:12px 0;break-inside:auto}.hero,.goldbar,.stage::before,th{-webkit-print-color-adjust:exact;print-color-adjust:exact}.stage{break-inside:avoid}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><img src="https://assets-002.noviams.com/novi-file-uploads/clear/logos/CLEAR_Learning_Logo_horizontal__2_.png" alt="CLEAR Learning"><span class="tag">Staff guide</span></div></header>
+<div class="goldbar"></div>
+<div class="hero"><div class="hero-in"><small>Instructor Portal</small><h1>Program Coordinator Guide</h1>
+<p>How CLEAR Learning plans each quarter, staffs its programs and supports instructors, from the first scheduling meeting to the evaluation report, using the Program Scheduler and the Instructor Portal.</p></div></div>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents"><strong>Contents</strong>
+  <a href="#overview">How it fits together</a>
+  <a href="#process" class="sub">The quarterly process</a>
+  <a href="#tools" class="sub">The tools</a>
+  <a href="#timeline" class="sub">Timeline for a cohort</a>
+  <a href="#signin">Signing in</a>
+  <a href="#plan">1. Plan the quarter</a>
+  <a href="#publish">2. Agendas and publishing</a>
+  <a href="#open">3. Open and announce</a>
+  <a href="#responses">4. Collect responses</a>
+  <a href="#select">5. Select instructors</a>
+  <a href="#prepare">6. Prepare the cohort</a>
+  <a href="#changes">7. Schedule changes</a>
+  <a href="#reports">8. Evaluation reports</a>
+  <a href="#records">Instructor records</a>
+  <a href="#email">Emails</a>
+  <a href="#help">Troubleshooting</a>
+</nav>
+
+<main>
+<section id="overview">
+  <h2>How it fits together</h2>
+  <p class="lead">Each quarter we schedule the next quarter's programs, find instructors for them, and give those instructors everything they need for the day they teach. The Instructor Portal now holds that whole process in one place, replacing TeamGantt, the instructor availability spreadsheet and several separate tools.</p>
+
+  <h3 id="process">The quarterly process</h3>
+  <p>Each stage shows the tool you use and what it replaces.</p>
+  <div class="flow" role="list">
+    <div class="stage" role="listitem"><span class="tool">Program Scheduler</span><h4>Plan the quarter</h4><p>Add each cohort from its program template, set start times and facilitators, and resolve overlaps, holidays and days off on the calendar.</p><div class="was"><b>Replaces</b> the TeamGantt schedule</div></div>
+    <div class="stage" role="listitem"><span class="tool">Program Scheduler</span><h4>Agendas and publishing</h4><p>Generate the program agenda PDFs for Novi, then publish the cohorts to the Instructor Portal as drafts.</p><div class="was"><b>Replaces</b> the TeamGantt export and separate Agenda Generator</div></div>
+    <div class="stage" role="listitem"><span class="tool">Staff dashboard</span><h4>Open and announce</h4><p>Review the drafts, open them, and email instructors that new programs are available.</p><div class="was"><b>Replaces</b> emailing out the availability spreadsheet</div></div>
+    <div class="stage" role="listitem"><span class="tool ins">Instructors</span><h4>Instructors respond</h4><p>Instructors mark the sessions they can and can't teach. Reminders go out automatically 7 and 2 days before the response date.</p><div class="was"><b>Replaces</b> collecting and merging returned spreadsheets</div></div>
+    <div class="stage" role="listitem"><span class="tool">Staff dashboard</span><h4>Select instructors</h4><p>After the response date, choose and confirm instructors, then email each a short selection notice.</p><div class="was"><b>Replaces</b> tracking selections by hand and emailing instructor agendas</div></div>
+    <div class="stage" role="listitem"><span class="tool auto">Automatic</span><h4>Zoom links appear</h4><p>Each morning the portal finds the Zoom meetings TalentLMS created and adds the links to instructors' assignments.</p><div class="was"><b>Replaces</b> sending Zoom links to each instructor</div></div>
+    <div class="stage" role="listitem"><span class="tool">Staff dashboard</span><h4>Download the cohort kit</h4><p>One zip per cohort with the survey links, in-person QR codes and the completed welcome email.</p><div class="was"><b>Replaces</b> the survey link tools and welcome email tool</div></div>
+    <div class="stage" role="listitem"><span class="tool">Evaluation reports</span><h4>Share evaluation reports</h4><p>Publish each instructor's report to their portal; they receive an email with a private link.</p><div class="was"><b>Replaces</b> downloading and emailing PDF reports</div></div>
+  </div>
+  <div class="legend"><span><i style="background:var(--blue-lt);border:1px solid var(--blue)"></i>Staff work</span><span><i style="background:var(--green-lt);border:1px solid var(--green)"></i>Instructors' work</span><span><i style="background:var(--gold-lt);border:1px solid var(--gold)"></i>Happens automatically</span></div>
+  <p style="margin-top:12px">Unchanged: the programs are still built in Novi and TalentLMS as they are today, and Zoom meetings are still created in TalentLMS. Instructors who need to withdraw after being confirmed, or who can't cover a session, still call the program facilitator.</p>
+
+  <h3 id="tools">The tools</h3>
+  <div class="tools">
+    <div class="toolcard"><h4>Program Scheduler</h4><p>The quarter's schedule and the single source of truth for dates and times. Shared by all staff.</p><div class="who">Address: <span class="path">/program-scheduler</span></div></div>
+    <div class="toolcard b"><h4>Staff dashboard</h4><p>Programs, responses, selections, emails, Zoom links, cohort kits and instructor records.</p><div class="who">Address: <span class="path">/admin-dashboard</span></div></div>
+    <div class="toolcard n"><h4>Instructor Portal</h4><p>What instructors see: open programs, their answers, their assignments and their evaluation reports.</p><div class="who">Address: the portal's home page</div></div>
+    <div class="toolcard g"><h4>Evaluation reports</h4><p>The module evaluation dashboard, now able to publish reports to instructors' portals.</p><div class="who">Address: <span class="path">/evaluation-reports</span></div></div>
+    <div class="toolcard"><h4>Working behind the scenes</h4><p>The Agenda Generator builds program agendas and the welcome email tool builds welcome emails. You don't need to open either one.</p><div class="who">Used by the Scheduler and the dashboard</div></div>
+    <div class="toolcard b"><h4>Daily check</h4><p>Every morning: reminders to instructors who haven't responded, and the Zoom link check.</p><div class="who">Runs on its own</div></div>
+  </div>
+
+  <h3 id="timeline">Timeline for a cohort</h3>
+  <div class="timeline">
+    <div><b>Previous quarter:</b> the cohort is scheduled, its agenda generated, and it's published and announced.</div>
+    <div><b>Until 30 days before the first live session:</b> instructors respond. The response date is set automatically.</div>
+    <div><b>7 and 2 days before the response date:</b> reminders go to approved instructors who haven't responded.</div>
+    <div><b>After the response date:</b> answers lock; staff confirm instructors and send selection notices.</div>
+    <div><b>By 1 week before the first live session:</b> Zoom links are in place. Anything missing appears on the Overview.</div>
+    <div><b>Before the cohort starts:</b> download the cohort kit for the survey links, QR codes and welcome email.</div>
+    <div><b>After the cohort:</b> publish evaluation reports to instructors.</div>
+  </div>
+</section>
+
+<section id="signin">
+  <h2>Signing in</h2>
+  <p>The Instructor Portal is protected by Cloudflare Zero Trust, so nobody can open it without signing in.</p>
+  <ol class="steps">
+    <li>Open the portal's staff dashboard (<span class="path">/admin-dashboard</span>) or the Program Scheduler (<span class="path">/program-scheduler</span>).</li>
+    <li>Enter your CLEAR email address and choose <span class="ui">Send me a code</span>.</li>
+    <li>Enter the one-time code from your email. You stay signed in for a while on that browser.</li>
+  </ol>
+  <div class="note"><strong>Staff and instructor access are separate.</strong> Staff pages only open for addresses in the staff access group. If a new coordinator can't sign in, see <a href="#records">Instructor and staff records</a>.</div>
+  <p>The staff dashboard has seven tabs: <span class="ui">Overview</span>, <span class="ui">Responses</span>, <span class="ui">Selection</span>, <span class="ui">Programs</span>, <span class="ui">Instructors</span>, <span class="ui">Staff</span> and <span class="ui">Activity</span>. The header links to the Program Scheduler and to the instructor view.</p>
+</section>
+
+<section id="plan">
+  <h2>1. Plan the quarter</h2>
+  <p class="lead">All staff work in the same shared schedule. Changes save automatically; the header shows <span class="ui">All changes saved</span> when they're stored.</p>
+
+  <h3>Add the cohorts</h3>
+  <ol class="steps">
+    <li>Open the Program Scheduler and use the arrows to move to the quarter you're planning.</li>
+    <li>Choose <span class="ui">Add cohort</span>, then the program.</li>
+    <li>Enter the Welcome session date (or Day 1 for in-person programs). The preview lists every session the template creates, with any holidays flagged.</li>
+    <li>Choose the start time. Online programs default to 1:00 PM Eastern; 11:00 AM and 2:00 PM are listed first as the usual alternatives.</li>
+    <li>For in-person programs, enter the location as City, ST (for example Austin, TX).</li>
+    <li>Choose Open or Closed enrollment and, if known, the facilitator.</li>
+    <li>Check the cohort label, for example <strong>2027.01.07 NCIT B CAN Open</strong>, and choose <span class="ui">Add cohort</span>.</li>
+  </ol>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/program-scheduler</span></div><div class="screen"><div class="backdrop"><div class="dlg"><div class="dlg-h">Add cohort<span class="facts">Close</span></div><div class="dlg-b">
+<div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px">
+<div class="anc"><i class="co">1</i><span class="lbl">Program</span><span class="inp" style="display:block">NCIT Basic Online (Canadian) ▾</span></div>
+<div class="anc"><i class="co">2</i><span class="lbl">Welcome session date</span><span class="inp" style="display:block">01/07/2027</span></div>
+<div class="anc"><i class="co">3</i><span class="lbl">Start time (ET)</span><span class="inp" style="display:block">1:00 PM ▾</span></div>
+<div><span class="lbl">Enrollment</span><span class="inp" style="display:block">Open ▾</span></div>
+<div><span class="lbl">Facilitator</span><span class="inp" style="display:block">Zephir ▾</span></div>
+<div class="anc"><i class="co">4</i><span class="lbl">Cohort label</span><b style="color:#64092C">2027.01.07 NCIT B CAN Open</b></div></div>
+<table class="t" style="margin-top:12px"><thead><tr><th>Session</th><th>Date</th><th>Time</th></tr></thead><tbody>
+<tr><td>Welcome &amp; Introduction Session</td><td>Thu, Jan 7</td><td>1:00 PM – 2:00 PM</td></tr>
+<tr><td>Investigative Process</td><td>Tue, Jan 12</td><td>1:00 PM – 3:00 PM</td></tr>
+<tr><td>Interviewing Techniques</td><td>Wed, Jan 13</td><td>1:00 PM – 4:00 PM</td></tr>
+<tr><td>Week One Q &amp; A</td><td>Thu, Jan 14</td><td>1:00 PM – 2:00 PM</td></tr>
+<tr><td class="facts" colspan="3">+ 3 more sessions</td></tr></tbody></table></div>
+<div class="dlg-f"><span class="btn ghost">Cancel</span><span class="btn">Add cohort</span></div></div></div></div></div><figcaption><b>Figure 1.</b> Adding a cohort. The preview lists every session the template creates.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Choose the program. Its template sets the sessions and their pattern.</span></li><li><b class="n">2</b><span>Enter the Welcome session date (Day 1 for in-person programs).</span></li><li><b class="n">3</b><span>Online programs default to 1:00 PM Eastern; 11:00 AM and 2:00 PM are listed first.</span></li><li><b class="n">4</b><span>The cohort label is built automatically from the date, course, location and enrollment.</span></li></ol>
+<div class="tip"><strong>Patterns come from the program templates.</strong> For example, NCIT Basic online runs the Welcome session on a Thursday, then Tuesday through Thursday for the next two weeks. If a cohort starts on an unusual weekday, the scheduler says so. Templates can be edited on the <span class="ui">Program templates</span> tab.</div>
+
+  <h3>Use the calendar</h3>
+  <ul>
+    <li><strong>Quarter view</strong> shows all three months, with sessions colored by program track. Holidays and CLEAR days off are shaded.</li>
+    <li><strong>Week view</strong> shows sessions by hour, like Outlook. Overlapping sessions sit side by side. Click a date in the quarter view to open its week.</li>
+    <li><strong>Drag a session</strong> to another day, or, in week view, to another time. Sessions moved by hand are marked as changed and keep their date when the cohort moves.</li>
+    <li><strong>Click a session</strong> to change its date, time or facilitator, see what it overlaps, or delete the cohort.</li>
+    <li>Filter by facilitator or program at the top. The toolbar stays in view as you scroll.</li>
+  </ul>
+
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/program-scheduler</span></div><div class="screen"><div class="app-top"><div class="t"><small>CLEAR Learning · Instructor Portal</small>Program Scheduler</div><div class="tabs2"><span class="on">Calendar</span><span class="">Cohorts</span><span class="">Conflicts<span class="n">3</span></span><span class="">Program templates</span><span class="">Facilitators and days off</span></div></div>
+<div class="bar"><span class="sel anc" style="background:#64092C;color:#fff"><i class="co">1</i>Quarter</span><span class="sel">Week</span><span class="sel">‹ Q1 2027 ›</span><span class="btn">Add cohort</span><span class="grow"></span><span class="sel">Facilitator: Everyone ▾</span><span class="btn ghost">Generate program agendas</span><span class="btn ghost">Publish to Instructor Portal</span></div>
+<b style="color:#64092C;font-size:13px">January 2027</b>
+<div class="anc" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:#DEDCE0;border:1px solid #DEDCE0;border-radius:8px;overflow:hidden;margin-top:4px">
+<div style="background:#FAF7F8;font-size:10.5px;font-weight:700;padding:3px 5px">Sun</div><div style="background:#FAF7F8;font-size:10.5px;font-weight:700;padding:3px 5px">Mon</div><div style="background:#FAF7F8;font-size:10.5px;font-weight:700;padding:3px 5px">Tue</div><div style="background:#FAF7F8;font-size:10.5px;font-weight:700;padding:3px 5px">Wed</div><div style="background:#FAF7F8;font-size:10.5px;font-weight:700;padding:3px 5px">Thu</div><div style="background:#FAF7F8;font-size:10.5px;font-weight:700;padding:3px 5px">Fri</div><div style="background:#FAF7F8;font-size:10.5px;font-weight:700;padding:3px 5px">Sat</div><div style="position:relative;background:#fff;min-height:74px;padding:3px 4px;display:flex;flex-direction:column;gap:2px"><b style="font-size:11px">17</b></div><div style="position:relative;background:#FDECEA;min-height:74px;padding:3px 4px;display:flex;flex-direction:column;gap:2px"><b style="font-size:11px">18</b><i class="co r" style="top:4px">2</i><span style="font-size:9.5px;color:#B42318;font-weight:700">Martin Luther King Jr. Day</span></div><div style="position:relative;background:#fff;min-height:74px;padding:3px 4px;display:flex;flex-direction:column;gap:2px"><b style="font-size:11px">19</b><span style="display:block;background:#64092C;color:#fff;border-radius:3px;padding:1px 4px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#084D78;color:#fff;font-size:8px;text-align:center;line-height:12px;margin-right:3px;font-weight:800">Z</span>1pm B CAN Report Writing</span></div><div style="position:relative;background:#fff;min-height:74px;padding:3px 4px;display:flex;flex-direction:column;gap:2px"><b style="font-size:11px">20</b><span style="display:block;background:#64092C;color:#fff;border-radius:3px;padding:1px 4px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#084D78;color:#fff;font-size:8px;text-align:center;line-height:12px;margin-right:3px;font-weight:800">Z</span>1pm B CAN Testifying</span></div><div style="position:relative;background:#fff;min-height:74px;padding:3px 4px;display:flex;flex-direction:column;gap:2px"><b style="font-size:11px">21</b><i class="co r" style="top:4px">3</i><span style="display:block;background:#64092C;color:#fff;border-radius:3px;padding:1px 4px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 0 0 2px #B42318"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#084D78;color:#fff;font-size:8px;text-align:center;line-height:12px;margin-right:3px;font-weight:800">Z</span>12pm B CAN Program Review</span><span style="display:block;background:#64092C;color:#fff;border-radius:3px;padding:1px 4px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 0 0 2px #B42318"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#084D78;color:#fff;font-size:8px;text-align:center;line-height:12px;margin-right:3px;font-weight:800">Z</span>12pm B US Welcome</span></div><div style="position:relative;background:#fff;min-height:74px;padding:3px 4px;display:flex;flex-direction:column;gap:2px"><b style="font-size:11px">22</b></div><div style="position:relative;background:#fff;min-height:74px;padding:3px 4px;display:flex;flex-direction:column;gap:2px"><b style="font-size:11px">23</b></div></div>
+</div></div><figcaption><b>Figure 2.</b> The quarter view in the Program Scheduler.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Switch between the quarter view and the week view. The toolbar stays at the top as you scroll.</span></li><li><b class="n">2</b><span>Holidays and CLEAR days off are shaded and named.</span></li><li><b class="n">3</b><span>Sessions that need attention have a red outline. Here, one facilitator (Z) has two cohorts at noon. Drag any session to another day.</span></li></ol>
+<figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/program-scheduler</span></div><div class="screen"><div style="display:grid;grid-template-columns:44px repeat(5,minmax(0,1fr));margin-top:20px;border:1px solid #DEDCE0;background:#fff">
+<div style="font-size:10px;color:#6E6B70;position:relative"><div style="height:38px;text-align:right;padding-right:4px">11 AM</div><div style="height:38px;text-align:right;padding-right:4px">12 PM</div><div style="height:38px;text-align:right;padding-right:4px">1 PM</div><div style="height:38px;text-align:right;padding-right:4px">2 PM</div><div style="height:38px;text-align:right;padding-right:4px">3 PM</div></div>
+<div style="border-left:1px solid #DEDCE0;position:relative;height:190px;background:repeating-linear-gradient(#fff,#fff 37px,#EEECEF 37px,#EEECEF 38px)"><div style="position:absolute;top:-22px;font-size:11px;font-weight:700;left:4px">Mon 18</div></div><div style="border-left:1px solid #DEDCE0;position:relative;height:190px;background:repeating-linear-gradient(#fff,#fff 37px,#EEECEF 37px,#EEECEF 38px)"><div style="position:absolute;top:-22px;font-size:11px;font-weight:700;left:4px">Tue 19</div><div style="position:absolute;left:2%;width:96%;top:76px;height:114px;background:#64092C;color:#fff;border-radius:4px;padding:2px 4px;font-size:10px;line-height:1.25;overflow:hidden"><b>1–4 PM</b><br>B CAN Report Writing</div></div><div style="border-left:1px solid #DEDCE0;position:relative;height:190px;background:repeating-linear-gradient(#fff,#fff 37px,#EEECEF 37px,#EEECEF 38px)"><div style="position:absolute;top:-22px;font-size:11px;font-weight:700;left:4px">Wed 20</div><div style="position:absolute;left:2%;width:96%;top:76px;height:114px;background:#64092C;color:#fff;border-radius:4px;padding:2px 4px;font-size:10px;line-height:1.25;overflow:hidden"><b>1–4 PM</b><br>B CAN Testifying</div></div>
+<div class="anc"><i class="co r" style="top:30px">1</i><div style="border-left:1px solid #DEDCE0;position:relative;height:190px;background:repeating-linear-gradient(#fff,#fff 37px,#EEECEF 37px,#EEECEF 38px)"><div style="position:absolute;top:-22px;font-size:11px;font-weight:700;left:4px">Thu 21</div><div style="position:absolute;left:2%;width:47%;top:38px;height:76px;background:#64092C;color:#fff;border-radius:4px;padding:2px 4px;font-size:10px;line-height:1.25;overflow:hidden;box-shadow:0 0 0 2px #B42318"><b>12–2 PM</b><br>B CAN Program Review</div><div style="position:absolute;left:51%;width:47%;top:38px;height:38px;background:#64092C;color:#fff;border-radius:4px;padding:2px 4px;font-size:10px;line-height:1.25;overflow:hidden;box-shadow:0 0 0 2px #B42318"><b>12–1 PM</b><br>B US Welcome</div></div></div><div style="border-left:1px solid #DEDCE0;position:relative;height:190px;background:repeating-linear-gradient(#fff,#fff 37px,#EEECEF 37px,#EEECEF 38px)"><div style="position:absolute;top:-22px;font-size:11px;font-weight:700;left:4px">Fri 22</div></div></div></div></div><figcaption><b>Figure 3.</b> The week view shows sessions by hour. Overlapping sessions sit side by side.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Two overlapping sessions on Thursday. Drag one to a new time, or open it to use a suggested time.</span></li></ol>
+<h3>Resolve conflicts</h3>
+  <p>The <span class="ui">Conflicts</span> tab lists:</p>
+  <ul>
+    <li><strong>Facilitator conflicts:</strong> one facilitator on two overlapping sessions.</li>
+    <li><strong>Facilitators on days off:</strong> someone scheduled on a day they're unavailable.</li>
+    <li><strong>Overlapping sessions:</strong> two cohorts at the same time.</li>
+    <li><strong>Holidays, days off and weekends.</strong></li>
+  </ul>
+  <p>Each one offers a suggested start time that clears the overlap. Overlaps are allowed: choose <span class="ui">Keep both as scheduled</span> to set the flag aside.</p>
+
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/program-scheduler</span></div><div class="screen"><div class="app-top"><div class="t"><small>CLEAR Learning · Instructor Portal</small>Program Scheduler</div><div class="tabs2"><span class="">Calendar</span><span class="">Cohorts</span><span class="">Conflicts<span class="n">3</span></span><span class="">Program templates</span><span class="">Facilitators and days off</span></div></div>
+<div class="card" style="border-left:5px solid #B42318"><b>Thu, Jan 21: Zephir is facilitating both</b>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+<div style="background:#FAF7F8;border-radius:6px;padding:8px"><b>2027.01.07 NCIT B CAN Open</b><div>Program Review &amp; Final Exam Information</div><div class="facts">12:00 PM–2:00 PM · Zephir</div><div class="anc" style="margin-top:6px;display:inline-block"><i class="co">1</i><span class="btn ghost">Move to 2:30 PM</span></div></div>
+<div style="background:#FAF7F8;border-radius:6px;padding:8px"><b>2027.01.21 NCIT B US Open</b><div>Welcome &amp; Introduction Session</div><div class="facts">12:00 PM–1:00 PM · Zephir</div><div style="margin-top:6px"><span class="btn ghost">Move to 10:30 AM</span></div></div></div>
+<div class="anc" style="margin-top:6px;display:inline-block"><i class="co">2</i><span class="btn lnk">Keep both as scheduled</span></div></div></div></div><figcaption><b>Figure 4.</b> A facilitator conflict on the Conflicts tab.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Suggested start times clear the overlap, with a 15-minute gap.</span></li><li><b class="n">2</b><span>Overlaps are allowed. Keep both as scheduled sets the flag aside.</span></li></ol>
+<h3>Facilitators and days off</h3>
+  <p>On the <span class="ui">Facilitators and days off</span> tab, keep the facilitator list, each facilitator's days off and CLEAR closure days up to date. A facilitator who is off can't be chosen for a cohort or session on those dates. US federal holidays always show, and Canadian holidays can be switched on.</p>
+  <p>To have someone cover a single online session, open the session and choose them under <span class="ui">Facilitator for this session</span>. The session is marked as covered.</p>
+</section>
+
+<section id="publish">
+  <h2>2. Program agendas and publishing</h2>
+  <h3>Generate program agendas for Novi</h3>
+  <ol class="steps">
+    <li>In the Program Scheduler, choose <span class="ui">Generate program agendas</span>.</li>
+    <li>Choose <span class="ui">Agenda</span> on a cohort to open its agenda, or <span class="ui">All in one document</span> for the ticked cohorts.</li>
+    <li>In the print window, choose <span class="ui">Save as PDF</span>. The file name is already set to the cohort label.</li>
+  </ol>
+  <p>Agendas use the same layouts as always. The staff dashboard's Programs tab also has a <span class="ui">Generate program agendas</span> button that opens this window.</p>
+
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/program-scheduler</span></div><div class="screen"><div class="backdrop"><div class="dlg"><div class="dlg-h">Generate program agendas<span class="facts">Close</span></div><div class="dlg-b">
+<div class="facts" style="margin-bottom:8px">Each agenda opens in a print window with the file name set to the cohort label; choose Save as PDF.</div>
+<div style="border:1px solid #DEDCE0;border-radius:6px">
+<div class="row" style="padding:6px 10px"><span class="cb on"></span><span class="lg s ">B</span><span style="flex:1"><b>2027.01.07 NCIT B CAN Open</b></span><span class="anc" style="display:inline-block"><i class="co r">1</i><span class="btn ghost">Agenda</span></span></div><div class="row" style="padding:6px 10px"><span class="cb on"></span><span class="lg s ">B</span><span style="flex:1"><b>2027.01.21 NCIT B US Open</b></span><span class="btn ghost">Agenda</span></div><div class="row" style="padding:6px 10px"><span class="cb on"></span><span class="lg s ">S</span><span style="flex:1"><b>2027.03.01 NCIT S Austin, TX Open</b></span><span class="btn ghost">Agenda</span></div><div class="row" style="padding:6px 10px"><span class="cb on"></span><span class="lg s gold">AC</span><span style="flex:1"><b>2027.03.18 ACRG Open</b></span><span class="btn ghost">Agenda</span></div></div></div>
+<div class="dlg-f"><span class="btn ghost">Close</span><span class="anc" style="display:inline-block"><i class="co">2</i><span class="btn">All in one document</span></span></div></div></div></div></div><figcaption><b>Figure 5.</b> Generating program agendas for Novi.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Agenda opens one cohort's agenda, ready to save as a PDF for its Novi event.</span></li><li><b class="n">2</b><span>All in one document prints the ticked cohorts together.</span></li></ol>
+<h3>Publish to the Instructor Portal</h3>
+  <ol class="steps">
+    <li>Choose <span class="ui">Publish to Instructor Portal</span>. New and changed cohorts are ticked.</li>
+    <li>Check the quarter label and choose <span class="ui">Publish</span>.</li>
+    <li>New cohorts arrive in the staff dashboard as drafts that only staff can see.</li>
+  </ol>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/program-scheduler</span></div><div class="screen"><div class="backdrop"><div class="dlg"><div class="dlg-h">Publish to Instructor Portal<span class="facts">Close</span></div><div class="dlg-b">
+<div class="facts" style="margin-bottom:8px">New cohorts arrive in the staff dashboard as drafts. Cohorts already published are updated in place.</div>
+<span class="lbl">Quarter label in the Instructor Portal</span><span class="inp anc" style="margin-bottom:10px"><i class="co r">1</i>Q1 2027</span>
+<div style="border:1px solid #DEDCE0;border-radius:6px;padding:2px 10px">
+<div class="row"><span class="cb on"></span><span class="lg s">B</span><span style="flex:1"><b>2027.01.07 NCIT B CAN Open</b></span><span class="pill gold anc"><i class="co r">2</i>Changed since publishing</span></div>
+<div class="row"><span class="cb on"></span><span class="lg s">B</span><span style="flex:1"><b>2027.01.21 NCIT B US Open</b></span><span class="pill grey">Not published</span></div>
+<div class="row" style="border:0"><span class="cb"></span><span class="lg s gold">AC</span><span style="flex:1"><b>2027.03.18 ACRG Open</b></span><span class="pill green">Published Oct 18</span></div></div></div>
+<div class="dlg-f"><span class="btn ghost">Cancel</span><span class="btn anc"><i class="co">3</i>Publish</span></div></div></div></div></div><figcaption><b>Figure 6.</b> The Publish window, with new and changed cohorts ticked.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Check the quarter label. Programs are filtered by it in the staff dashboard.</span></li><li><b class="n">2</b><span>Each cohort shows whether it has been published, or changed since.</span></li><li><b class="n">3</b><span>Choose Publish. New cohorts become drafts; published ones are updated.</span></li></ol>
+<div class="note"><strong>The scheduler is the source of truth for dates.</strong> To change a live program's dates or times, change them in the scheduler and publish again. Each cohort shows <em>Not published</em>, <em>Published</em> or <em>Changed since publishing</em> so you can tell what still needs to go out.</div>
+</section>
+
+<section id="open">
+  <h2>3. Open and announce</h2>
+  <ol class="steps">
+    <li>On the staff dashboard <span class="ui">Overview</span>, review the drafts. Check dates and times on the <span class="ui">Programs</span> tab, or open a program's editor.</li>
+    <li>Choose <span class="ui">Open all drafts</span> (it shows how many, for example <em>Open all 10 drafts</em>), or open programs one at a time with their status menu.</li>
+    <li>Choose <span class="ui">Announce programs</span>. Tick the programs to include, add an optional note, use <span class="ui">Preview</span> and <span class="ui">Send test to me</span>, then send.</li>
+  </ol>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/admin-dashboard</span></div><div class="screen"><div class="app-top"><div class="t">Instructor Portal Staff Dashboard</div><div class="tabs2"><span class="on">Overview</span><span class="">Responses</span><span class="">Selection</span><span class="">Programs</span><span class="">Instructors</span><span class="">Staff</span><span class="">Activity</span></div></div>
+<div class="note2 anc"><i class="co">1</i><b>2 open programs haven't been announced.</b> Instructors won't know to look until you tell them. <span class="btn">Announce by email</span></div>
+<div class="bar"><span class="sel">Q1 2027 ▾</span><span class="grow"></span><span class="btn ghost">Compose email</span><span class="btn ghost">Announce programs</span><span class="btn ghost">Send reminders</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<div class="card" style="margin:0"><div class="ph"><span class="lg">NCIT B</span><div style="flex:1"><h3>Canadian NCIT - Basic Online</h3><b style="font-size:11.5px">2027.01.07 NCIT B CAN Open</b><div class="facts">Jan 12 – Jan 21 · 6 sessions<br>respond by Dec 8 (auto), 49 days left</div></div><span class="pill open">open</span></div>
+<div class="anc" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><i class="co">2</i><div><b style="font-size:18px">14</b><div class="facts">responses received</div></div><div><b style="font-size:18px">4<small style="font-size:11px;color:#6E6B70">/6</small></b><div class="facts">sessions confirmed</div></div></div>
+<div class="facts" style="margin-top:6px">Announced Oct 20, 2026</div><div style="margin-top:6px"><span class="btn ghost">Responses</span> <span class="btn ghost">Selection</span> <span class="btn">Close responses</span></div></div>
+<div class="card" style="margin:0"><div class="ph gold"><span class="lg gold">ACRG</span><div style="flex:1"><h3 style="color:#4A0620">Advanced Concepts in Reg. Governance</h3><b style="font-size:11.5px">2027.03.18 ACRG Open</b><div class="facts">Mar 18 – Apr 6 · 3 sessions</div></div><span class="pill open anc"><i class="co r">3</i>open</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><b style="font-size:18px">6</b><div class="facts">responses received</div></div><div><b style="font-size:18px">0<small style="font-size:11px;color:#6E6B70">/3</small></b><div class="facts">sessions confirmed</div></div></div>
+<div class="warnt" style="margin-top:6px">Not announced yet</div></div></div></div></div><figcaption><b>Figure 7.</b> The Overview: every program in the quarter at a glance.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Notices at the top call out what needs doing, such as announcing open programs.</span></li><li><b class="n">2</b><span>Responses received, and how many sessions have a confirmed instructor.</span></li><li><b class="n">3</b><span>The program's status. Its button moves it to the next step: open, close or reopen.</span></li></ol>
+<figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/admin-dashboard</span></div><div class="screen"><div class="backdrop"><div class="dlg"><div class="dlg-h">Announce programs to instructors<span class="facts">Close</span></div><div class="dlg-b">
+<div class="facts" style="margin-bottom:8px">Each instructor's email lists only the ticked programs they're approved to teach.</div>
+<div style="border:1px solid #DEDCE0;border-radius:6px;padding:4px 10px;margin-bottom:10px">
+<div class="row"><span class="cb on"></span><b>Canadian NCIT - Basic Online</b><span class="facts">Jan 12 – Jan 21</span></div>
+<div class="row" style="border:0"><span class="cb on"></span><b>Advanced Concepts in Reg. Governance</b><span class="facts">Mar 18 – Apr 6</span></div></div>
+<span class="lbl">Personal note at the top (optional)</span><div class="inp anc" style="display:block;height:40px"><i class="co r">1</i></div></div>
+<div class="dlg-f"><span class="btn ghost">Cancel</span><span class="btn ghost anc"><i class="co">2</i>Preview</span><span class="btn ghost">Send test to me</span><span class="btn">Send announcement</span></div></div></div></div></div><figcaption><b>Figure 8.</b> Announcing programs by email.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Add an optional note that appears at the top of the email.</span></li><li><b class="n">2</b><span>Preview shows the email exactly as instructors will see it. Send test to me sends it to you first.</span></li></ol>
+<p>Each instructor's announcement lists only the ticked programs that match their teaching approvals and formats. Instructors approved for none of them aren't emailed.</p>
+  <h3>What decides who sees a program</h3>
+  <ul>
+    <li><strong>Teaching approvals</strong> (Instructors tab): the programs each instructor is approved to teach. Anyone approved for a workshop also sees the Workshop Series.</li>
+    <li><strong>Teaches</strong>: the format each instructor chose (Online only, In person only, or Both).</li>
+    <li>Instructors with no approvals or format set see everything, so nobody is left out before their record is complete.</li>
+  </ul>
+</section>
+
+<section id="responses">
+  <h2>4. Collect responses</h2>
+  <p>The response date is set automatically to 30 days before the cohort's first live session. Instructors can change their answers until then; afterwards answers lock.</p>
+  <ul>
+    <li><strong>Overview</strong> shows how many instructors have responded to each program and how many sessions are confirmed.</li>
+    <li><strong>Responses</strong> shows every answer in a grid laid out like the old availability spreadsheet. Click any cell to enter an answer for an instructor who sent it another way; it's recorded as a staff entry.</li>
+    <li><strong>By instructor</strong> (on the Responses tab) shows everything one instructor has told you across programs.</li>
+  </ul>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/admin-dashboard</span></div><div class="screen"><div class="app-top"><div class="t">Instructor Portal Staff Dashboard</div><div class="tabs2"><span class="">Overview</span><span class="on">Responses</span><span class="">Selection</span><span class="">Programs</span><span class="">Instructors</span><span class="">Staff</span><span class="">Activity</span></div></div>
+<div class="bar"><span class="sel" style="background:#64092C;color:#fff">By program</span><span class="sel">By instructor</span><span class="sel">Canadian NCIT - Basic Online (2027.01.07 NCIT B CAN Open) ▾</span></div>
+<div class="card" style="padding:0;overflow:hidden"><table class="t"><thead><tr><th>Session</th><th class="anc"><i class="co">1</i>Barton, Andrew</th><th>Cooley, Mandi</th><th>Verge, Vicki</th><th>Wade, Amigo</th><th>Available</th></tr></thead><tbody>
+<tr style="background:#FAF7F8"><td><b>Whole program</b></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#1F6B3F;color:#fff">A</span></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#EEECEF;color:#6E6B70">&nbsp;</span></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#5A5A5A;color:#fff">N</span></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#EEECEF;color:#6E6B70">&nbsp;</span></td><td></td></tr>
+<tr><td>Investigative Process<div class="facts">Jan 12, 1:00 PM</div></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#1F6B3F;color:#fff;opacity:.55">A</span></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#1F6B3F;color:#fff">A</span></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#5A5A5A;color:#fff;opacity:.55">N</span></td><td class="anc" style="text-align:center"><i class="co r">2</i><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-size:10.5px;background:#EEECEF;color:#6E6B70">–</span></td><td>2</td></tr>
+<tr><td>Interviewing Techniques<div class="facts">Jan 13, 1:00 PM</div></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#5A5A5A;color:#fff">N</span></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#1F6B3F;color:#fff">A</span></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#5A5A5A;color:#fff;opacity:.55">N</span></td><td style="text-align:center"><span style="display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;font-weight:700;font-size:10.5px;background:#EEECEF;color:#6E6B70">&nbsp;</span></td><td>1</td></tr></tbody></table></div></div></div><figcaption><b>Figure 9.</b> The Responses grid, laid out like the old availability spreadsheet.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Each column is an instructor. Click a name to see their answers across all programs.</span></li><li><b class="n">2</b><span>Click any cell to enter an answer for an instructor who sent it another way. Faded answers come from the instructor's whole-program answer.</span></li></ol>
+<h3>Reminders</h3>
+  <p>Reminders go out automatically 7 and 2 days before each response date, only to approved instructors who haven't responded to that program. Use <span class="ui">Send reminders</span> on the Overview to send one at any other time.</p>
+  <div class="tip"><strong>Need a different response date?</strong> Open the program's editor, clear <em>Automatic</em> next to <em>Respond by</em>, and choose a date.</div>
+</section>
+
+<section id="select">
+  <h2>5. Select instructors</h2>
+  <ol class="steps">
+    <li>Open the <span class="ui">Selection</span> tab and choose the program.</li>
+    <li>For each session or module, choose from the instructors marked available. The number after each name is how many slots they already hold this cycle. The ↗ link opens their teaching history and evaluations.</li>
+    <li>Set each pick's role (Lead, Co-instructor or Backup). New picks start as <em>Tentative</em>, which only staff can see.</li>
+    <li>When you've decided, set the picks to <em>Confirmed</em> and choose <span class="ui">Save selections</span>.</li>
+    <li>Choose <span class="ui">Email selection notices</span>. Each confirmed instructor gets a short email with a <em>View your assignments</em> button.</li>
+  </ol>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/admin-dashboard</span></div><div class="screen"><div class="app-top"><div class="t">Instructor Portal Staff Dashboard</div><div class="tabs2"><span class="">Overview</span><span class="">Responses</span><span class="on">Selection</span><span class="">Programs</span><span class="">Instructors</span><span class="">Staff</span><span class="">Activity</span></div></div>
+<div class="card"><div class="ph anc"><i class="co">1</i><span class="lg">NCIT B</span><div><h3>Canadian NCIT - Basic Online Program</h3><div class="facts">2027.01.07 NCIT B CAN Open · Jan 12 – Jan 21, 2027 · 6 sessions · respond by Dec 8, 2026</div></div></div>
+<div style="display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap"><span class="btn ghost">Mark all confirmed</span><span class="btn dis">Save selections</span><span class="btn ghost">Email selection notices (1)</span><span class="btn ghost">Find Zoom links</span><span class="btn anc"><i class="co r">5</i>Download cohort kit</span></div></div>
+<div class="card" style="margin:0">
+<div style="display:grid;grid-template-columns:190px 1fr;gap:12px;padding-bottom:9px"><div class="anc"><i class="co">2</i><b>Investigative Process</b><div class="facts">Jan 12, 2027, 1:00 PM – 3:00 PM ET</div><div class="facts">Zoom: https://zoom.us/j/8814…</div></div>
+<div><div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;background:#E3F1E8;border:1px solid #B9DCC6;border-radius:8px;padding:5px 9px;margin-bottom:6px"><b>Barton, Andrew</b><span class="anc" style="display:inline-flex;gap:6px"><i class="co r">3</i><span class="sel">Lead ▾</span><span class="sel">Confirmed ▾</span></span><span class="facts">✉ Emailed Oct 20</span><span style="color:#084D78;font-weight:600;font-size:11px">History ↗</span></div>
+<div class="anc" style="display:flex;gap:5px;flex-wrap:wrap"><i class="co">4</i><span class="sel" style="border-radius:12px">+ Cooley, Mandi <b style="background:#E2EDF4;color:#084D78;border-radius:7px;padding:0 5px">2</b></span><span class="sel" style="border-radius:12px">+ Verge, Vicki <b style="background:#E2EDF4;color:#084D78;border-radius:7px;padding:0 5px">0</b></span><span class="sel" style="border-radius:12px;border-style:dashed">+ Someone else</span></div></div></div>
+<div style="display:grid;grid-template-columns:190px 1fr;gap:12px;border-top:1px solid #EEECEF;padding-top:9px"><div><b>Interviewing Techniques</b><div class="facts">Jan 13, 2027, 1:00 PM – 4:00 PM ET</div><div class="warnt">No Zoom link yet</div></div>
+<div><div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;background:#F8EDD3;border:1px solid #EAD49B;border-radius:8px;padding:5px 9px"><b>Cooley, Mandi</b><span class="sel">Lead ▾</span><span class="sel">Tentative ▾</span><span style="color:#084D78;font-weight:600;font-size:11px">History ↗</span></div></div></div></div></div></div><figcaption><b>Figure 10.</b> The Selection tab for one cohort, with one confirmed and one tentative pick.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>The program header shows the cohort, dates, number of sessions and response date.</span></li><li><b class="n">2</b><span>Each session lists its date, time and Zoom link. Green picks are confirmed; gold picks are tentative and only staff can see them.</span></li><li><b class="n">3</b><span>Set the role and status. Change Tentative to Confirmed, then choose Save selections.</span></li><li><b class="n">4</b><span>Instructors who marked the session available appear as chips, with how many slots they already hold this cycle.</span></li><li><b class="n">5</b><span>Once every session has a confirmed instructor, Download cohort kit is highlighted.</span></li></ol>
+<p>Add staffing notes at the bottom of the tab; they're kept with the date and author. To pick someone who didn't mark the session available, use <span class="ui">+ Someone else</span>.</p>
+  <div class="note"><strong>Welcome sessions.</strong> In ACRG, ELPR and SRA: Staffing a Board, every instructor confirmed for the cohort attends the Welcome session, so it isn't selected separately. In all other programs the Welcome session isn't listed for instructors.</div>
+  <p>Instructors who can no longer teach after being confirmed call the program facilitator; staff then update the selection here.</p>
+</section>
+
+<section id="prepare">
+  <h2>6. Prepare the cohort</h2>
+  <h3>Zoom links</h3>
+  <p>Zoom meetings are still created in TalentLMS. Every morning the portal reads the meetings on the clearlearning@clearhq.org Zoom account and matches each to its session by date, start time and length. Instructors see the link on their My assignments page.</p>
+  <ul>
+    <li><strong>Find Zoom links now</strong> (Overview) or <strong>Find Zoom links</strong> (Selection) runs the check straight away.</li>
+    <li><strong>Choose the right meeting:</strong> when two meetings start at the same time, the Overview asks you to pick the right one or paste the link.</li>
+    <li><strong>Missing links:</strong> programs starting within a week that still lack links are listed on the Overview, with a box to paste each link.</li>
+    <li>A link typed into a program's editor is marked as entered by hand and is never replaced by the check.</li>
+  </ul>
+
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/admin-dashboard</span></div><div class="screen"><div class="card" style="margin:0"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div class="anc"><i class="co">1</i><b style="color:#64092C">Zoom links</b><div class="facts">Last checked Oct 21, 9:00 AM: 18 added, 1 to review, 4 sessions with no meeting in Zoom yet.</div></div><span class="btn ghost">Find Zoom links now</span></div>
+<div style="font-weight:700;margin:10px 0 4px">Choose the right meeting (1)</div>
+<div style="border:1px solid #DEDCE0;border-left:5px solid #DDA838;border-radius:0;padding:8px 10px"><b>NCIT - Basic Online Program (2027.01.21 NCIT B US Open)</b><div>Week One Q &amp; A <span class="facts">Feb 4, 2027, 1:00 PM – 2:00 PM ET</span></div>
+<div class="anc" style="margin-top:6px"><i class="co">2</i><div style="margin-bottom:4px"><span class="btn">Use this meeting</span> <b>NCIT B Jan 21 Week 1 Q&amp;A</b> <span class="facts">Thu, Feb 4, 1:00 PM ET, 60 min</span></div><div><span class="btn">Use this meeting</span> <b>ELPR Module 4</b> <span class="facts">Thu, Feb 4, 1:00 PM ET, 180 min</span></div></div>
+<div class="anc" style="margin-top:6px"><i class="co">3</i><span class="inp" style="min-width:240px">Or paste the Zoom link</span> <span class="btn lnk">Save link</span></div></div></div></div></div><figcaption><b>Figure 11.</b> The Zoom links panel on the Overview.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>The daily check runs every morning. Find Zoom links now runs it straight away.</span></li><li><b class="n">2</b><span>When two meetings start at the same time, choose the one that belongs to the session.</span></li><li><b class="n">3</b><span>Or paste the link yourself. Links entered by hand are never replaced.</span></li></ol>
+<h3>Cohort kit</h3>
+  <p>Once every session has a confirmed instructor, the Overview shows <em>Kit ready</em> and the Selection tab's <span class="ui">Download cohort kit</span> button is highlighted. The kit is one zip named after the cohort, containing:</p>
+  <ul>
+    <li><strong>Survey links</strong> as a printable page and a spreadsheet, one per confirmed instructor for each instructor-led session, plus links for the self-paced modules.</li>
+    <li><strong>QR codes</strong> for in-person modules.</li>
+    <li><strong>The welcome email</strong>, ready to paste into TalentLMS (subject line first), plus a preview.</li>
+    <li>A <strong>READ ME</strong> file if anything needs attention, such as a missing Zoom link.</li>
+  </ul>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>Downloads</span></div><div class="screen"><div class="card" style="margin:0;max-width:540px"><b style="color:#64092C">Cohort Kit - 2027.03.01 NCIT B US Austin, TX Open.zip</b><div style="margin-top:6px"><div style="padding:3px 0 3px 0px;display:flex;gap:6px;align-items:center;font-size:12px"><span style="color:#DDA838">▸</span><b>2027.03.01 NCIT B US Austin, TX Open</b></div><div style="padding:3px 0 3px 16px;display:flex;gap:6px;align-items:center;font-size:12px"><span style="color:#6E6B70">•</span>Survey Links - 2027.03.01 NCIT B US Austin, TX Open.html</div><div style="padding:3px 0 3px 16px;display:flex;gap:6px;align-items:center;font-size:12px"><span style="color:#6E6B70">•</span>Survey Links - 2027.03.01 NCIT B US Austin, TX Open.csv</div><div style="padding:3px 0 3px 16px;display:flex;gap:6px;align-items:center;font-size:12px"><span style="color:#DDA838">▸</span>QR Codes <span class="facts">(10 files: M01 Barton, Andrew.png …)</span></div><div style="padding:3px 0 3px 16px;display:flex;gap:6px;align-items:center;font-size:12px"><span style="color:#6E6B70">•</span>Welcome Email - NCIT B IPT – Basic In-Person (US &amp; CAN) (TalentLMS).txt</div><div style="padding:3px 0 3px 16px;display:flex;gap:6px;align-items:center;font-size:12px"><span style="color:#6E6B70">•</span>Welcome Email - NCIT B IPT – Basic In-Person (US &amp; CAN) (preview).html</div><div style="padding:3px 0 3px 16px;display:flex;gap:6px;align-items:center;font-size:12px"><span style="color:#6E6B70">•</span><span class="anc" style="display:inline-block"><i class="co r">1</i>READ ME - items to check.txt</span> <span class="facts">(only when something needs attention)</span></div></div></div></div></div><figcaption><b>Figure 12.</b> What's inside a cohort kit.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>The READ ME file lists anything to check before using the kit, such as a missing Zoom link or venue details not entered yet.</span></li></ol>
+<div class="tip"><strong>In-person welcome emails need venue details.</strong> Before downloading, open the program's editor and fill in <em>Welcome email details</em>: venue, address, registration and session times, training room, parking and meals, and the contact. City and program dates fill in automatically.</div><figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/admin-dashboard</span></div><div class="screen"><div class="backdrop"><div class="dlg"><div class="dlg-h">Edit program<span class="facts">Close</span></div><div class="dlg-b">
+<b style="color:#64092C">Welcome email details</b><div class="facts" style="margin-bottom:8px">Used to fill in this program's welcome email in the cohort kit. City and program dates fill in automatically if left blank.</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div><span class="lbl">Venue name</span><span class="inp" style="display:block;color:#2B2B2B">Hilton Austin Downtown</span></div><div><span class="lbl">Street address</span><span class="inp" style="display:block;color:#2B2B2B">500 E 4th St</span></div><div><span class="lbl">City, State/Province, Zip/Postal code</span><span class="inp" style="display:block;color:#2B2B2B">Austin, TX 78701</span></div><div><span class="lbl">Training room</span><span class="inp" style="display:block;color:#2B2B2B">Salon F</span></div><div><span class="lbl">Registration opens</span><span class="inp" style="display:block;color:#2B2B2B">7:30 AM CST</span></div><div><span class="lbl">Session begins</span><span class="inp" style="display:block;color:#2B2B2B">8:00 AM CST</span></div><div><span class="lbl">Contact name</span><span class="inp" style="display:block;color:#2B2B2B">Julie Winsor</span></div><div><span class="lbl">Contact email</span><span class="inp" style="display:block;color:#2B2B2B">jwinsor@clearhq.org</span></div></div></div>
+<div class="dlg-f"><span class="btn ghost">Cancel</span><span class="btn">Save</span></div></div></div></div></div><figcaption><b>Figure 13.</b> Welcome email details for an in-person program, in its program editor.</figcaption></figure>
+
+</section>
+
+<section id="changes">
+  <h2>7. Schedule changes</h2>
+  <ol class="steps">
+    <li>Make the change in the Program Scheduler and publish the cohort again.</li>
+    <li>The live program updates; instructors' answers stay attached.</li>
+    <li>Confirmed instructors whose schedule changed are flagged on the Overview and Selection tab.</li>
+    <li>Choose <span class="ui">Send schedule change notices</span>. Each instructor gets their current schedule with the changes marked.</li>
+  </ol>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/admin-dashboard</span></div><div class="screen"><div class="backdrop"><div class="dlg"><div class="dlg-h">Send schedule change notices<span class="facts">Close</span></div><div class="dlg-b">
+<div class="facts" style="margin-bottom:8px">Each instructor gets their current schedule with the changes marked.</div>
+<div style="border:1px solid #DEDCE0;border-radius:6px;padding:4px 10px;margin-bottom:10px"><div class="row" style="border:0"><span class="cb on"></span><b>Barton, Andrew</b><span class="facts anc"><i class="co r">1</i>Investigative Process: date or time</span></div></div>
+<span class="lbl">Note explaining the change (optional)</span><div class="inp" style="display:block;height:38px;color:#6E6B70">The session moved to Thursday because of the holiday.</div></div>
+<div class="dlg-f"><span class="btn ghost">Cancel</span><span class="btn ghost">Preview</span><span class="btn ghost">Send test to me</span><span class="btn">Send change notices</span></div></div></div></div></div><figcaption><b>Figure 14.</b> Sending schedule change notices from the Selection tab.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Each affected instructor is listed with exactly what changed.</span></li></ol>
+<p>A replaced Zoom link is treated as a change too. A first Zoom link appearing is not, since instructors check My assignments for it.</p>
+</section>
+
+<section id="reports">
+  <h2>8. Evaluation reports</h2>
+  <p>The evaluation report tool (<span class="path">/evaluation-reports</span>) works as it always has: filters, data corrections, comment selection, PDF and XLSX exports, and the link to update the Master Instructor File.</p>
+  <ol class="steps">
+    <li>Generate the instructor report and deselect any comments that shouldn't be shared.</li>
+    <li>Choose <span class="ui">Publish to Instructor Portal</span>.</li>
+    <li>Each instructor's report is posted to their Evaluation reports page with its own private link, and they receive an email.</li>
+  </ol>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/evaluation-reports</span></div><div class="screen"><div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;padding:12px 14px;margin-bottom:10px"><b style="color:#64092C">Next Steps</b>
+<div style="background:#FBF6E9;border:1px solid #DDA838;border-radius:8px;padding:7px 10px;margin:6px 0 10px;font-size:12px">1. Review the report and deselect any comments you do not wish to include. 2. Click Publish to Instructor Portal, or Download PDF for files.</div>
+<div class="bar" style="margin:0"><span class="btn anc"><i class="co">1</i>Publish to Instructor Portal</span><span class="btn ghost">Download PDF</span><span class="btn ghost">Download XLSX</span><span class="btn ghost">Update Master Instructor File</span></div></div>
+<div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;padding:12px 14px"><b style="color:#64092C">Reports published to the Instructor Portal</b>
+<table class="t" style="margin-top:6px"><thead><tr><th>Instructor</th><th>Report</th><th>Published</th><th>Viewed</th><th></th></tr></thead><tbody>
+<tr><td>Barton, Andrew</td><td style="color:#084D78">Evaluation Report - 2027.01.07 NCIT B CAN Open</td><td>Feb 18, 2027</td><td class="anc"><i class="co">2</i>Feb 19, 2027</td><td><span class="btn ghost">Withdraw</span></td></tr>
+<tr><td>Cooley, Mandi</td><td style="color:#084D78">Evaluation Report - 2027.01.07 NCIT B CAN Open</td><td>Feb 18, 2027</td><td>Not yet</td><td><span class="btn ghost">Withdraw</span></td></tr></tbody></table></div></div></div><figcaption><b>Figure 15.</b> Publishing reports from the evaluation report tool.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Publish to Instructor Portal posts each instructor's report and emails them a link. Only comments left selected are included.</span></li><li><b class="n">2</b><span>See when each instructor opened their report. Withdraw removes it from their portal.</span></li></ol>
+<p>Names that don't match an instructor on the roster are listed instead of published; correct the name and publish again. <span class="ui">Reports published to the Instructor Portal</span>, at the bottom of the tool, shows each report, whether it has been viewed, and a <span class="ui">Withdraw</span> button.</p>
+</section>
+
+<section id="records">
+  <h2>Instructor and staff records</h2>
+  <h3>Instructors tab</h3>
+  <ul>
+    <li><strong>Contact details:</strong> each instructor's name (Last, First), every email they may sign in with, active status, notes, and the format they teach (<em>Teaches</em>). Instructors set their own format in the portal; staff can change it here.</li>
+    <li><strong>Teaching approvals:</strong> tick the programs each instructor is approved to teach.</li>
+    <li><span class="ui">Paste names and emails</span> adds or updates several instructors at once, for example from the master instructor file. Each instructor has a <span class="ui">Preview page</span> link that shows their portal exactly as they see it.</li>
+  </ul>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/admin-dashboard</span></div><div class="screen"><div class="app-top"><div class="t">Instructor Portal Staff Dashboard</div><div class="tabs2"><span class="">Overview</span><span class="">Responses</span><span class="">Selection</span><span class="">Programs</span><span class="on">Instructors</span><span class="">Staff</span><span class="">Activity</span></div></div>
+<div class="bar"><span class="sel">Contact details</span><span class="sel" style="background:#64092C;color:#fff">Teaching approvals</span><span class="grow"></span><span class="btn">Save approvals</span></div>
+<div class="card" style="padding:0;overflow:hidden"><table class="t"><thead><tr><th>Instructor</th><th style="text-align:center"><span class="lg s " style="margin:0 auto 2px">B</span>Basic</th><th style="text-align:center"><span class="lg s " style="margin:0 auto 2px">S</span>Specialized</th><th style="text-align:center"><span class="lg s " style="margin:0 auto 2px">AIT</span>AIT</th><th style="text-align:center"><span class="lg s " style="margin:0 auto 2px">W</span>Series</th><th style="text-align:center"><span class="lg s blue" style="margin:0 auto 2px">EL</span>ELPR</th><th style="text-align:center"><span class="lg s gold" style="margin:0 auto 2px">AC</span>ACRG</th></tr></thead><tbody>
+<tr><td><b>Barton, Andrew</b><div class="facts">3 programs · Teaches: Both</div></td><td style="text-align:center"><span class="cb on"></span></td><td style="text-align:center"><span class="cb on"></span></td><td style="text-align:center"><span class="cb on"></span></td><td style="text-align:center"><span class="cb "></span></td><td style="text-align:center"><span class="cb "></span></td><td style="text-align:center"><span class="cb "></span></td></tr>
+<tr><td><b>Cooley, Mandi</b><div class="facts">2 programs · Teaches: Online only</div></td><td style="text-align:center"><span class="cb on"></span></td><td style="text-align:center"><span class="cb "></span></td><td style="text-align:center"><span class="cb "></span></td><td style="text-align:center"><span class="cb on"></span></td><td style="text-align:center"><span class="cb "></span></td><td style="text-align:center"><span class="cb "></span></td></tr>
+<tr><td class="anc"><i class="co r">1</i><b>Verge, Vicki</b><div class="warnt">Not set: sees everything</div></td><td style="text-align:center"><span class="cb"></span></td><td style="text-align:center"><span class="cb"></span></td><td style="text-align:center"><span class="cb"></span></td><td style="text-align:center"><span class="cb"></span></td><td style="text-align:center"><span class="cb"></span></td><td style="text-align:center"><span class="cb"></span></td></tr></tbody></table></div></div></div><figcaption><b>Figure 16.</b> Teaching approvals on the Instructors tab (some programs omitted).</figcaption></figure><ol class="key"><li><b class="n">1</b><span>An instructor with nothing ticked sees every program until their approvals are set.</span></li></ol>
+<div class="warn"><strong>Adding or removing an instructor also needs an access change.</strong> After saving, use the email link in the notice on the Instructors tab to tell the administrator, so the person can be added to or removed from the Cloudflare Zero Trust access group. The Staff tab has the same notice for staff changes.</div>
+  <h3>Other tabs</h3>
+  <ul>
+    <li><strong>Programs:</strong> every program grouped by type. Edit details, status, response date, track, logo, sessions and Zoom links, or add a one-off program.</li>
+    <li><strong>Staff:</strong> who can use the dashboard. Only admins can change it.</li>
+    <li><strong>Activity:</strong> a log of changes, sends and imports.</li>
+  </ul>
+</section>
+
+<section id="email">
+  <h2>Emails the portal sends</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Email</th><th>Sent</th><th>Who receives it</th></tr></thead>
+    <tbody>
+      <tr><td>New programs announcement</td><td>When staff choose Announce programs</td><td>Approved instructors, listing only their matching programs</td></tr>
+      <tr><td>Reminder</td><td>Automatically 7 and 2 days before the response date, or when staff choose Send reminders</td><td>Approved instructors who haven't responded</td></tr>
+      <tr><td>Selection notice</td><td>When staff choose Email selection notices</td><td>Confirmed instructors</td></tr>
+      <tr><td>Schedule change notice</td><td>When staff choose Send schedule change notices</td><td>Confirmed instructors whose schedule changed</td></tr>
+      <tr><td>Evaluation report</td><td>When a report is published</td><td>That instructor</td></tr>
+      <tr><td>Custom email</td><td>When staff choose Compose email</td><td>The group you choose</td></tr>
+    </tbody>
+  </table></div>
+  <p>All emails come from clearlearning@clearhq.org in CLEAR Learning styling. Every send window has <span class="ui">Preview</span> and <span class="ui">Send test to me</span>. <span class="ui">Compose email</span> (Overview) and <span class="ui">Email this program's instructors</span> (Selection) send your own message with bold, italic, lists and links.</p>
+</section>
+
+<section id="help">
+  <h2>Troubleshooting</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>If…</th><th>Then…</th></tr></thead>
+    <tbody>
+      <tr><td>An instructor can't sign in or doesn't get a code</td><td>Check their email is listed on the Instructors tab and that the administrator has added it to the Zero Trust access group. Codes can land in junk mail.</td></tr>
+      <tr><td>An instructor can't see a program</td><td>Check their teaching approvals and format, and that the program is Open. Use their Preview page link to see what they see.</td></tr>
+      <tr><td>A program shows "Answers locked"</td><td>The response date has passed. Change it in the program's editor, or enter answers for the instructor on the Responses tab.</td></tr>
+      <tr><td>A session has no Zoom link</td><td>Check the meeting exists in TalentLMS for that date and time, then choose Find Zoom links. If it still doesn't match, paste the link on the Overview.</td></tr>
+      <tr><td>The scheduler says someone else changed the schedule</td><td>Choose Load their version to see the latest, or Keep my version to save yours over theirs.</td></tr>
+      <tr><td>The agenda window doesn't open</td><td>Allow pop-ups for the portal in your browser, then try again.</td></tr>
+      <tr><td>A report name didn't match the roster</td><td>Fix the name with a data correction in the report tool, or on the Instructors tab, then publish again.</td></tr>
+    </tbody>
+  </table></div>
+  <p>For anything else, contact Amanda Vance.</p>
+</section>
+<p class="foot">CLEAR Learning · Instructor Portal Program Coordinator Guide</p>
+</main>
+</div>
+</body>
+</html>
