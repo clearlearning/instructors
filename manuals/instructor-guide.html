@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instructor Portal Guide | CLEAR Learning</title>
+<link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--burgundy:#64092C;--burgundy-dk:#4A0620;--gold:#C9933A;--gold-lt:#F8EDD3;--blue:#084D78;--blue-lt:#E2EDF4;--ink:#1A1014;--charcoal:#484848;--muted:#6E6B70;--line:#E4DCE0;--soft:#FAF4F6;--bg:#F5F0F2;--green:#1F6B3F;--green-lt:#E3F1E8;--red:#9B1C1C}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Open Sans",Arial,sans-serif;font-size:16px;line-height:1.65}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.top{background:#fff}
+.top-in{max-width:980px;margin:0 auto;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.top img{width:220px;height:auto;display:block}
+.top a.btn{background:var(--burgundy);color:#fff;text-decoration:none;font-weight:700;padding:9px 16px;border-radius:6px;font-size:14px}
+.top a.btn:hover{background:var(--burgundy-dk)}
+.goldbar{height:4px;background:var(--gold)}
+.hero{background:var(--burgundy);color:#fff}
+.hero-in{max-width:980px;margin:0 auto;padding:32px 28px 28px}
+.hero small{display:block;font-weight:700;font-size:13px;opacity:.85}
+.hero h1{margin:4px 0 8px;font-size:32px;line-height:1.15;font-weight:800}
+.hero p{margin:0;max-width:66ch;opacity:.93}
+main{max-width:980px;margin:0 auto;padding:26px 28px 70px}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.toc a{background:#fff;border:1px solid var(--line);border-radius:18px;padding:5px 14px;font-size:14px;font-weight:600;color:var(--burgundy);text-decoration:none}
+.toc a:hover{border-color:var(--burgundy)}
+section{background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px 30px;margin-bottom:20px}
+h2{margin:0 0 8px;color:var(--burgundy);font-size:23px}
+h3{margin:20px 0 6px;color:var(--burgundy);font-size:17px}
+p{margin:0 0 12px;max-width:72ch}
+ul{margin:0 0 14px;padding-left:22px;max-width:72ch}
+li{margin-bottom:6px}
+.ui{font-weight:700;color:var(--burgundy-dk)}
+ol.steps{list-style:none;padding-left:0;margin:6px 0 14px;counter-reset:st;max-width:72ch}
+ol.steps>li{counter-increment:st;position:relative;padding-left:40px;margin-bottom:12px}
+ol.steps>li::before{content:counter(st);position:absolute;left:0;top:1px;width:26px;height:26px;border-radius:50%;background:var(--gold-lt);color:var(--burgundy);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:1px solid var(--gold)}
+.note,.tip,.important{border-radius:8px;padding:12px 16px;margin:14px 0;max-width:76ch}
+.note{background:var(--blue-lt);border-left:4px solid var(--blue)}
+.tip{background:var(--gold-lt);border-left:4px solid var(--gold)}
+.important{background:#FBE9EC;border-left:4px solid var(--red)}
+.note strong,.tip strong,.important strong{display:block;margin-bottom:2px}
+
+/* Journey */
+.journey{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:16px 0 4px;counter-reset:j}
+.jstep{position:relative;border:1px solid var(--line);border-radius:10px;padding:14px 12px 12px;counter-increment:j;background:#fff}
+.jstep::before{content:counter(j);position:absolute;top:-12px;left:12px;width:26px;height:26px;border-radius:50%;background:var(--burgundy);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px #fff}
+.jstep h3{margin:6px 0 4px;font-size:15px}
+.jstep p{font-size:13.5px;margin:0;color:var(--charcoal)}
+
+/* Mock answer control */
+.answer{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:13px;font-weight:600;vertical-align:middle}
+.answer span{padding:5px 11px;background:#fff;color:var(--charcoal)}
+.answer span+span{border-left:1px solid var(--line)}
+.answer span.on{background:var(--green);color:#fff}
+.badge{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:12px;vertical-align:middle}
+.b-done{background:var(--green-lt);color:var(--green)}
+.b-part{background:var(--gold-lt);color:#7A5410}
+.b-need{background:#fff;color:var(--burgundy);border:1px solid var(--burgundy)}
+table{border-collapse:collapse;width:100%;margin:8px 0 14px;font-size:15px}
+th{background:var(--soft);color:var(--burgundy);text-align:left;font-size:13px;padding:9px 12px;border-bottom:2px solid var(--gold)}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl{overflow-x:auto}
+.foot{text-align:center;color:var(--muted);font-size:13px}
+/* ---------- Drawn screen mockups (figures) ---------- */
+figure.mock{margin:18px 0 10px}
+.frame{position:relative;border:1px solid #CFC6CB;border-radius:10px;background:#F3F3F5;box-shadow:0 6px 18px rgba(74,6,32,.10)}
+.chrome{display:flex;align-items:center;gap:6px;background:#ECE7EA;border-bottom:1px solid #DDD5D9;border-radius:10px 10px 0 0;padding:7px 12px;font-size:11.5px;color:#6E6B70}
+.chrome i{width:10px;height:10px;border-radius:50%;background:#D5CCD1;display:inline-block}
+.chrome span{margin-left:10px;background:#fff;border:1px solid #DDD5D9;border-radius:10px;padding:1px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen{position:relative;padding:16px;font-size:13px;line-height:1.5;color:#2B2B2B;pointer-events:none;user-select:none;overflow-x:auto}
+figure.mock figcaption{font-size:13px;color:#6E6B70;margin-top:8px}
+figure.mock figcaption b{color:#64092C}
+.co{position:absolute;top:-11px;left:-11px;width:26px;height:26px;border-radius:50%;background:#DDA838;color:#4A0620;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25);z-index:5;font-style:normal}
+.co.r{left:auto;right:-11px}
+.anc{position:relative}
+ol.key{list-style:none;padding:0;margin:12px 0 4px;display:grid;gap:7px;max-width:80ch}
+ol.key li{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:start;font-size:14px;margin:0}
+ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:#4A0620;font-size:12px;display:flex;align-items:center;justify-content:center}
+.screen .app-top{background:#64092C;color:#fff;margin:-16px -16px 14px;padding:11px 16px 0;border-radius:0}
+.screen .app-top .t{font-weight:800;font-size:15px}
+.screen .app-top .t small{display:block;font-size:10.5px;opacity:.8;font-weight:600}
+.screen .tabs2{display:flex;gap:2px;margin-top:9px;flex-wrap:wrap}
+.screen .tabs2 span{padding:5px 11px;font-weight:600;font-size:11.5px;opacity:.8;border-radius:6px 6px 0 0}
+.screen .tabs2 span.on{background:#F3F3F5;color:#64092C;opacity:1}
+.screen .tabs2 .n{display:inline-block;background:#fff;color:#9B1C1C;border-radius:8px;padding:0 6px;margin-left:4px;font-size:10.5px}
+.screen .card{background:#fff;border:1px solid #DEDCE0;border-radius:10px;padding:13px 15px;margin-bottom:10px}
+.screen .ph{margin:-13px -15px 11px;padding:11px 15px;border-radius:10px 10px 0 0;background:#FAF7F8;border-top:6px solid #64092C;display:flex;gap:10px;align-items:center}
+.screen .ph.gold{border-top-color:#DDA838}.screen .ph.blue{border-top-color:#084D78}
+.screen .ph h3{margin:0;color:#64092C;font-size:14.5px}
+.screen .facts{font-size:11.5px;color:#6E6B70}
+.screen .warnt{font-size:11.5px;color:#9A5B00;font-weight:700}
+.screen .btn{display:inline-block;border-radius:6px;padding:5px 10px;font-weight:700;font-size:11.5px;background:#64092C;color:#fff;white-space:nowrap;border:1px solid #64092C}
+.screen .btn.ghost{background:#fff;color:#64092C}
+.screen .btn.dis{background:#CFCBD0;border-color:#CFCBD0}
+.screen .btn.lnk{background:none;border-color:transparent;color:#084D78;padding:5px 4px}
+.screen .lg{width:32px;height:32px;border-radius:7px;background:#64092C;color:#fff;font-weight:800;font-size:9.5px;display:flex;align-items:center;justify-content:center;flex:none;text-align:center;line-height:1.1}
+.screen .lg.gold{background:#DDA838;color:#4A0620}.screen .lg.blue{background:#084D78}.screen .lg.s{width:20px;height:20px;font-size:7px;border-radius:4px}
+.screen .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:9px;white-space:nowrap}
+.screen .pill.green{background:#E3F1E8;color:#1F6B3F}.screen .pill.gold{background:#F8EDD3;color:#7A5410}.screen .pill.grey{background:#EEECEF;color:#6E6B70}.screen .pill.red{background:#FDECEA;color:#B42318}.screen .pill.blue{background:#E2EDF4;color:#084D78}.screen .pill.open{background:#E3F1E8;color:#1F6B3F;text-transform:uppercase}
+.screen .bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.screen .grow{flex:1}
+.screen .sel{border:1px solid #DEDCE0;border-radius:5px;background:#fff;padding:2px 7px;font-size:11.5px;white-space:nowrap}
+.screen .inp{border:1px solid #DEDCE0;border-radius:5px;padding:4px 8px;font-size:12px;background:#fff;display:inline-block;min-width:100px}
+.screen .lbl{font-size:11px;font-weight:700;color:#484848;display:block;margin-bottom:2px}
+.screen .cb{width:14px;height:14px;border:1.5px solid #9C8F95;border-radius:3px;flex:none;display:inline-block;position:relative;vertical-align:-2px}
+.screen .cb.on{background:#64092C;border-color:#64092C}
+.screen .cb.on::after{content:"";position:absolute;left:3.5px;top:.5px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.screen .row{display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #F1EEF0}
+.screen .dlg{max-width:580px;margin:4px auto;background:#fff;border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.22)}
+.screen .dlg-h{padding:11px 15px;border-bottom:1px solid #DEDCE0;font-weight:700;color:#64092C;display:flex;justify-content:space-between}
+.screen .dlg-b{padding:13px 15px}
+.screen .dlg-f{padding:9px 15px;border-top:1px solid #DEDCE0;background:#FAF7F8;display:flex;justify-content:flex-end;gap:7px;border-radius:0 0 10px 10px}
+.screen .backdrop{background:rgba(30,10,18,.35);margin:-16px;padding:20px 14px}
+.screen table.t{border-collapse:collapse;width:100%;font-size:11.5px;margin:0}
+.screen table.t th{background:#FAF7F8;color:#484848;font-size:11px;padding:6px 8px;text-align:left;border-bottom:1px solid #DEDCE0;white-space:nowrap}
+.screen table.t td{padding:6px 8px;border-bottom:1px solid #EEECEF;vertical-align:middle}
+.screen .note2{background:#F8EDD3;border-left:4px solid #DDA838;padding:8px 11px;border-radius:0;margin-bottom:10px;font-size:12px}
+.screen .err2{background:#FBE9EC;border-left:4px solid #9B1C1C;padding:8px 11px;border-radius:0;margin-bottom:10px;font-size:12px}
+
+@media (max-width:820px){.journey{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.journey{grid-template-columns:1fr}section{padding:22px 18px}.hero h1{font-size:26px}main,.top-in,.hero-in{padding-left:16px;padding-right:16px}}
+@media print{figure.mock{break-inside:avoid}.frame{box-shadow:none}.co,ol.key li b.n,.screen *{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{background:#fff}.toc,.top a.btn{display:none}section{border:0;padding:10px 0}.hero,.goldbar,.jstep::before,th,.answer span.on{-webkit-print-color-adjust:exact;print-color-adjust:exact}.jstep{break-inside:avoid}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><img src="https://assets-002.noviams.com/novi-file-uploads/clear/logos/CLEAR_Learning_Logo_horizontal__2_.png" alt="CLEAR Learning"><a class="btn" href="/">Open the Instructor Portal</a></div></header>
+<div class="goldbar"></div>
+<div class="hero"><div class="hero-in"><small>For CLEAR Learning instructors</small><h1>Instructor Portal Guide</h1>
+<p>The Instructor Portal is where you see upcoming CLEAR Learning programs, tell us which sessions you can teach, and find everything for the sessions you're confirmed to teach, including Zoom links and your evaluation reports.</p></div></div>
+
+<main>
+<nav class="toc" aria-label="Contents">
+  <a href="#how">How it works</a><a href="#signin">Signing in</a><a href="#formats">Your formats</a><a href="#programs">Finding programs</a><a href="#answer">Answering</a>
+  <a href="#timezones">Time zones</a><a href="#assignments">My assignments</a><a href="#reports">Evaluation reports</a><a href="#emails">Emails</a><a href="#questions">Questions</a>
+</nav>
+
+<section id="how">
+  <h2>How it works</h2>
+  <p>Each quarter, CLEAR Learning schedules the next quarter's programs and posts them to the portal. The process from there:</p>
+  <div class="journey" role="list">
+    <div class="jstep" role="listitem"><h3>New programs</h3><p>You receive an email when programs that match your instruction preferences are open.</p></div>
+    <div class="jstep" role="listitem"><h3>You respond</h3><p>Mark the sessions you can and can't teach by each program's response date.</p></div>
+    <div class="jstep" role="listitem"><h3>Selection</h3><p>After the response date, CLEAR Learning confirms instructors and emails a selection notice.</p></div>
+    <div class="jstep" role="listitem"><h3>Get ready</h3><p>Your sessions, times and Zoom links are on My assignments, with calendar downloads.</p></div>
+    <div class="jstep" role="listitem"><h3>Your report</h3><p>After the program, your evaluation report appears on Evaluation reports.</p></div>
+  </div>
+</section>
+
+<section id="signin">
+  <h2>Signing in</h2>
+  <p>There's no password. You sign in with a one-time code sent to your email.</p>
+  <ol class="steps">
+    <li>Open the Instructor Portal using the button at the top of this page or the link in any CLEAR Learning email. Bookmark it for next time.</li>
+    <li>Enter the email address CLEAR Learning has on file for you and choose <span class="ui">Send me a code</span>.</li>
+    <li>Check your email for the code (it may take a minute, and may land in junk mail) and enter it.</li>
+  </ol>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>clearlearning.cloudflareaccess.com</span></div><div class="screen"><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;padding:16px;text-align:center"><b style="font-size:14px">Instructor Portal</b><div class="facts" style="margin:6px 0 10px">Get a login code emailed to you</div>
+<span class="inp anc" style="display:block;text-align:left"><i class="co">1</i>andrew.barton@agency.gov</span><span class="btn" style="display:block;margin-top:8px;background:#484848;border-color:#484848">Send me a code</span></div>
+<div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;padding:16px;text-align:center"><b style="font-size:14px">Instructor Portal</b><div class="facts" style="margin:6px 0 10px">Enter the code sent to your email</div>
+<span class="inp anc" style="display:block;letter-spacing:.3em;text-align:center"><i class="co">2</i>482 913</span><span class="btn" style="display:block;margin-top:8px;background:#484848;border-color:#484848">Sign in</span></div></div></div></div><figcaption><b>Figure 1.</b> Signing in. These screens are provided by Cloudflare, CLEAR’s sign-in service, and may look slightly different.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Enter the email address CLEAR Learning has on file for you.</span></li><li><b class="n">2</b><span>Enter the one-time code from your email.</span></li></ol>
+<div class="note"><strong>Using a different email address?</strong> The portal only recognizes addresses on file. If your code never arrives, or you see a message that your email isn't on the list, contact <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</div>
+</section>
+
+<section id="formats">
+  <h2>Your formats</h2>
+  <p>At the top of the Programs page, tell us which formats you are available to teach: <span class="ui">Online only</span>, <span class="ui">In person only</span> or <span class="ui">Both</span>.</p>
+  <p>You'll see, and receive emails about, programs in the formats you choose. You can change this at any time. Until you choose, you'll see every program.</p><figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div class="app-top"><div style="display:flex;justify-content:space-between"><div class="t"><small>CLEAR Learning</small>Instructor Portal</div><div style="font-size:11px;text-align:right"><b>Barton, Andrew</b><br>Guide · Sign out</div></div><div class="tabs2"><span class="on">Programs<span class="n" style="background:#DDA838;color:#4A0620">2</span></span><span class="">My assignments<span class="n" style="background:rgba(255,255,255,.2);color:#fff">2</span></span><span class="">Evaluation reports<span class="n" style="background:rgba(255,255,255,.2);color:#fff">1</span></span></div></div>
+<div class="anc" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#F8EDD3;border:1px solid #DDA838;border-left:4px solid #DDA838;border-radius:6px;padding:10px 12px"><i class="co">1</i><div style="flex:1;min-width:200px"><b>Which formats are you available to teach?</b><div class="facts">Choose one so CLEAR Learning contacts you only about programs you can teach.</div></div>
+<span style="display:inline-flex;border:1px solid #DEDCE0;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600"><span style="padding:4px 9px;background:#fff">Online only</span><span style="padding:4px 9px;background:#fff;border-left:1px solid #DEDCE0">In person only</span><span style="padding:4px 9px;background:#1F6B3F;color:#fff">Both</span></span></div></div></div><figcaption><b>Figure 2.</b> Choosing the formats you teach, at the top of the Programs page.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Until you choose, this bar is highlighted. Once you choose, it turns white; you can change it at any time.</span></li></ol>
+
+</section>
+
+<section id="programs">
+  <h2>Finding programs</h2>
+  <p>The <span class="ui">Programs</span> page shows a card for each program that matches your instruction preferences, with its logo, cohort, dates, session times and response date. A colored band across the top of each card shows the program family.</p>
+  <p>Each card shows where your answers stand:</p>
+  <ul>
+    <li><span class="badge b-need">Needs your response</span> You haven't answered yet.</li>
+    <li><span class="badge b-part">3 of 7 answered</span> You've answered some sessions.</li>
+    <li><span class="badge b-done">✓ Responded</span> You've answered every session. The session list turns green.</li>
+  </ul>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;overflow:hidden;max-width:470px;margin:0 auto">
+<div class="anc" style="display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:center;padding:14px 16px 10px;background:#FAF7F8;border-top:6px solid #64092C"><i class="co r" style="top:6px;right:8px">1</i><span class="lg" style="width:48px;height:48px;border-radius:10px">NCIT B</span><div><b style="color:#64092C;font-size:14.5px">Canadian NCIT - Basic Online Program</b><div style="font-size:12px;font-weight:600;color:#484848">2027.01.07 NCIT B CAN Open</div><div class="facts">Jan 12 – Jan 21, 2027 · Virtual (Zoom) · 6 live sessions</div></div></div>
+<div class="anc" style="padding:8px 16px 10px 76px;font-size:12px;background:#E3F1E8"><i class="co r" style="top:6px;right:8px">2</i><div><b style="display:inline-block;min-width:84px">Tue, Jan 12</b>1:00 PM – 3:00 PM ET</div><div><b style="display:inline-block;min-width:84px">Wed, Jan 13</b>1:00 PM – 4:00 PM ET</div><div><b style="display:inline-block;min-width:84px">Thu, Jan 14</b>1:00 PM – 2:00 PM ET</div><div class="facts">+ 3 more</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-top:1px solid #DEDCE0;background:#FAF7F8"><span class="anc" style="font-weight:700;color:#64092C;font-size:12px"><i class="co r" style="top:-15px">3</i>Respond by Dec 8, 2026 · 49 days left</span><span class="pill green anc" style="font-size:11px"><i class="co" style="top:-15px;left:-15px">4</i>✓ Responded Oct 19</span></div></div></div></div><figcaption><b>Figure 3.</b> A program card on the Programs page.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>The program's logo, family color, cohort label, dates and format.</span></li><li><b class="n">2</b><span>Session dates and times. The list turns green once you've answered every session.</span></li><li><b class="n">3</b><span>The response date and days remaining. It turns red in the last week.</span></li><li><b class="n">4</b><span>Your status: Needs your response, 3 of 7 answered, or Responded.</span></li></ol>
+<p>Use <span class="ui">Show</span> to see everything, only programs that need your response, or programs you've already answered. The response date turns red when it's a week or less away.</p>
+</section>
+
+<section id="answer">
+  <h2>Answering</h2>
+  <ol class="steps">
+    <li>Open a program's card.</li>
+    <li>Use the <span class="ui">Whole program</span> row to answer every session at once, for example <span class="answer"><span class="on">Available</span><span>Not available</span><span>N/A</span></span></li>
+    <li>Change any single session that's different. Your answer for that session overrides the whole-program answer.</li>
+    <li>Add anything we should know in <span class="ui">Comments for staff</span>, for example "first half only" or a session you'd especially like to lead.</li>
+    <li>Choose <span class="ui">Save answers</span>. A bar at the bottom of the screen reminds you if you have unsaved changes.</li>
+  </ol>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;overflow:hidden">
+<div style="padding:9px 16px;background:#F8EDD3;font-size:12.5px;border-bottom:1px solid #DEDCE0"><b>Respond by December 8, 2026</b> (11:59 PM Eastern). You can save now and change your answers any time until then.</div>
+<div class="anc" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:#FAF7F8;border-bottom:1px solid #DEDCE0"><i class="co">1</i><b style="min-width:110px">Whole program</b><span style="display:inline-flex;border:1px solid #DEDCE0;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600"><span style="padding:4px 9px;background:#1F6B3F;color:#fff;">Available</span><span style="padding:4px 9px;background:#fff;color:#484848;border-left:1px solid #DEDCE0">Not available</span><span style="padding:4px 9px;background:#fff;color:#484848;border-left:1px solid #DEDCE0">N/A</span></span><span class="facts">Sets every session below in one click.</span></div>
+<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 16px;border-bottom:1px solid #EEECEF"><div><b>Investigative Process</b><div class="facts">Tue, Jan 12, 1:00 PM – 3:00 PM ET</div></div><div style="text-align:right"><span style="display:inline-flex;border:1px solid #DEDCE0;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600;opacity:.6"><span style="padding:4px 9px;background:#1F6B3F;color:#fff;">Available</span><span style="padding:4px 9px;background:#fff;color:#484848;border-left:1px solid #DEDCE0">Not available</span><span style="padding:4px 9px;background:#fff;color:#484848;border-left:1px solid #DEDCE0">N/A</span></span><div class="facts">From whole program</div></div></div>
+<div class="anc" style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 16px;border-bottom:1px solid #EEECEF"><i class="co r">2</i><div><b>Interviewing Techniques</b><div class="facts">Wed, Jan 13, 1:00 PM – 4:00 PM ET</div></div><div><span style="display:inline-flex;border:1px solid #DEDCE0;border-radius:6px;overflow:hidden;font-size:11px;font-weight:600"><span style="padding:4px 9px;background:#fff;color:#484848;">Available</span><span style="padding:4px 9px;background:#5A5A5A;color:#fff;border-left:1px solid #DEDCE0">Not available</span><span style="padding:4px 9px;background:#fff;color:#484848;border-left:1px solid #DEDCE0">N/A</span></span></div></div>
+<div class="anc" style="padding:10px 16px"><i class="co">3</i><span class="lbl">Comments for staff</span><div class="inp" style="display:block;height:34px;color:#6E6B70">First half of the program only, please.</div></div>
+<div style="display:flex;justify-content:flex-end;gap:10px;align-items:center;padding:0 16px 12px"><span class="facts">Not answered yet</span><span class="btn anc"><i class="co r">4</i>Save answers</span></div></div></div></div><figcaption><b>Figure 4.</b> Answering for a program.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Answer for the whole program in one click.</span></li><li><b class="n">2</b><span>Change any session that's different. Its own answer overrides the whole-program answer.</span></li><li><b class="n">3</b><span>Add anything staff should know.</span></li><li><b class="n">4</b><span>Save. You can come back and change your answers until the response date.</span></li></ol>
+<p><strong>Not available</strong> helps us as much as <strong>Available</strong>: it tells us we've heard from you. Use <strong>N/A</strong> for a session that doesn't apply to you.</p>
+  <h3>Changing your answers</h3>
+  <p>You can change your answers at any time before the response date (11:59 PM Eastern). After that, answers are locked while instructors are selected.</p>
+  <h3>In-person programs</h3>
+  <p>In-person programs are staffed by module. Each module is listed with its day and time, in the venue's local time. Some modules run across two days.</p>
+  <h3>Welcome sessions</h3>
+  <p>In ACRG, ELPR and SRA: Staffing a Board, every instructor confirmed for the cohort attends the Welcome session. It's marked <em>All instructors assigned to this cohort attend</em> and doesn't need an answer. It's added to your assignments automatically if you're confirmed.</p>
+</section>
+
+<section id="timezones">
+  <h2>Time zones</h2>
+  <p>All times in the portal are shown in Eastern Time, the time zone CLEAR schedules in. You have the option to change the time zone to one of your choosing:</p>
+  <ol class="steps">
+    <li>On the time zone bar near the top of the page, choose <span class="ui">Show times in my time zone</span>. To use a different time zone, pick it from the list that appears.</li>
+    <li>Times are converted, with the original Eastern Time shown in brackets. If a session falls on a different day for you, that's marked too.</li>
+    <li>Choose <span class="ui">Back to Eastern Time</span> at any point.</li>
+  </ol>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div class="anc" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#E2EDF4;border-left:4px solid #084D78;border-radius:0;padding:10px 12px"><i class="co">1</i><div style="flex:1;min-width:220px"><b>Times are converted to Mountain Time.</b><div class="facts">The original Eastern Time is in brackets after each time. Only the display changes; your answers are the same either way.</div></div><span class="sel">Mountain Time ▾</span><span class="btn ghost">Back to Eastern Time</span></div>
+<div class="anc" style="background:#fff;border:1px solid #DEDCE0;border-radius:8px;padding:9px 12px;margin-top:10px"><i class="co">2</i><b>Investigative Process</b><div style="font-size:12px">Tue, Jan 12, 11:00 AM – 1:00 PM MST <span class="facts">(1:00 PM – 3:00 PM ET)</span></div></div></div></div><figcaption><b>Figure 5.</b> Times shown in your own time zone.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Choose Show times in my time zone, or pick any time zone from the list. Back to Eastern Time returns to the default.</span></li><li><b class="n">2</b><span>Each time shows in your time zone, with Eastern Time in brackets.</span></li></ol>
+<p>Changing the time zone only changes what you see; your answers are the same either way. In-person programs always show the venue's local time.</p>
+</section>
+
+<section id="assignments">
+  <h2>My assignments</h2>
+  <p>Once you're confirmed to teach, your sessions appear on <span class="ui">My assignments</span> with the program, cohort, date, time and your role. This is the place to check for everything about the sessions you're teaching.</p>
+  <ul>
+    <li><strong>Zoom links</strong> appear on each online session before the program's first session. Until then, the session shows <em>The Zoom link appears here before the first session.</em></li>
+    <li><strong>Add to calendar (.ics)</strong> downloads a calendar file with your sessions. If you download it before the Zoom links appear, download it again afterwards to include them.</li>
+  </ul>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div class="app-top"><div style="display:flex;justify-content:space-between"><div class="t"><small>CLEAR Learning</small>Instructor Portal</div><div style="font-size:11px;text-align:right"><b>Barton, Andrew</b><br>Guide · Sign out</div></div><div class="tabs2"><span class="">Programs<span class="n" style="background:#DDA838;color:#4A0620">2</span></span><span class="on">My assignments<span class="n" style="background:rgba(255,255,255,.2);color:#fff">2</span></span><span class="">Evaluation reports<span class="n" style="background:rgba(255,255,255,.2);color:#fff">1</span></span></div></div>
+<div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;overflow:hidden">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 16px;background:#FAF7F8;border-top:6px solid #64092C;border-bottom:1px solid #DEDCE0"><div style="display:flex;gap:10px;align-items:center"><span class="lg">NCIT B</span><div><b style="color:#64092C">Canadian NCIT - Basic Online Program</b><div class="facts">2027.01.07 NCIT B CAN Open</div></div></div><span class="btn ghost anc"><i class="co r">1</i>Add to calendar (.ics)</span></div>
+<div class="anc" style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid #EEECEF"><i class="co">2</i><div><b>Investigative Process</b><div style="font-size:12px">Tue, Jan 12, 1:00 PM – 3:00 PM ET</div><div style="font-size:12px">Zoom: <span style="color:#084D78">https://zoom.us/j/88140022…</span></div></div><span class="pill gold">Lead</span></div>
+<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px"><div><b>Report Writing</b><div style="font-size:12px">Tue, Jan 19, 1:00 PM – 4:00 PM ET</div><div class="facts">The Zoom link appears here before the first session.</div></div><span class="pill gold">Lead</span></div></div></div></div><figcaption><b>Figure 6.</b> My assignments, with Zoom links as they become available.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Download a calendar file with your sessions. Download it again after Zoom links appear to include them.</span></li><li><b class="n">2</b><span>Each session shows its date, time, your role and, once available, its Zoom link.</span></li></ol>
+<div class="important"><strong>Can no longer teach a session you're confirmed for?</strong> Please call the program facilitator as soon as possible. Changes after confirmation are handled by phone so nothing is missed.</div>
+</section>
+
+<section id="reports">
+  <h2>Evaluation reports</h2>
+  <p>After a program, CLEAR Learning publishes your evaluation report to the <span class="ui">Evaluation reports</span> page and emails you a link. Each report summarizes participant ratings by module and the comments shared with you.</p>
+  <ul>
+    <li>Choose <span class="ui">View report</span> to open it in a new tab. New reports are marked <em>New</em> until you open them.</li>
+    <li>To keep a copy, use your browser's print option and choose <span class="ui">Save as PDF</span>.</li>
+    <li>Your reports are private: only you and CLEAR Learning staff can open them.</li>
+  </ul><figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div class="app-top"><div style="display:flex;justify-content:space-between"><div class="t"><small>CLEAR Learning</small>Instructor Portal</div><div style="font-size:11px;text-align:right"><b>Barton, Andrew</b><br>Guide · Sign out</div></div><div class="tabs2"><span class="">Programs<span class="n" style="background:#DDA838;color:#4A0620">2</span></span><span class="">My assignments<span class="n" style="background:rgba(255,255,255,.2);color:#fff">2</span></span><span class="on">Evaluation reports<span class="n" style="background:rgba(255,255,255,.2);color:#fff">1</span></span></div></div>
+<div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;overflow:hidden">
+<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid #EEECEF"><div class="anc"><i class="co r" style="left:auto;right:-30px">1</i><b>Evaluation Report - 2027.01.07 NCIT B CAN Open</b><div class="facts">Published Feb 18 <span class="pill red" style="margin-left:6px">New</span></div></div><span class="btn anc"><i class="co r">2</i>View report</span></div>
+<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px"><div><b>Evaluation Report - 2026.10.29 NCIT B US Open</b><div class="facts">Published Dec 3</div></div><span class="btn">View report</span></div></div></div></div><figcaption><b>Figure 7.</b> The Evaluation reports page.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>New reports are marked New until you open them.</span></li><li><b class="n">2</b><span>View report opens it in a new tab. To keep a copy, print it and choose Save as PDF.</span></li></ol>
+
+</section>
+
+<section id="emails">
+  <h2>Emails you'll receive</h2>
+  <p>All emails come from clearlearning@clearhq.org.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Email</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td>New programs are open</td><td>Programs matching your instruction preferences are ready for your answers.</td></tr>
+      <tr><td>Reminder</td><td>A response date is 7 or 2 days away and we haven't heard from you. Answering, even "Not available", stops these reminders.</td></tr>
+      <tr><td>You're confirmed to teach</td><td>You've been selected. Your details are on My assignments.</td></tr>
+      <tr><td>Schedule update</td><td>A date, time or Zoom link for one of your sessions changed. The email shows what changed.</td></tr>
+      <tr><td>New evaluation report</td><td>A report is ready on your Evaluation reports page.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="questions">
+  <h2>Common questions</h2>
+  <h3>I don't see a program I expected.</h3>
+  <p>The portal shows programs that match your instruction preferences and the formats you chose. Check your format at the top of the Programs page, and set <span class="ui">Show</span> to <em>Everything</em>. If it's still missing, contact us.</p>
+  <h3>The response date has passed and I need to change an answer.</h3>
+  <p>Email <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a> with the change.</p>
+  <h3>I'm confirmed but there's no Zoom link yet.</h3>
+  <p>Links appear before the program's first session. If a link is still missing a few days before your session, contact us.</p>
+  <h3>Can I use the portal on my phone?</h3>
+  <p>Yes. The portal works on phones, tablets and computers.</p>
+  <h3>Who do I contact?</h3>
+  <p>For questions about the portal, email <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a> or call 859-269-1289. If you need to withdraw from a confirmed session, please call the program facilitator.</p>
+</section>
+<p class="foot">CLEAR Learning · Instructor Portal Guide</p>
+</main>
+</body>
+</html>
