@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" sizes="32x32" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+  <title>Expenses and Hours | CLEAR Learning Instructor Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --burgundy: #64092C;
+    --burgundy-dark: #4a0620;
+    --burgundy-light: #8a1040;
+    --gold: #DDA838;
+    --gold-light: #f0c55a;
+    --charcoal: #484848;
+    --blue: #084D78;
+    --bg: #f7f5f2;
+    --white: #ffffff;
+    --border: #d8d0c8;
+    --text: #2c2c2c;
+    --text-light: #666;
+    --success: #2e7d32;
+    --success-bg: #e8f5e9;
+    --error: #c62828;
+    --error-bg: #ffebee;
+    --warn: #e65100;
+    --warn-bg: #fff3e0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+    --radius: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Open Sans', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: var(--burgundy);
+    color: white;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .site-header .logo {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .site-header .logo span { color: var(--gold); }
+  /* ── LAYOUT ── */
+  .main-wrap { max-width: 900px; margin: 0 auto; padding: 28px 20px 60px; }
+  /* ── TABS ── */
+  .tab-btn:hover { color: var(--burgundy); }
+  /* ── CARDS ── */
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--burgundy);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .icon { font-size: 16px; }
+
+  /* ── FORM ELEMENTS ── */
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .field-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .field-row.full { grid-template-columns: 1fr; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--charcoal);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .field label .req { color: var(--burgundy); margin-left: 2px; }
+  .field input, .field select, .field textarea {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: white;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--burgundy);
+    box-shadow: 0 0 0 2px rgba(100,9,44,0.08);
+  }
+  .field textarea { resize: vertical; min-height: 64px; }
+  .field .hint { font-size: 11px; color: var(--text-light); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 9px 18px;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: inherit;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--burgundy); color: white; }
+  .btn-primary:hover { background: var(--burgundy-dark); }
+  .btn-secondary { background: white; color: var(--burgundy); border: 1.5px solid var(--burgundy); }
+  .btn-secondary:hover { background: #fdf5f7; }
+  .btn-danger { background: #c62828; color: white; }
+  .btn-danger:hover { background: #b71c1c; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+  /* ── EXPENSE LINES ── */
+  .expense-entry {
+    display: grid;
+    grid-template-columns: 130px 1fr 90px 28px 28px;
+    gap: 8px;
+    align-items: start;
+    padding: 10px;
+    background: #fdfcfb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+  }
+  .expense-entry input, .expense-entry select {
+    padding: 7px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    width: 100%;
+  }
+  .expense-entry input:focus, .expense-entry select:focus {
+    outline: none; border-color: var(--burgundy);
+  }
+  .remove-btn {
+    background: none; border: none; cursor: pointer;
+    color: #999; font-size: 16px; padding: 6px 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .remove-btn:hover { color: #c62828; }
+  .expense-line-header {
+    display: grid;
+    grid-template-columns: 130px 1fr 100px 28px;
+    gap: 8px;
+    padding: 0 10px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* ── TEACHING DAYS ── */
+  .teaching-day {
+    display: grid;
+    grid-template-columns: 120px 120px 1fr 28px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    background: #fdfcfb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+  }
+  .teaching-day input, .teaching-day select {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    width: 100%;
+  }
+  .teaching-day input:focus { outline: none; border-color: var(--burgundy); }
+
+  /* ── PER DIEM DAYS ── */
+  .perdiem-day {
+    display: grid;
+    grid-template-columns: 120px 130px 90px 90px 28px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    background: #fdfcfb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+  }
+  .perdiem-day input, .perdiem-day select {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    width: 100%;
+  }
+
+  /* ── SUMMARY BOX ── */
+  .summary-box {
+    background: linear-gradient(135deg, var(--burgundy) 0%, var(--burgundy-dark) 100%);
+    color: white;
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    margin-top: 16px;
+  }
+  .summary-box h3 {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .summary-item { display: flex; justify-content: space-between; align-items: center; }
+  .summary-item .label { font-size: 12px; opacity: 0.8; }
+  .summary-item .value { font-size: 14px; font-weight: 700; }
+  .summary-total {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.25);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .summary-total .label { font-size: 14px; font-weight: 600; }
+  .summary-total .value { font-size: 22px; font-weight: 800; color: var(--gold-light); }
+
+  /* ── RECEIPT UPLOAD ── */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    background: #fdfcfb;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--burgundy);
+    background: #fdf5f7;
+  }
+  .upload-zone .upload-icon { font-size: 32px; margin-bottom: 8px; display: block; }
+  .upload-zone p { font-size: 13px; color: var(--text-light); }
+  .upload-zone strong { color: var(--burgundy); }
+  .receipt-preview {
+    background: #fdfcfb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 8px;
+  }
+  .receipt-preview .file-icon { font-size: 24px; }
+  .receipt-preview .file-info { flex: 1; }
+  .receipt-preview .file-name { font-size: 13px; font-weight: 600; color: var(--charcoal); }
+  .receipt-preview .file-size { font-size: 11px; color: var(--text-light); }
+
+  /* ── ALERT / TOAST ── */
+  .alert {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 12px;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .alert-warn { background: var(--warn-bg); color: var(--warn); border: 1px solid #ffcc80; }
+  .alert-info { background: #e3f2fd; color: var(--blue); border: 1px solid #90caf9; }
+
+  /* ── DASHBOARD TABLE ── */
+  .dash-table tr:hover td { background: #fdf5f7; }
+
+  /* ── STATUS BADGES ── */
+
+  /* ── SETTINGS GRID ── */
+  .rate-input-group input:focus { outline: none; }
+
+  /* ── INSTRUCTOR TABLE ── */
+  .instructor-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 120px 32px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 10px;
+    background: #fdfcfb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+  }
+  .instructor-row input, .instructor-row select {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    width: 100%;
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay.open { display: flex; }
+
+  /* ── REVIEW PANEL ── */
+  .review-item .rvalue { font-size: 13px; color: var(--text); font-weight: 500; }
+  .review-expense-row:last-child { border-bottom: none; }
+
+  /* ── PDF VIEWER ── */
+
+  /* ── AUTH SCREEN ── */
+  #auth-screen {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+  }
+  .auth-card .field { text-align: left; margin-bottom: 12px; }
+  .auth-card .btn { width: 100%; justify-content: center; margin-top: 8px; }
+
+  /* ── MISC ── */
+  .flex-row { display: flex; gap: 8px; align-items: center; }
+  .flex-row.end { justify-content: flex-end; }
+  .flex-row.between { justify-content: space-between; }
+  .mt-8 { margin-top: 8px; }
+  .page-subtitle { font-size: 13px; color: var(--text-light); margin-bottom: 20px; }
+
+  /* ── STATS BAR ── */
+  /* ── IMPORT CSV ── */
+  .import-zone:hover { border-color: var(--burgundy); color: var(--burgundy); }
+
+  @media (max-width: 640px) {
+    .field-row, .field-row.three { grid-template-columns: 1fr; }
+    .expense-entry.staff-entry { grid-template-columns: 1fr 1fr; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="logo">CLEAR &nbsp;·&nbsp; Instructor Expense Report</div>
+  <a href="/#/mine" style="color:#fff;font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap">← Back to My assignments</a>
+</header>
+
+<div id="main-view" style="display:none">
+  <div class="main-wrap">
+    <div id="prog-banner" style="display:none;margin-bottom:14px;padding:14px 16px;background:#fff;border:1px solid var(--border);border-top:5px solid var(--burgundy);border-radius:var(--radius)"></div>
+    <div id="portal-notice" style="display:none;margin-bottom:14px"></div>
+    <div class="page-subtitle">Submit teaching hours and travel expenses. Your information, the program and your teaching days are filled in from the Instructor Portal; check them before submitting. All fields marked <span style="color:var(--burgundy)">*</span> are required.</div>
+    <div id="submit-alert-top" style="display:none;margin-bottom:16px;padding:14px 16px;background:#fde8e8;border:2px solid #c62828;border-radius:var(--radius);color:#c62828;font-weight:600;font-size:13px;font-family:'Open Sans',sans-serif"></div>
+
+    <!-- SUBMITTER INFO -->
+    <div class="card">
+      <div class="card-title"><span class="icon">👤</span> Your Information</div>
+      <div class="alert alert-info" id="PII Check" style="display: block;">Your name, email and pay rate come from CLEAR's records. Check your phone number and mailing address; you can correct them for this report. To update your records permanently, or if anything else is wrong, contact <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Name <span class="req">*</span></label>
+          <select id="f-instructor" onchange="handleInstructorSelect();clearFieldError(this);watchForm()">
+            <option value="">— Select your name —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" id="f-email" readonly style="background:#f5f5f5;color:var(--text-light)" placeholder="From your Instructor Portal sign-in">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Phone Number <span class="req">*</span></label>
+          <input type="tel" id="f-phone" placeholder="+1 (555) 000-0000" oninput="clearFieldError(this);watchForm()">
+        </div>
+      </div>
+      <div class="field-row full">
+        <div class="field">
+          <label>Street Address <span class="req">*</span></label>
+          <input type="text" id="f-addr-street" placeholder="Street address" oninput="syncAddress();clearFieldError(this);watchForm()">
+        </div>
+      </div>
+      <div class="field-row full">
+        <div class="field">
+          <label>Address Line 2</label>
+          <input type="text" id="f-addr-street2" placeholder="Apt, suite, unit, building, floor, etc. (optional)" oninput="syncAddress()">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>City <span class="req">*</span></label>
+          <input type="text" id="f-addr-city" placeholder="City" oninput="syncAddress();clearFieldError(this);watchForm()">
+        </div>
+        <div class="field">
+          <label>State / Province</label>
+          <input type="text" id="f-addr-state" placeholder="State or Province" oninput="syncAddress()">
+        </div>
+        <div class="field">
+          <label>ZIP / Postal Code</label>
+          <input type="text" id="f-addr-zip" placeholder="ZIP or Postal Code" oninput="syncAddress()">
+        </div>
+        <div class="field">
+          <label>Country <span class="req">*</span></label>
+          <input type="text" id="f-addr-country" list="country-list" placeholder="Type to search…" autocomplete="off" oninput="syncAddress();clearFieldError(this);watchForm()">
+          <datalist id="country-list">
+            <option value="Afghanistan"><option value="Albania"><option value="Algeria"><option value="Andorra"><option value="Angola">
+            <option value="Antigua and Barbuda"><option value="Argentina"><option value="Armenia"><option value="Australia"><option value="Austria">
+            <option value="Azerbaijan"><option value="Bahamas"><option value="Bahrain"><option value="Bangladesh"><option value="Barbados">
+            <option value="Belarus"><option value="Belgium"><option value="Belize"><option value="Benin"><option value="Bhutan">
+            <option value="Bolivia"><option value="Bosnia and Herzegovina"><option value="Botswana"><option value="Brazil"><option value="Brunei">
+            <option value="Bulgaria"><option value="Burkina Faso"><option value="Burundi"><option value="Cabo Verde"><option value="Cambodia">
+            <option value="Cameroon"><option value="Canada"><option value="Central African Republic"><option value="Chad"><option value="Chile">
+            <option value="China"><option value="Colombia"><option value="Comoros"><option value="Congo"><option value="Costa Rica">
+            <option value="Croatia"><option value="Cuba"><option value="Cyprus"><option value="Czech Republic"><option value="Denmark">
+            <option value="Djibouti"><option value="Dominica"><option value="Dominican Republic"><option value="Ecuador"><option value="Egypt">
+            <option value="El Salvador"><option value="Equatorial Guinea"><option value="Eritrea"><option value="Estonia"><option value="Eswatini">
+            <option value="Ethiopia"><option value="Fiji"><option value="Finland"><option value="France"><option value="Gabon">
+            <option value="Gambia"><option value="Georgia"><option value="Germany"><option value="Ghana"><option value="Greece">
+            <option value="Grenada"><option value="Guatemala"><option value="Guinea"><option value="Guinea-Bissau"><option value="Guyana">
+            <option value="Haiti"><option value="Honduras"><option value="Hungary"><option value="Iceland"><option value="India">
+            <option value="Indonesia"><option value="Iran"><option value="Iraq"><option value="Ireland"><option value="Israel">
+            <option value="Italy"><option value="Jamaica"><option value="Japan"><option value="Jordan"><option value="Kazakhstan">
+            <option value="Kenya"><option value="Kiribati"><option value="Kuwait"><option value="Kyrgyzstan"><option value="Laos">
+            <option value="Latvia"><option value="Lebanon"><option value="Lesotho"><option value="Liberia"><option value="Libya">
+            <option value="Liechtenstein"><option value="Lithuania"><option value="Luxembourg"><option value="Madagascar"><option value="Malawi">
+            <option value="Malaysia"><option value="Maldives"><option value="Mali"><option value="Malta"><option value="Marshall Islands">
+            <option value="Mauritania"><option value="Mauritius"><option value="Mexico"><option value="Micronesia"><option value="Moldova">
+            <option value="Monaco"><option value="Mongolia"><option value="Montenegro"><option value="Morocco"><option value="Mozambique">
+            <option value="Myanmar"><option value="Namibia"><option value="Nauru"><option value="Nepal"><option value="Netherlands">
+            <option value="New Zealand"><option value="Nicaragua"><option value="Niger"><option value="Nigeria"><option value="North Korea">
+            <option value="North Macedonia"><option value="Norway"><option value="Oman"><option value="Pakistan"><option value="Palau">
+            <option value="Palestine"><option value="Panama"><option value="Papua New Guinea"><option value="Paraguay"><option value="Peru">
+            <option value="Philippines"><option value="Poland"><option value="Portugal"><option value="Qatar"><option value="Romania">
+            <option value="Russia"><option value="Rwanda"><option value="Saint Kitts and Nevis"><option value="Saint Lucia">
+            <option value="Saint Vincent and the Grenadines"><option value="Samoa"><option value="San Marino"><option value="Sao Tome and Principe">
+            <option value="Saudi Arabia"><option value="Senegal"><option value="Serbia"><option value="Seychelles"><option value="Sierra Leone">
+            <option value="Singapore"><option value="Slovakia"><option value="Slovenia"><option value="Solomon Islands"><option value="Somalia">
+            <option value="South Africa"><option value="South Korea"><option value="South Sudan"><option value="Spain"><option value="Sri Lanka">
+            <option value="Sudan"><option value="Suriname"><option value="Sweden"><option value="Switzerland"><option value="Syria">
+            <option value="Taiwan"><option value="Tajikistan"><option value="Tanzania"><option value="Thailand"><option value="Timor-Leste">
+            <option value="Togo"><option value="Tonga"><option value="Trinidad and Tobago"><option value="Tunisia"><option value="Turkey">
+            <option value="Turkmenistan"><option value="Tuvalu"><option value="Uganda"><option value="Ukraine"><option value="United Arab Emirates">
+            <option value="United Kingdom"><option value="United States"><option value="Uruguay"><option value="Uzbekistan"><option value="Vanuatu">
+            <option value="Vatican City"><option value="Venezuela"><option value="Vietnam"><option value="Yemen"><option value="Zambia">
+            <option value="Zimbabwe">
+          </datalist>
+        </div>
+      </div>
+      <input type="hidden" id="f-address">
+      <input type="hidden" id="f-address">
+      <div id="instructor-not-found" style="display:none;margin-top:8px;font-size:12px;color:var(--warn)">
+        If your name is not in the list, contact your CLEAR staff liaison to have it added before submitting.
+      </div>
+    </div>
+
+    <!-- TEACHING HOURS -->
+    <div class="card" id="teaching-card">
+      <div class="card-title"><span class="icon">🎓</span> Teaching Hours</div>
+      <div class="alert alert-info" id="teaching-info-msg" style="display:none"></div>
+      <div class="field-row">
+        <div class="field">
+          <label>Program Taught <span class="req">*</span></label>
+          <select id="f-instructor-program" onchange="syncInstructorProgram();clearFieldError(this);watchForm()">
+            <option value="">— Select program —</option>
+            <option value="NCIT Basic">NCIT Basic</option>
+            <option value="NCIT AIT">NCIT Applied Investigative Techniques</option>
+            <option value="NCIT Specialized">NCIT Specialized</option>
+            <option value="NCIT IRSM">NCIT Investigating Reports of Sexual Misconduct</option>
+            <option value="NCIT DDI">NCIT Drug Diversion Investigations</option>
+            <option value="NCIT Comms">NCIT Communications and the Art of Persuasion</option>
+            <option value="NCIT Ethics">NCIT Developing a Professional Attitude: Ethics and the Regulatory Investigator</option>
+            <option value="ELPR">ELPR Executive Leadership Program for Regulators</option>
+            <option value="SRA SAB">SRA Staffing a Board</option>
+            <option value="SRA SSR">SRA Soft Skills for Regulators</option>
+            <option value="BMT IRG">BMT Introduction to Regulatory Governance</option>
+            <option value="BMT ACRG">BMT Advanced Concepts in Regulatory Governance</option>
+            <option value="BCT GMFYB">BMT Getting the Most From Your Board</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Delivery Method <span class="req">*</span></label>
+          <select id="f-delivery" onchange="handleDeliveryChange();clearFieldError(this);watchForm()">
+            <option value="">— Select —</option>
+            <option value="in-person">In-Person</option>
+            <option value="virtual">Virtual</option>
+          </select>
+        </div>
+      </div>
+      <div id="f-instructor-inperson-row" style="display:none">
+        <div class="field-row full">
+          <div class="field">
+            <label>Destination <span class="req">*</span></label>
+            <input type="text" id="f-instructor-destination" placeholder="City, State/Province, and Country" oninput="syncInstructorDestination();clearFieldError(this);watchForm()">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Departure Date <span class="req">*</span></label>
+            <input type="date" id="f-instructor-depart" onchange="syncInstructorDates();clearFieldError(this);watchForm()">
+          </div>
+          <div class="field">
+            <label>Return Date <span class="req">*</span></label>
+            <input type="date" id="f-instructor-return" onchange="syncInstructorDates();clearFieldError(this);watchForm()">
+          </div>
+        </div>
+      </div>
+      <div id="teaching-hours-wrap">
+        <div style="font-family:'Trebuchet MS',sans-serif;font-size:14px;font-weight:700;color:var(--burgundy);margin:14px 0 4px">Instruction Time</div>
+        <div id="teaching-dates-note" style="display:none;font-size:12px;color:var(--text-light);margin-bottom:10px">Days have automatically populated based on your trip dates. Delete a row by clicking × or change the date in a row as needed.</div>
+        <div style="display:grid;grid-template-columns:120px 120px 1fr 28px;gap:8px;padding:0 10px 4px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.4px">
+          <span>Date</span><span>Hours</span><span>Modules Taught</span><span></span>
+        </div>
+        <div id="teaching-days-list"></div>
+      </div>
+    </div>
+
+    <!-- SECTIONS HIDDEN UNTIL IN-PERSON SELECTED -->
+    <div id="inperson-sections" style="display:none">
+
+      <!-- PER DIEM -->
+      <div class="card" id="perdiem-card">
+        <div class="card-title"><span class="icon">🍽️</span> Meal Per Diem</div>
+        <div class="alert alert-info" id="perdiem-info-msg"></div>
+        <div class="alert alert-info" style="margin-bottom:10px; display: block;">🎓 <strong>Instructor per diem:</strong> Your full per diem is automatically applied for each day. No receipts are required for meals. If a meal is provided for you by CLEAR or the program host, select the checkbox in the <strong>Meal Provided</strong> column and indicate which meal or meals was/were provided in the <strong>Which Meal(s)</strong> drop down menu for that day. This will adjust your per diem amount for that day to reflect any meals not already provided.</div>
+        <div id="perdiem-days-header" class="expense-line-header" style="grid-template-columns:110px 130px 90px 90px 160px 28px;padding:0 4px 4px;gap:6px">
+          <span>Date</span><span>Day Type</span><span>Per Diem</span>
+          <span style="background:#fce7f3;border-radius:3px;padding:2px 4px;font-size:10px;text-align:center;line-height:1.3">Meal Provided?</span>
+          <span style="background:#fce7f3;border-radius:3px;padding:2px 4px;font-size:10px;text-align:center;line-height:1.3">Which Meal(s)</span>
+          <span></span>
+        </div>
+        <div id="perdiem-days-list"></div>
+        <div id="perdiem-totals" style="margin-top:10px;padding:10px 12px;background:#f5f3f0;border-radius:var(--radius);display:flex;gap:24px;flex-wrap:wrap">
+          <div style="font-size:12px;color:var(--text-light)">Total Per Diem: <strong id="pd-total-cap" style="color:var(--charcoal)">$0.00</strong></div>
+        </div>
+        <div id="perdiem-trip-cap-warn" style="display:none" class="alert alert-warn mt-8"></div>
+        <button class="btn btn-secondary btn-sm mt-8" onclick="addPerDiemDay()">+ Add Day</button>
+      </div>
+
+      <!-- EXPENSES -->
+      <div class="card" id="expense-card">
+        <div class="card-title"><span class="icon">💳</span> Expense Lines</div>
+        <div class="alert alert-info" style="margin-bottom:10px; display: block;">If paying expenses in a currency other than USD, select the correct currency in the provided drop-down menu and enter your expense item in the ORIGINAL CURRENCY field. This will calculate the USD amount at the current exchange rate (shown below the row). Repeat these steps for any line items paid for in a currency other than USD; otherwise, enter your expense amount in the Amount (USD) field.</div>
+        <p style="font-size:12px;color:var(--text-light);margin-bottom:6px">For categories like Hotel, Airfare, and Rental Car, use the Description field to record the vendor name.</p>
+        <div style="display:grid;grid-template-columns:130px 100px 1fr 90px 90px 28px;gap:8px;padding:0 4px 4px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.4px;align-items:center;text-align:center">
+          <span style="text-align:left">Category</span><span>Currency</span><span style="text-align:left">Description / Miles</span><span style="background:#fef9c3;border-radius:3px;padding:2px 4px">Original Currency</span><span>Amount (USD)</span><span></span>
+        </div>
+        <div id="expense-lines-list"></div>
+      </div>
+
+      <!-- RECEIPT -->
+      <div class="card" id="receipt-card">
+        <div class="card-title"><span class="icon">📎</span> Receipt Upload</div>
+        <p id="receipt-instructions" style="font-size:13px;color:var(--text-light);margin-bottom:12px">Upload receipts for non-per diem expenses. Meal per diem does not require receipts. PDF only · Max 20 MB.</p>
+        <div class="upload-zone" id="receipt-drop-zone" onclick="document.getElementById('receipt-file-input').click()">
+          <span class="upload-icon">📄</span>
+          <p><strong>Click to upload</strong> or drag and drop</p>
+          <p>PDF files only · Max 20 MB</p>
+        </div>
+        <input type="file" id="receipt-file-input" accept=".pdf" style="display:none" onchange="handleReceiptUpload(event)">
+        <div id="receipt-preview" style="display:none"></div>
+      </div>
+
+    </div><!-- end inperson-sections -->
+
+    <!-- SUMMARY -->
+    <div class="summary-box">
+      <h3>Expense Summary</h3>
+      <div class="summary-grid" id="summary-grid"></div>
+      <div class="summary-total">
+        <span class="label">Total Reimbursement Request</span>
+        <span class="value" id="summary-total-val">$0.00</span>
+      </div>
+    </div>
+
+    <div class="flex-row end mt-16">
+      <button class="btn btn-primary" id="submit-btn" onclick="submitReport()" disabled style="opacity:0.5;cursor:not-allowed">Submit Report →</button>
+    </div>
+    <div id="submit-alert" style="display:none;margin-top:16px"></div>
+  </div>
+</div>
+
+<div id="loading-screen" style="display:none;text-align:center;padding:60px 20px">
+  <div style="font-size:32px;margin-bottom:16px">⏳</div>
+  <p style="color:var(--text-light);font-size:15px">Submitting your report…</p>
+</div>
+
+<style>
+  .field-error input, .field-error textarea, .field-error select {
+    border-color: #c62828 !important;
+    background: #fff5f5 !important;
+  }
+  .field-error-label {
+    color: #c62828;
+    font-size: 11px;
+    margin-top: 3px;
+    display: block;
+  }
+  .upload-zone-error {
+    border-color: #c62828 !important;
+    background: #fff5f5 !important;
+  }
+</style>
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════
+// Runs inside the Instructor Portal: everything is loaded from and submitted to the portal's API,
+// which reads the instructor's own record from the CLEAR expense system and forwards the report to it.
+const QS = new URLSearchParams(location.search);
+const PID = QS.get('pid') || '';
+const AS = QS.get('as') || '';
+let CTX = null;
+let cfg = { perdiem: 75.00, travelPct: 75, mileage: 0.670, tier1: 0, tier2: 0 };
+let instructors = [];
+let receiptBase64 = null;
+let receiptFileName = null;
+const escT = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MONTHS_L = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const longD = iso => { if (!iso) return ''; const [y,m,d] = iso.split('-').map(Number); return `${MONTHS_L[m-1]} ${d}, ${y}`; };
+const shiftD = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); };
+function portalNotice(html, kind) {
+  const el = document.getElementById('portal-notice');
+  const style = kind === 'warn' ? 'background:#FDF6E3;border-left:4px solid #DDA838' : kind === 'err' ? 'background:#fde8e8;border-left:4px solid #c62828' : 'background:#E2EDF4;border-left:4px solid #084D78';
+  el.innerHTML += `<div style="${style};padding:12px 16px;border-radius:var(--radius);font-size:13px;margin-bottom:8px">${html}</div>`;
+  el.style.display = 'block';
+}
+function fillTeachingDays() {
+  const byDate = {}; (CTX.days || []).forEach(d => byDate[d.date] = d);
+  document.querySelectorAll('.teaching-day').forEach(row => {
+    const d = byDate[row.querySelector('.td-date')?.value];
+    if (!d) return;
+    if (d.hours) row.querySelector('.td-hours').value = d.hours;
+    row.querySelector('.td-program').value = d.modules || '';
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+async function initApp() {
+  try {
+    const r = await fetch('/api/expense/context?pid=' + encodeURIComponent(PID) + (AS ? '&as=' + encodeURIComponent(AS) : ''), { credentials: 'same-origin' });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401) throw new Error('Your sign-in expired. Reload the page to sign in again.');
+    if (!r.ok) throw new Error(j.error || ('The portal returned ' + r.status + '.'));
+    CTX = j; Object.assign(cfg, j.cfg || {});
+  } catch (e) {
+    document.getElementById('main-view').style.display = 'block';
+    document.querySelector('#main-view .main-wrap').innerHTML = `<div style="max-width:620px;margin:60px auto;text-align:center"><h2 style="color:var(--burgundy)">This report can't be opened</h2><p>${escT(e.message)}</p><p><a href="/#/mine">Back to My assignments</a></p></div>`;
+    return;
+  }
+  const P = CTX.program, M = CTX.me;
+  document.getElementById('prog-banner').innerHTML = `<div style="font-weight:800;color:var(--burgundy);font-size:16px">${escT(P.title)}</div><div style="font-size:13px;font-weight:600">${escT(P.cohort)}</div><div style="font-size:12px;color:var(--text-light)">${P.delivery === 'in-person' ? 'In-person, ' + escT(P.destination) : 'Virtual'} · your teaching days ${escT(longD(P.first))}${P.last && P.last !== P.first ? ' to ' + escT(longD(P.last)) : ''}</div>`;
+  document.getElementById('prog-banner').style.display = 'block';
+
+  // Your information: one locked name, from the expense system's record for this instructor
+  instructors = [{ ...M }];
+  populateInstructorDropdown();
+  document.getElementById('instructor-not-found').style.display = 'none';
+  const sel = document.getElementById('f-instructor');
+  sel.value = M.name; sel.disabled = true;
+  handleInstructorSelect();
+  document.getElementById('f-email').value = M.email || '';
+  if (!M.found) portalNotice('We couldn\u2019t find your details in CLEAR\u2019s expense records, so your phone, address and pay rate aren\u2019t filled in. Enter your phone and address below; CLEAR Learning will confirm your rate. Contact <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a> if you have questions.', 'warn');
+
+  document.getElementById('perdiem-info-msg').textContent =
+    `Full-day per diem cap: $${cfg.perdiem.toFixed(2)} · Travel day per diem: ${cfg.travelPct}% ($${(cfg.perdiem * cfg.travelPct / 100).toFixed(2)})`;
+
+  // Program and delivery method, from the assignment
+  const ps = document.getElementById('f-instructor-program');
+  if (P.option && [...ps.options].some(o => o.value === P.option)) { ps.value = P.option; ps.disabled = true; }
+  syncInstructorProgram();
+  const dl = document.getElementById('f-delivery');
+  dl.value = P.delivery; dl.disabled = true;
+  handleDeliveryChange();
+
+  // Teaching days from the confirmed sessions or modules
+  if (P.delivery === 'in-person') {
+    document.getElementById('f-instructor-destination').value = P.destination || '';
+    syncInstructorDestination();
+    if (P.first && P.last) {
+      document.getElementById('f-instructor-depart').value = shiftD(P.first, -1);
+      document.getElementById('f-instructor-return').value = shiftD(P.last, 1);
+      syncInstructorDates();
+    }
+  } else {
+    const list = document.getElementById('teaching-days-list'); list.innerHTML = '';
+    (CTX.days || []).forEach(d => { addTeachingDay(); const row = list.lastElementChild; row.querySelector('.td-date').value = d.date; });
+    addTeachingDay();
+    syncVirtualDates();
+  }
+  fillTeachingDays();
+  if ((CTX.days || []).some(d => !d.hours)) portalNotice('Some teaching days don\u2019t have hours filled in (for example a module that runs across two days). Enter the hours you taught on each of those days.', 'info');
+
+  if ((CTX.submitted || []).length) portalNotice(`You submitted a report for this program on ${CTX.submitted.map(s => escT(new Date(s.submittedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }))).join(', ')}. Submit another only to report something that wasn\u2019t included.`, 'warn');
+  if (!CTX.open) portalNotice(`Reports for this program open on <strong>${escT(longD(CTX.opensOn))}</strong>, after your last session. You can review the form now.`, 'info');
+  if (AS) portalNotice('Staff preview: this is how the form looks to the instructor. Submitting is turned off.', 'info');
+
+  updateSummary();
+  document.getElementById('main-view').style.display = 'block';
+
+  ['f-instructor','f-delivery','f-instructor-program','f-phone','f-addr-street','f-addr-city','f-addr-country'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', watchForm);
+  });
+  ['f-instructor-destination','f-instructor-depart','f-instructor-return'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(el.type === 'date' ? 'change' : 'input', watchForm);
+  });
+  watchForm();
+  if (!CTX.open || AS) { const b = document.getElementById('submit-btn'); if (b) { b.disabled = true; b.title = AS ? 'Staff preview' : 'Opens after your last session'; } }
+}
+
+window.addEventListener('DOMContentLoaded', initApp);
+
+function syncAddress() {
+  const street  = document.getElementById('f-addr-street')?.value?.trim()  || '';
+  const street2 = document.getElementById('f-addr-street2')?.value?.trim() || '';
+  const city    = document.getElementById('f-addr-city')?.value?.trim()    || '';
+  const state   = document.getElementById('f-addr-state')?.value?.trim()   || '';
+  const zip     = document.getElementById('f-addr-zip')?.value?.trim()     || '';
+  const country = document.getElementById('f-addr-country')?.value?.trim() || '';
+  const parts   = [street, street2, city, state, zip, country].filter(Boolean);
+  document.getElementById('f-address').value = parts.join(', ');
+}
+
+// ═══════════════════════════════════════════════════════
+//  INSTRUCTOR DROPDOWN
+// ═══════════════════════════════════════════════════════
+function populateInstructorDropdown() {
+  const sel = document.getElementById('f-instructor');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Select your name —</option>';
+  instructors.forEach(i => {
+    const opt = document.createElement('option');
+    opt.value = i.name; opt.textContent = i.name;
+    sel.appendChild(opt);
+  });
+  sel.value = current;
+  if (instructors.length === 0) {
+    document.getElementById('instructor-not-found').style.display = 'block';
+  }
+}
+
+function handleInstructorSelect() {
+  const sel = document.getElementById('f-instructor');
+  const instr = instructors.find(i => i.name === sel.value);
+  if (instr) {
+    document.getElementById('f-email').value = instr.email || '';
+    if (instr.phone)   document.getElementById('f-phone').value        = instr.phone;
+    if (instr.street)  document.getElementById('f-addr-street').value  = instr.street;
+    if (instr.city)    document.getElementById('f-addr-city').value    = instr.city;
+    if (instr.state)   document.getElementById('f-addr-state').value   = instr.state;
+    if (instr.zip)     document.getElementById('f-addr-zip').value     = instr.zip;
+    if (instr.country) document.getElementById('f-addr-country').value = instr.country;
+    syncAddress();
+    const rate = String(instr.tier).includes('1') ? cfg.tier1 : cfg.tier2;
+    const infoMsg = document.getElementById('teaching-info-msg');
+    if (infoMsg && rate) {
+      infoMsg.textContent = `${instr.name} — $${Number(rate).toFixed(2)}/hr`;
+      infoMsg.style.display = 'flex';
+    }
+  } else {
+    document.getElementById('f-email').value = '';
+  }
+  clearFieldError(document.getElementById('f-instructor'));
+  watchForm();
+}
+
+// ═══════════════════════════════════════════════════════
+//  DELIVERY METHOD
+// ═══════════════════════════════════════════════════════
+function handleDeliveryChange() {
+  const delivery = document.getElementById('f-delivery').value;
+  const inPersonRow = document.getElementById('f-instructor-inperson-row');
+  const inPersonSections = document.getElementById('inperson-sections');
+
+  if (inPersonRow)      inPersonRow.style.display      = delivery === 'in-person' ? 'block' : 'none';
+  if (inPersonSections) inPersonSections.style.display = delivery === 'in-person' ? 'block' : 'none';
+
+  syncInstructorProgram();
+
+  if (delivery === 'virtual') {
+    document.getElementById('f-destination').value = 'Virtual';
+    const depart = document.getElementById('f-instructor-depart');
+    const ret    = document.getElementById('f-instructor-return');
+    if (depart) depart.value = '';
+    if (ret)    ret.value    = '';
+    syncVirtualDates();
+    // Clear expense lines for virtual — not needed
+    document.getElementById('expense-lines-list').innerHTML = '';
+  } else if (delivery === 'in-person') {
+    syncInstructorDestination();
+    syncInstructorDates();
+    // Initialize expense lines if empty
+    if (document.getElementById('expense-lines-list') && !document.getElementById('expense-lines-list').children.length) addExpenseLine();
+    buildPerDiemRows();
+  } else {
+    if (inPersonSections) inPersonSections.style.display = 'none';
+  }
+
+  updateSummary();
+  clearFieldError(document.getElementById('f-delivery'));
+  watchForm();
+}
+
+function syncInstructorProgram() {
+  const sel = document.getElementById('f-instructor-program');
+  const val = sel?.value || '';
+  const eventEl = document.getElementById('f-event');
+  if (eventEl) eventEl.value = val;
+}
+
+function syncInstructorDestination() {
+  const val = document.getElementById('f-instructor-destination')?.value || '';
+  const destEl = document.getElementById('f-destination');
+  if (destEl) destEl.value = val;
+}
+
+function syncInstructorDates() {
+  const depart = document.getElementById('f-instructor-depart')?.value || '';
+  const ret    = document.getElementById('f-instructor-return')?.value || '';
+  const startEl = document.getElementById('f-date-start');
+  const endEl   = document.getElementById('f-date-end');
+  if (startEl) startEl.value = depart;
+  if (endEl)   endEl.value   = ret;
+  if (depart && ret && depart <= ret) populateTeachingDates(depart, ret);
+  buildPerDiemRows();
+}
+
+function syncVirtualDates() {
+  const rows = document.getElementById('teaching-days-list')?.querySelectorAll('.teaching-day');
+  if (!rows || rows.length === 0) return;
+  const dates = [];
+  rows.forEach(row => { const d = row.querySelector('.td-date')?.value; if (d) dates.push(d); });
+  if (!dates.length) return;
+  dates.sort();
+  const startEl = document.getElementById('f-date-start');
+  const endEl   = document.getElementById('f-date-end');
+  if (startEl) startEl.value = dates[0];
+  if (endEl)   endEl.value   = dates[dates.length - 1];
+}
+
+function showInstructorSections(show) {
+  const inPersonSections = document.getElementById('inperson-sections');
+  if (inPersonSections) inPersonSections.style.display = show ? 'block' : 'none';
+}
+
+// Hidden fields needed for data collection
+document.addEventListener('DOMContentLoaded', () => {
+  ['f-event','f-destination','f-date-start','f-date-end'].forEach(id => {
+    if (!document.getElementById(id)) {
+      const inp = document.createElement('input');
+      inp.type = 'hidden'; inp.id = id;
+      document.body.appendChild(inp);
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+//  TEACHING DAYS
+// ═══════════════════════════════════════════════════════
+function addTeachingDay() {
+  const list = document.getElementById('teaching-days-list');
+  const div  = document.createElement('div');
+  div.className = 'teaching-day';
+  div.style.cssText = 'display:grid;grid-template-columns:120px 120px 1fr 28px;gap:8px;align-items:center;margin-bottom:6px';
+
+  const dateInput = document.createElement('input');
+  dateInput.type = 'date'; dateInput.className = 'td-date';
+  dateInput.setAttribute('style','padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;width:100%');
+  dateInput.addEventListener('change', () => { ensureBlankTeachingDay(); syncVirtualDates(); updateSummary(); watchForm(); });
+
+  const hoursInput = document.createElement('input');
+  hoursInput.type = 'number'; hoursInput.className = 'td-hours';
+  hoursInput.step = '0.5'; hoursInput.min = '0'; hoursInput.max = '24'; hoursInput.placeholder = 'Hours';
+  hoursInput.setAttribute('style','padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;width:100%');
+  hoursInput.addEventListener('input', () => { ensureBlankTeachingDay(); updateSummary(); watchForm(); });
+
+  const programInput = document.createElement('input');
+  programInput.type = 'text'; programInput.className = 'td-program';
+  programInput.placeholder = 'Modules taught';
+  programInput.setAttribute('style','padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;width:100%');
+  programInput.addEventListener('input', ensureBlankTeachingDay);
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'remove-btn'; removeBtn.textContent = '×';
+  removeBtn.onclick = () => {
+    const rows = document.getElementById('teaching-days-list').querySelectorAll('.teaching-day');
+    if (rows.length > 1) { div.remove(); updateSummary(); watchForm(); }
+  };
+
+  div.appendChild(dateInput); div.appendChild(hoursInput);
+  div.appendChild(programInput); div.appendChild(removeBtn);
+  list.appendChild(div);
+}
+
+function ensureBlankTeachingDay() {
+  const list = document.getElementById('teaching-days-list');
+  const rows = list.querySelectorAll('.teaching-day');
+  const last = rows[rows.length - 1];
+  if (!last) { addTeachingDay(); return; }
+  const d = last.querySelector('.td-date')?.value;
+  const h = last.querySelector('.td-hours')?.value;
+  const p = last.querySelector('.td-program')?.value;
+  if (d || h || p) addTeachingDay();
+}
+
+function populateTeachingDates(startVal, endVal) {
+  const list = document.getElementById('teaching-days-list');
+  const dates = [];
+  const cur = new Date(startVal + 'T00:00:00');
+  const end = new Date(endVal   + 'T00:00:00');
+  while (cur <= end) { dates.push(cur.toISOString().slice(0,10)); cur.setDate(cur.getDate()+1); }
+
+  const existing = {};
+  list.querySelectorAll('.teaching-day').forEach(row => {
+    const d = row.querySelector('.td-date')?.value;
+    if (d) existing[d] = { hours: row.querySelector('.td-hours')?.value || '', program: row.querySelector('.td-program')?.value || '' };
+  });
+
+  list.innerHTML = '';
+  dates.forEach(dateStr => {
+    const ex = existing[dateStr] || {};
+    addTeachingDay();
+    const rows = list.querySelectorAll('.teaching-day');
+    const lastRow = rows[rows.length - 1];
+    if (lastRow) {
+      const di = lastRow.querySelector('.td-date');   if (di) di.value = dateStr;
+      const hi = lastRow.querySelector('.td-hours');  if (hi) hi.value = ex.hours || '';
+      const pi = lastRow.querySelector('.td-program');if (pi) pi.value = ex.program || '';
+    }
+  });
+  addTeachingDay(); // blank row at end
+
+  const note = document.getElementById('teaching-dates-note');
+  if (note) note.style.display = 'block';
+  updateSummary();
+}
+
+// ═══════════════════════════════════════════════════════
+//  PER DIEM (instructor — allowance only, no actual spent)
+// ═══════════════════════════════════════════════════════
+function buildPerDiemRows() {
+  const startVal = document.getElementById('f-date-start').value;
+  const endVal   = document.getElementById('f-date-end').value;
+  const list     = document.getElementById('perdiem-days-list');
+
+  if (!startVal || !endVal || startVal > endVal) {
+    list.innerHTML = '<p style="font-size:13px;color:var(--text-light);padding:10px 0">Enter your travel dates above to populate per diem days.</p>';
+    updateSummary(); return;
+  }
+
+  const existing = {};
+  list.querySelectorAll('.perdiem-day').forEach(row => {
+    const d = row.querySelector('.pd-date')?.value;
+    if (d) existing[d] = { type: row.querySelector('.pd-type')?.value || '' };
+  });
+
+  const dates = [];
+  const cur = new Date(startVal + 'T00:00:00');
+  const end = new Date(endVal   + 'T00:00:00');
+  while (cur <= end) { dates.push(cur.toISOString().slice(0,10)); cur.setDate(cur.getDate()+1); }
+  list.innerHTML = '';
+  const isSameDay = dates.length === 1;
+
+  dates.forEach((dateStr, idx) => {
+    const defaultType = (isSameDay || idx === 0 || idx === dates.length - 1) ? 'travel' : 'full';
+    const dayType     = existing[dateStr]?.type || defaultType;
+    const baseAllow   = dayType === 'full' ? cfg.perdiem
+      : dayType === 'travel' ? cfg.perdiem * cfg.travelPct / 100
+      : cfg.perdiem;
+
+    let dayLabel = '';
+    if (isSameDay)                  dayLabel = '(same-day)';
+    else if (idx === 0)             dayLabel = '(departure)';
+    else if (idx === dates.length-1) dayLabel = '(return)';
+
+    const div = document.createElement('div');
+    div.className = 'perdiem-day';
+    div.style.cssText = 'margin-bottom:8px;padding:8px 10px;background:#fdfcfb;border:1px solid var(--border);border-radius:var(--radius)';
+    div.innerHTML = `
+      <div style="display:grid;grid-template-columns:110px 130px 90px 90px 160px 28px;gap:6px;align-items:center">
+        <input type="date" class="pd-date" value="${dateStr}" readonly style="background:#f5f5f5;color:var(--charcoal);font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;width:100%">
+        <select class="pd-type" onchange="calcPerdiem(this)" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%">
+          <option value="travel" ${dayType==='travel'?'selected':''}>Travel Day</option>
+          <option value="full"   ${dayType==='full'  ?'selected':''}>Full Day</option>
+          <option value="custom" ${dayType==='custom'?'selected':''}>Custom</option>
+        </select>
+        <input type="number" class="pd-allowance pd-actual" step="0.01" value="${baseAllow.toFixed(2)}"
+          ${dayType !== 'custom' ? 'readonly style="background:#f5f5f5;color:var(--text-light);padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;text-align:right"' : 'style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;text-align:right"'}
+          oninput="updateSummary();updatePdTotals()">
+        <div style="display:flex;align-items:center;justify-content:center;background:#fdf2f8;border-radius:4px;border:1px solid #f9a8d4">
+          <input type="checkbox" class="pd-clear-meal" style="width:16px;height:16px;cursor:pointer;accent-color:#be185d" onchange="calcPerdiem(this.closest('.perdiem-day').querySelector('.pd-type'));updatePdTotals()" title="A meal was provided (reduces allowance)">
+        </div>
+        <select class="pd-clear-meal-type" onchange="calcPerdiem(this.closest('.perdiem-day').querySelector('.pd-type'));updatePdTotals()" style="padding:5px 6px;border:1px solid #f9a8d4;border-radius:4px;font-size:11px;width:100%;background:#fdf2f8">
+          <option value="">— Select meal —</option>
+          <option value="B">Breakfast only</option>
+          <option value="L">Lunch only</option>
+          <option value="D">Dinner only</option>
+          <option value="BL">Breakfast and Lunch</option>
+          <option value="BD">Breakfast and Dinner</option>
+          <option value="LD">Lunch and Dinner</option>
+          <option value="BLD">All meals</option>
+        </select>
+        <button class="remove-btn" onclick="this.closest('.perdiem-day').remove();updateSummary();updatePdTotals()">×</button>
+      </div>`;
+    list.appendChild(div);
+  });
+  updateSummary();
+}
+
+function calcPerdiem(el) {
+  const row  = el.closest('.perdiem-day');
+  const type = row.querySelector('.pd-type')?.value;
+  const inp  = row.querySelector('.pd-allowance');
+  if (!inp) return;
+  const base = type==='full' ? cfg.perdiem : type==='travel' ? cfg.perdiem*cfg.travelPct/100 : parseFloat(inp.value)||cfg.perdiem;
+  const mealProvided = row.querySelector('.pd-clear-meal')?.checked;
+  const mealType     = row.querySelector('.pd-clear-meal-type')?.value || '';
+  let mealAdj = 0;
+  if (mealProvided && mealType) {
+    if (mealType.includes('B')) mealAdj += 0.20;
+    if (mealType.includes('L')) mealAdj += 0.30;
+    if (mealType.includes('D')) mealAdj += 0.50;
+  }
+  if (type !== 'custom') {
+    inp.value = Math.max(0, base - mealAdj * cfg.perdiem).toFixed(2);
+    inp.readOnly = true; inp.style.background = '#f5f5f5'; inp.style.color = 'var(--text-light)';
+  } else { inp.readOnly = false; inp.style.background = 'white'; inp.style.color = ''; }
+  updateSummary();
+}
+
+function addPerDiemDay() {
+  const list = document.getElementById('perdiem-days-list');
+  const p    = list.querySelector('p'); if (p) p.remove();
+  const div  = document.createElement('div');
+  div.className = 'perdiem-day';
+  div.style.cssText = 'margin-bottom:8px;padding:8px 10px;background:#fdfcfb;border:1px solid var(--border);border-radius:var(--radius)';
+  div.innerHTML = `
+    <div style="display:grid;grid-template-columns:110px 130px 90px 90px 160px 28px;gap:6px;align-items:center">
+      <input type="date" class="pd-date" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%">
+      <select class="pd-type" onchange="calcPerdiem(this)" style="padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%">
+        <option value="travel">Travel Day</option>
+        <option value="full">Full Day</option>
+        <option value="custom">Custom</option>
+      </select>
+      <input type="number" class="pd-allowance pd-actual" step="0.01" value="${cfg.perdiem.toFixed(2)}" readonly
+        style="background:#f5f5f5;color:var(--text-light);padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:100%;text-align:right"
+        oninput="updateSummary();updatePdTotals()">
+      <div style="display:flex;align-items:center;justify-content:center;background:#fdf2f8;border-radius:4px;border:1px solid #f9a8d4">
+        <input type="checkbox" class="pd-clear-meal" style="width:16px;height:16px;cursor:pointer;accent-color:#be185d" onchange="calcPerdiem(this.closest('.perdiem-day').querySelector('.pd-type'));updatePdTotals()" title="A meal was provided (reduces allowance)">
+      </div>
+      <select class="pd-clear-meal-type" onchange="calcPerdiem(this.closest('.perdiem-day').querySelector('.pd-type'));updatePdTotals()" style="padding:5px 6px;border:1px solid #f9a8d4;border-radius:4px;font-size:11px;width:100%;background:#fdf2f8">
+        <option value="">— Select meal —</option>
+        <option value="B">Breakfast only</option>
+        <option value="L">Lunch only</option>
+        <option value="D">Dinner only</option>
+        <option value="BL">Breakfast and Lunch</option>
+        <option value="BD">Breakfast and Dinner</option>
+        <option value="LD">Lunch and Dinner</option>
+        <option value="BLD">All meals</option>
+      </select>
+      <button class="remove-btn" onclick="this.closest('.perdiem-day').remove();updateSummary();updatePdTotals()">×</button>
+    </div>`;
+  list.appendChild(div);
+  updateSummary();
+  updatePdTotals();
+}
+
+// ═══════════════════════════════════════════════════════
+//  EXPENSE LINES
+// ═══════════════════════════════════════════════════════
+const EXPENSE_CATS = ['Airfare','Baggage Fees','Gasoline','Gratuities','Hotel','Mileage','Miscellaneous','Parking','Public Transportation','Rental Car','Uber / Rideshare'];
+
+const CURRENCIES = [
+  {code:'USD',name:'US Dollar'},{code:'CAD',name:'Canadian Dollar'},{code:'EUR',name:'Euro'},
+  {code:'GBP',name:'British Pound'},{code:'AUD',name:'Australian Dollar'},{code:'CHF',name:'Swiss Franc'},
+  {code:'MXN',name:'Mexican Peso'},{code:'NZD',name:'New Zealand Dollar'},{code:'SEK',name:'Swedish Krona'},
+  {code:'NOK',name:'Norwegian Krone'},{code:'DKK',name:'Danish Krone'},{code:'JPY',name:'Japanese Yen'},
+  {code:'HKD',name:'Hong Kong Dollar'},{code:'SGD',name:'Singapore Dollar'},{code:'ZAR',name:'South African Rand'},
+];
+const exchangeRates = {};
+
+async function getExchangeRate(code) {
+  if (code === 'USD') return 1;
+  if (exchangeRates[code]) return exchangeRates[code];
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.rates) {
+        Object.entries(data.rates).forEach(([k,v]) => { exchangeRates[k] = 1/v; });
+        return exchangeRates[code] || null;
+      }
+    }
+  } catch(e) { console.warn('Rate fetch failed:', e.message); }
+  return null;
+}
+
+async function handleCurrencyChange(currSel) {
+  const row  = currSel.closest('.expense-entry');
+  const code = currSel.value;
+  const fi   = row.querySelector('.el-foreign');
+  const amt  = row.querySelector('.el-amt');
+  const note = row.querySelector('.el-currency-note');
+  if (code === 'USD') {
+    if (fi) { fi.disabled = true; fi.value = ''; fi.placeholder = '—'; }
+    amt.readOnly = false; amt.style.background = ''; amt.style.color = ''; amt.placeholder = '0.00';
+    if (note) note.textContent = '';
+    updateSummary(); return;
+  }
+  if (fi) { fi.disabled = false; fi.placeholder = '0.00'; }
+  amt.readOnly = true; amt.style.background = '#f5f5f5'; amt.style.color = 'var(--text-light)'; amt.placeholder = 'USD (auto)';
+  const foreign = parseFloat(fi?.value) || 0;
+  if (foreign > 0) {
+    if (note) note.textContent = 'Fetching rate…';
+    const rate = await getExchangeRate(code);
+    if (rate) {
+      amt.value = (foreign * rate).toFixed(2);
+      if (note) note.textContent = '1 ' + code + ' = $' + rate.toFixed(4) + ' USD · Converted: $' + amt.value;
+    } else {
+      if (note) note.textContent = 'Rate unavailable — enter USD amount manually.';
+      amt.readOnly = false; amt.style.background = ''; amt.style.color = '';
+    }
+  } else {
+    if (note) note.textContent = 'Enter amount in ' + code + ' to convert.';
+  }
+  updateSummary();
+}
+
+function addExpenseLine() {
+  const list = document.getElementById('expense-lines-list');
+  const div  = document.createElement('div');
+  div.className = 'expense-entry';
+  div.style.cssText = 'display:grid;grid-template-columns:130px 100px 1fr 90px 90px 28px;gap:8px;align-items:start;margin-bottom:6px;padding:8px 10px;background:#fdfcfb;border:1px solid var(--border);border-radius:var(--radius)';
+
+  // Category
+  const catSel = document.createElement('select'); catSel.className = 'el-cat';
+  catSel.setAttribute('style','padding:7px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;width:100%');
+  catSel.appendChild(Object.assign(document.createElement('option'),{value:'',textContent:'— Category —'}));
+  EXPENSE_CATS.forEach(c => catSel.appendChild(Object.assign(document.createElement('option'),{value:c,textContent:c})));
+  catSel.onchange = function() { handleExpenseCat(this); ensureBlankExpenseLine(); };
+
+  // Currency selector
+  const currWrap = document.createElement('div'); currWrap.style.cssText = 'display:flex;flex-direction:column;gap:2px';
+  const currSel = document.createElement('select'); currSel.className = 'el-currency';
+  currSel.setAttribute('style','padding:7px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:inherit;width:100%');
+  CURRENCIES.forEach(c => {
+    const o = document.createElement('option'); o.value = c.code; o.textContent = c.code + ' — ' + c.name;
+    if (c.code === 'USD') o.selected = true; currSel.appendChild(o);
+  });
+  currSel.addEventListener('change', () => handleCurrencyChange(currSel));
+  const currNote = document.createElement('div'); currNote.className = 'el-currency-note';
+  currNote.style.cssText = 'font-size:11px;color:var(--burgundy);margin-top:2px';
+  currWrap.appendChild(currSel); currWrap.appendChild(currNote);
+
+  // Description
+  const descWrap = document.createElement('div'); descWrap.className = 'el-desc-wrap';
+  const descInput = document.createElement('input'); descInput.type = 'text'; descInput.className = 'el-desc';
+  descInput.placeholder = 'Vendor / description (optional)';
+  descInput.setAttribute('style','padding:7px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;width:100%');
+  descInput.addEventListener('input', ensureBlankExpenseLine);
+  descWrap.appendChild(descInput);
+
+  // Original currency amount (yellow, disabled by default)
+  const foreignWrap = document.createElement('div'); foreignWrap.className = 'el-foreign-wrap';
+  const foreignInp = document.createElement('input'); foreignInp.type = 'number'; foreignInp.className = 'el-foreign';
+  foreignInp.step = '0.01'; foreignInp.min = '0'; foreignInp.placeholder = '—'; foreignInp.disabled = true;
+  foreignInp.setAttribute('style','padding:7px 8px;border:1px solid #d97706;border-radius:4px;font-size:12px;font-family:inherit;width:100%;background:#fef9c3;text-align:right');
+  foreignInp.addEventListener('input', () => { handleCurrencyChange(currSel); ensureBlankExpenseLine(); });
+  foreignWrap.appendChild(foreignInp);
+
+  // USD amount
+  const amtInput = document.createElement('input'); amtInput.type = 'number'; amtInput.className = 'el-amt';
+  amtInput.step = '0.01'; amtInput.min = '0'; amtInput.placeholder = '0.00';
+  amtInput.setAttribute('style','padding:7px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;width:100%');
+  amtInput.addEventListener('input', () => { ensureBlankExpenseLine(); updateSummary(); });
+
+  // Remove button
+  const removeBtn = document.createElement('button'); removeBtn.className = 'remove-btn'; removeBtn.textContent = '×';
+  removeBtn.onclick = function() { removeExpenseLine(this); };
+
+  div.appendChild(catSel); div.appendChild(currWrap); div.appendChild(descWrap);
+  div.appendChild(foreignWrap); div.appendChild(amtInput); div.appendChild(removeBtn);
+  list.appendChild(div);
+}
+
+function ensureBlankExpenseLine() {
+  const list = document.getElementById('expense-lines-list');
+  const rows = list.querySelectorAll('.expense-entry');
+  const last = rows[rows.length - 1];
+  if (!last) { addExpenseLine(); return; }
+  if (last.querySelector('.el-cat')?.value || last.querySelector('.el-desc')?.value || last.querySelector('.el-amt')?.value) addExpenseLine();
+}
+
+function removeExpenseLine(btn) {
+  const row  = btn.closest('.expense-entry');
+  const list = document.getElementById('expense-lines-list');
+  if (list.querySelectorAll('.expense-entry').length > 1) { row.remove(); }
+  else { row.querySelector('.el-cat').value = ''; row.querySelector('.el-amt').value = ''; }
+  updateSummary();
+}
+
+function handleExpenseCat(sel) {
+  const row=sel.closest('.expense-entry'),dw=row.querySelector('.el-desc-wrap'),amt=row.querySelector('.el-amt'),cs=row.querySelector('.el-currency');
+  if(sel.value==='Mileage'){
+    if(cs){cs.value='USD';cs.disabled=true;}
+    const fi2=row.querySelector('.el-foreign');if(fi2){fi2.disabled=true;fi2.value='';fi2.placeholder='—';}
+    dw.innerHTML='<div style="display:grid;grid-template-columns:1fr 90px;gap:6px"><input type="text" class="el-desc" placeholder="Description (e.g., home to airport)" style="padding:7px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;width:100%"><input type="number" class="el-miles" step="0.1" min="0" placeholder="Miles" style="padding:7px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;width:100%" oninput="calcMileage(this)"></div>';
+    amt.readOnly=true;amt.style.background='#f5f5f5';amt.style.color='var(--text-light)';amt.placeholder='Calculated';
+  } else {
+    if(cs)cs.disabled=false;
+    dw.innerHTML='<input type="text" class="el-desc" placeholder="Vendor / description (optional)" style="padding:7px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;width:100%">';
+    dw.querySelector('.el-desc').addEventListener('input',ensureBlankExpenseLine);
+    const fi2=row.querySelector('.el-foreign');if(fi2){fi2.disabled=!cs||cs.value==='USD';fi2.placeholder=(!cs||cs.value==='USD')?'—':'0.00';}
+    amt.readOnly=false;amt.style.background='';amt.style.color='';amt.placeholder='0.00';
+  }
+  ensureBlankExpenseLine();updateSummary();
+}
+
+function calcMileage(milesInput) {
+  const row = milesInput.closest('.expense-entry');
+  row.querySelector('.el-amt').value = ((parseFloat(milesInput.value) || 0) * cfg.mileage).toFixed(2);
+  updateSummary();
+}
+
+// ═══════════════════════════════════════════════════════
+//  SUMMARY
+// ═══════════════════════════════════════════════════════
+function updatePdTotals() {
+  let tc = 0;
+  document.querySelectorAll('.perdiem-day').forEach(row => {
+    tc += parseFloat(row.querySelector('.pd-allowance')?.value) || 0;
+  });
+  const capEl = document.getElementById('pd-total-cap');
+  if (capEl) capEl.textContent = '$' + tc.toFixed(2);
+}
+
+function updateTripCapWarn() {
+  updatePdTotals();
+}
+
+function updateSummary() {
+  const delivery = document.getElementById('f-delivery')?.value;
+  const instrSel = document.getElementById('f-instructor');
+  const instr    = instructors.find(i => i.name === instrSel?.value);
+  const rate     = instr ? (String(instr.tier).includes('1') ? cfg.tier1 : cfg.tier2) : 0;
+
+  // Teaching pay
+  let teachingTotal = 0;
+  document.querySelectorAll('.teaching-day').forEach(row => {
+    teachingTotal += (parseFloat(row.querySelector('.td-hours')?.value) || 0) * Number(rate);
+  });
+
+  // Per diem (allowance = actual for instructors)
+  let perDiemTotal = 0;
+  document.querySelectorAll('.perdiem-day').forEach(row => {
+    perDiemTotal += parseFloat(row.querySelector('.pd-allowance')?.value) || 0;
+  });
+
+  // Expenses (in-person only)
+  let expenseTotal = 0;
+  if (delivery === 'in-person') {
+    document.querySelectorAll('.expense-entry').forEach(row => {
+      expenseTotal += parseFloat(row.querySelector('.el-amt')?.value) || 0;
+    });
+  }
+
+  const total = teachingTotal + perDiemTotal + expenseTotal;
+  let rows = `<div class="summary-item"><span class="label">Teaching Pay</span><span class="value">$${teachingTotal.toFixed(2)}</span></div>`;
+  if (delivery === 'in-person') {
+    rows += `<div class="summary-item"><span class="label">Meal Per Diem</span><span class="value">$${perDiemTotal.toFixed(2)}</span></div>`;
+    rows += `<div class="summary-item"><span class="label">Other Expenses</span><span class="value">$${expenseTotal.toFixed(2)}</span></div>`;
+  }
+  document.getElementById('summary-grid').innerHTML = rows;
+  document.getElementById('summary-total-val').textContent = `$${total.toFixed(2)}`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  RECEIPT UPLOAD
+// ═══════════════════════════════════════════════════════
+const dropZone = document.getElementById('receipt-drop-zone');
+if (dropZone) {
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0]; if (file) processReceiptFile(file);
+  });
+}
+function handleReceiptUpload(e) { const file = e.target.files[0]; if (file) processReceiptFile(file); }
+function processReceiptFile(file) {
+  if (!file.name.toLowerCase().endsWith('.pdf')) { alert('Please upload a PDF file.'); return; }
+  if (file.size > 20 * 1024 * 1024) { alert('File must be 20 MB or smaller.'); return; }
+  document.getElementById('receipt-drop-zone')?.classList.remove('upload-zone-error');
+  receiptFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    receiptBase64 = e.target.result.split(',')[1];
+    watchForm();
+    const preview = document.getElementById('receipt-preview');
+    preview.innerHTML = `
+      <div class="receipt-preview">
+        <span class="file-icon">📄</span>
+        <div class="file-info">
+          <div class="file-name">${file.name}</div>
+          <div class="file-size">${(file.size/1024).toFixed(1)} KB</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="removeReceipt()">Remove</button>
+      </div>`;
+    preview.style.display = 'block';
+    document.getElementById('receipt-drop-zone').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+function removeReceipt() {
+  receiptBase64 = null; receiptFileName = null;
+  document.getElementById('receipt-preview').style.display = 'none';
+  document.getElementById('receipt-drop-zone').style.display = 'block';
+  document.getElementById('receipt-file-input').value = '';
+  watchForm();
+}
+
+// ═══════════════════════════════════════════════════════
+//  VALIDATION & WATCH
+// ═══════════════════════════════════════════════════════
+function clearFieldErrors() {
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+  document.querySelectorAll('.field-error-label').forEach(el => el.remove());
+  document.getElementById('receipt-drop-zone')?.classList.remove('upload-zone-error');
+}
+
+function markFieldError(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const field = el.closest('.field');
+  if (field) {
+    field.classList.add('field-error');
+    if (!field.querySelector('.field-error-label')) {
+      const lbl = document.createElement('span');
+      lbl.className = 'field-error-label'; lbl.textContent = msg;
+      field.appendChild(lbl);
+    }
+  }
+}
+
+function clearFieldError(input) {
+  const field = input?.closest('.field');
+  if (!field) return;
+  field.classList.remove('field-error');
+  field.querySelectorAll('.field-error-label').forEach(el => el.remove());
+}
+
+function watchForm() {
+  const delivery  = document.getElementById('f-delivery')?.value;
+  const name      = document.getElementById('f-instructor')?.value;
+  const program   = document.getElementById('f-instructor-program')?.value?.trim();
+  const phone     = document.getElementById('f-phone')?.value?.trim();
+  const street    = document.getElementById('f-addr-street')?.value?.trim();
+  const city      = document.getElementById('f-addr-city')?.value?.trim();
+  const country   = document.getElementById('f-addr-country')?.value?.trim();
+  const hasHours  = Array.from(document.querySelectorAll('.td-hours')).some(el => parseFloat(el.value) > 0);
+
+  let allFilled = name && delivery && program && phone && street && city && country && hasHours;
+
+  if (delivery === 'in-person') {
+    const dest   = document.getElementById('f-instructor-destination')?.value?.trim();
+    const depart = document.getElementById('f-instructor-depart')?.value;
+    const ret    = document.getElementById('f-instructor-return')?.value;
+    allFilled = allFilled && dest && depart && ret;
+    // Receipt optional for instructors but good practice — don't require it
+  }
+
+  if (CTX && (!CTX.open || AS)) allFilled = false; // before the last session, or a staff preview
+  const btn = document.getElementById('submit-btn');
+  if (btn) {
+    btn.disabled = !allFilled;
+    btn.style.opacity = allFilled ? '1' : '0.5';
+    btn.style.cursor  = allFilled ? 'pointer' : 'not-allowed';
+  }
+}
+
+function validateForm() {
+  clearFieldErrors();
+  const delivery = document.getElementById('f-delivery')?.value;
+  const name     = document.getElementById('f-instructor')?.value;
+  const program  = document.getElementById('f-instructor-program')?.value?.trim();
+  const phone   = document.getElementById('f-phone')?.value?.trim();
+  const street  = document.getElementById('f-addr-street')?.value?.trim();
+  const city    = document.getElementById('f-addr-city')?.value?.trim();
+  const country = document.getElementById('f-addr-country')?.value?.trim();
+  const errors   = [];
+
+  if (!name)     { markFieldError('f-instructor',         'Required'); errors.push('name'); }
+  if (!delivery) { markFieldError('f-delivery',           'Required'); errors.push('delivery method'); }
+  if (!program)  { markFieldError('f-instructor-program', 'Please select the program taught'); errors.push('program'); }
+  if (!phone)    { markFieldError('f-phone',              'Required'); errors.push('phone number'); }
+  if (!street)   { markFieldError('f-addr-street',        'Required'); errors.push('street address'); }
+  if (!city)     { markFieldError('f-addr-city',          'Required'); errors.push('city'); }
+  if (!country)  { markFieldError('f-addr-country',       'Required'); errors.push('country'); }
+
+  const hasHours = Array.from(document.querySelectorAll('.td-hours')).some(el => parseFloat(el.value) > 0);
+  if (!hasHours) errors.push('at least one teaching day with hours');
+
+  if (delivery === 'in-person') {
+    const dest   = document.getElementById('f-instructor-destination')?.value?.trim();
+    const depart = document.getElementById('f-instructor-depart')?.value;
+    const ret    = document.getElementById('f-instructor-return')?.value;
+    if (!dest)   { markFieldError('f-instructor-destination', 'Required'); errors.push('destination'); }
+    if (!depart) { markFieldError('f-instructor-depart',      'Required'); errors.push('departure date'); }
+    if (!ret)    { markFieldError('f-instructor-return',      'Required'); errors.push('return date'); }
+    if (depart && ret && depart > ret) { markFieldError('f-instructor-return', 'Must be after departure'); errors.push('valid dates'); }
+  }
+
+  if (errors.length > 0) return 'Please complete all required fields: ' + errors.join(', ') + '.';
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
+//  SUBMISSION
+// ═══════════════════════════════════════════════════════
+async function submitReport() {
+  const err = validateForm();
+  if (err) {
+    const alertEl = document.getElementById('submit-alert-top');
+    alertEl.textContent = err; alertEl.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' }); return;
+  }
+
+  // Collect teaching days
+  const teachingDays = [];
+  document.querySelectorAll('.teaching-day').forEach(row => {
+    const date    = row.querySelector('.td-date')?.value || '';
+    const hours   = parseFloat(row.querySelector('.td-hours')?.value) || 0;
+    const program = row.querySelector('.td-program')?.value || '';
+    if (!date && !hours && !program) return;
+    teachingDays.push({ date, hours, program });
+  });
+
+  const instrSel  = document.getElementById('f-instructor');
+  const instr     = instructors.find(i => i.name === instrSel?.value);
+  const rate      = instr ? (String(instr.tier).includes('1') ? cfg.tier1 : cfg.tier2) : 0;
+  const totalHours   = teachingDays.reduce((s,d) => s + d.hours, 0);
+  const teachingPay  = totalHours * Number(rate);
+  const delivery     = document.getElementById('f-delivery')?.value;
+
+  const perDiemDays = [];
+  document.querySelectorAll('.perdiem-day').forEach(row => {
+    const allowance   = parseFloat(row.querySelector('.pd-allowance')?.value) || 0;
+    const otherInst   = parseInt(row.querySelector('.pd-other-inst')?.value)  || 0;
+    const clearMeal   = row.querySelector('.pd-clear-meal')?.checked || false;
+    const clearMealType = row.querySelector('.pd-clear-meal-type')?.value || '';
+    perDiemDays.push({
+      date: row.querySelector('.pd-date')?.value || '',
+      type: row.querySelector('.pd-type')?.value || 'full',
+      allowance, actualSpent: allowance,
+      groupBfast: otherInst,
+      groupLunch: clearMeal ? 1 : 0,
+      groupDinner: clearMealType ? 1 : 0,
+      otherInstructors: otherInst,
+      clearMealProvided: clearMeal,
+      clearMealType,
+    });
+  });
+
+  const expenseLines = [];
+  if (delivery === 'in-person') {
+    document.querySelectorAll('.expense-entry').forEach(row => {
+      const cat = row.querySelector('.el-cat')?.value;
+      if (!cat) return;
+      const isMileage = cat === 'Mileage';
+      expenseLines.push({
+        category:     cat,
+        description:  row.querySelector('.el-desc')?.value || '',
+        amount:       parseFloat(row.querySelector('.el-amt')?.value) || 0,
+        miles:        isMileage ? (parseFloat(row.querySelector('.el-miles')?.value) || 0) : 0,
+        reimbursable: true,
+      });
+    });
+  }
+
+  const perDiemTotal  = perDiemDays.reduce((s,d) => s + d.allowance, 0);
+  const expenseTotal  = expenseLines.reduce((s,e) => s + e.amount, 0);
+  const grandTotal    = teachingPay + perDiemTotal + expenseTotal;
+
+  // Sync hidden fields
+  syncInstructorProgram();
+  if (delivery === 'in-person') syncInstructorDestination();
+  if (delivery === 'virtual')   document.getElementById('f-destination').value = 'Virtual';
+  syncVirtualDates();
+
+  const report = {
+    id:           'EXP-' + Date.now(),
+    status:       'Pending',
+    submittedAt:  new Date().toISOString(),
+    name:         instrSel?.value || '',
+    email:        document.getElementById('f-email')?.value || '',
+    phone:        document.getElementById('f-phone')?.value?.trim() || '',
+    address:      document.getElementById('f-address')?.value || '',
+    type:         'instructor',
+    instructorName: instr?.name || '',
+    instructorTier: instr?.tier || '',
+    instructorRate: Number(rate),
+    event:        document.getElementById('f-event')?.value || document.getElementById('f-instructor-program')?.value || '',
+    destination:  document.getElementById('f-destination')?.value || (delivery === 'virtual' ? 'Virtual' : ''),
+    dateStart:    document.getElementById('f-date-start')?.value || '',
+    dateEnd:      document.getElementById('f-date-end')?.value || '',
+    purpose:      delivery === 'virtual' ? 'Virtual delivery' : '',
+    perDiemDays, expenseLines, teachingDays,
+    totalHours, teachingPay, perDiemTotal, expenseTotal, grandTotal,
+    receiptBase64:   receiptBase64 || null,
+    receiptFileName: receiptFileName || null,
+    personalMeals: 0, totalAmex: 0, reimbursementTotal: grandTotal,
+  };
+
+  document.getElementById('main-view').style.display = 'none';
+  document.getElementById('loading-screen').style.display = 'block';
+
+  try {
+    const res = await fetch('/api/expense/submit', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pid: PID, report })
+    });
+    const j = await res.json().catch(() => ({}));
+    if (res.status === 401) throw new Error('Your sign-in expired. Reload the page to sign in again; your entries will need to be re-entered.');
+    if (!res.ok) throw new Error(j.error || ('The portal returned ' + res.status + '.'));
+    showSuccessScreen(j.id || report.id);
+  } catch(e) {
+    console.error('Submit error:', e);
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('main-view').style.display = 'block';
+    const alertEl = document.getElementById('submit-alert-top');
+    alertEl.textContent = 'Your report wasn\u2019t submitted: ' + e.message + ' Please try again, or contact clearlearning@clearhq.org.';
+    alertEl.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function showSuccessScreen(reportId) {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('main-view').style.display = 'none';
+  const div = document.createElement('div');
+  div.style.cssText = 'max-width:600px;margin:80px auto;text-align:center;padding:40px 20px';
+  div.innerHTML = `
+    <div style="font-size:48px;margin-bottom:16px">✅</div>
+    <h2 style="color:var(--burgundy);font-family:'Trebuchet MS',sans-serif;margin-bottom:12px">Report Submitted</h2>
+    <p style="color:var(--charcoal);font-size:15px;margin-bottom:8px">Your expense report has been submitted successfully.</p>
+    <p style="color:var(--text-light);font-size:13px;margin-bottom:24px">You can follow its status on the My assignments page of the Instructor Portal.</p>
+    <p style="font-size:12px;color:var(--text-light)">Report ID: <strong>${reportId}</strong></p>
+    <p style="margin-top:20px"><a href="/#/mine" style="display:inline-block;background:var(--burgundy);color:#fff;padding:10px 18px;border-radius:6px;font-weight:700;text-decoration:none">Back to My assignments</a></p>`;
+  document.body.appendChild(div);
+}
+
+// Guaranteed fallback
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    if (document.getElementById('expense-lines-list') && !document.getElementById('expense-lines-list').children.length) addExpenseLine();
+  }, 800);
+});
+</script>
+</body>
+</html>
