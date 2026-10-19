@@ -16,20 +16,22 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Open Sans",Aria
 a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .top{background:#fff}
-.top-in{max-width:980px;margin:0 auto;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.top-in{max-width:1240px;margin:0 auto;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .top img{width:220px;height:auto;display:block}
 .top a.btn{background:var(--burgundy);color:#fff;text-decoration:none;font-weight:700;padding:9px 16px;border-radius:6px;font-size:14px}
 .top a.btn:hover{background:var(--burgundy-dk)}
 .goldbar{height:4px;background:var(--gold)}
 .hero{background:var(--burgundy);color:#fff}
-.hero-in{max-width:980px;margin:0 auto;padding:32px 28px 28px}
+.hero-in{max-width:1240px;margin:0 auto;padding:32px 28px 28px}
 .hero small{display:block;font-weight:700;font-size:13px;opacity:.85}
 .hero h1{margin:4px 0 8px;font-size:32px;line-height:1.15;font-weight:800}
 .hero p{margin:0;max-width:66ch;opacity:.93}
-main{max-width:980px;margin:0 auto;padding:26px 28px 70px}
-.toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
-.toc a{background:#fff;border:1px solid var(--line);border-radius:18px;padding:5px 14px;font-size:14px;font-weight:600;color:var(--burgundy);text-decoration:none}
-.toc a:hover{border-color:var(--burgundy)}
+.layout{max-width:1240px;margin:0 auto;padding:26px 28px 70px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:30px;align-items:start}
+nav.toc{position:sticky;top:20px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 8px;font-size:14px;max-height:calc(100vh - 40px);overflow:auto}
+nav.toc strong{display:block;padding:2px 12px 8px;color:var(--burgundy);font-size:13px}
+nav.toc a{display:block;padding:5px 12px;border-radius:6px;text-decoration:none;color:var(--charcoal)}
+nav.toc a:hover{background:var(--soft);color:var(--burgundy)}
+main{min-width:0}
 section{background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px 30px;margin-bottom:20px}
 h2{margin:0 0 8px;color:var(--burgundy);font-size:23px}
 h3{margin:20px 0 6px;color:var(--burgundy);font-size:17px}
@@ -123,9 +125,10 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
 .screen .note2{background:#F8EDD3;border-left:4px solid #DDA838;padding:8px 11px;border-radius:0;margin-bottom:10px;font-size:12px}
 .screen .err2{background:#FBE9EC;border-left:4px solid #9B1C1C;padding:8px 11px;border-radius:0;margin-bottom:10px;font-size:12px}
 
+@media (max-width:1000px){.layout{grid-template-columns:1fr}nav.toc{position:static;max-height:none}}
 @media (max-width:820px){.journey{grid-template-columns:1fr 1fr}}
-@media (max-width:520px){.journey{grid-template-columns:1fr}section{padding:22px 18px}.hero h1{font-size:26px}main,.top-in,.hero-in{padding-left:16px;padding-right:16px}}
-@media print{figure.mock{break-inside:avoid}.frame{box-shadow:none}.co,ol.key li b.n,.screen *{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{background:#fff}.toc,.top a.btn{display:none}section{border:0;padding:10px 0}.hero,.goldbar,.jstep::before,th,.answer span.on{-webkit-print-color-adjust:exact;print-color-adjust:exact}.jstep{break-inside:avoid}}
+@media (max-width:520px){.journey{grid-template-columns:1fr}section{padding:22px 18px}.hero h1{font-size:26px}.layout,.top-in,.hero-in{padding-left:16px;padding-right:16px}}
+@media print{figure.mock{break-inside:avoid}.frame{box-shadow:none}.co,ol.key li b.n,.screen *{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{background:#fff}.toc,.top a.btn{display:none}.layout{display:block;padding:0}section{border:0;padding:10px 0}.hero,.goldbar,.jstep::before,th,.answer span.on{-webkit-print-color-adjust:exact;print-color-adjust:exact}.jstep{break-inside:avoid}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>
@@ -135,11 +138,23 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
 <div class="hero"><div class="hero-in"><small>For CLEAR Learning instructors</small><h1>Instructor Portal Guide</h1>
 <p>The Instructor Portal is where you see upcoming CLEAR Learning programs, tell us which sessions you can teach, and find everything for the sessions you're confirmed to teach, including Zoom links and your evaluation reports.</p></div></div>
 
-<main>
-<nav class="toc" aria-label="Contents">
-  <a href="#how">How it works</a><a href="#signin">Signing in</a><a href="#formats">Your formats</a><a href="#programs">Finding programs</a><a href="#answer">Answering</a>
-  <a href="#timezones">Time zones</a><a href="#assignments">My assignments</a><a href="#reports">Evaluation reports</a><a href="#files">Program files</a><a href="#emails">Emails</a><a href="#questions">Questions</a>
+<div class="layout">
+<nav class="toc" aria-label="Contents"><strong>Contents</strong>
+  <a href="#how">How it works</a>
+  <a href="#signin">Signing in</a>
+  <a href="#formats">Your formats</a>
+  <a href="#programs">Finding programs</a>
+  <a href="#answer">Answering</a>
+  <a href="#timezones">Time zones</a>
+  <a href="#assignments">My assignments</a>
+  <a href="#expenses">Expenses and hours</a>
+  <a href="#reports">Evaluation reports</a>
+  <a href="#files">Program files</a>
+  <a href="#emails">Emails</a>
+  <a href="#questions">Questions</a>
 </nav>
+
+<main>
 
 <section id="how">
   <h2>How it works</h2>
@@ -149,7 +164,7 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
     <div class="jstep" role="listitem"><h3>You respond</h3><p>Mark the sessions you can and can't teach by each program's response date.</p></div>
     <div class="jstep" role="listitem"><h3>Selection</h3><p>After the response date, CLEAR Learning confirms instructors and emails a selection notice.</p></div>
     <div class="jstep" role="listitem"><h3>Get ready</h3><p>Your sessions, times and Zoom links are on My assignments, with calendar downloads. Program materials are on Program files.</p></div>
-    <div class="jstep" role="listitem"><h3>Your report</h3><p>After the program, your evaluation report appears on Evaluation reports.</p></div>
+    <div class="jstep" role="listitem"><h3>Your report</h3><p>After the program, submit your expenses and hours from My assignments. Your evaluation report appears on Evaluation reports.</p></div>
   </div>
 </section>
 
@@ -239,12 +254,30 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
     <li><strong>Zoom links</strong> appear on each online session before the program's first session. Until then, the session shows <em>The Zoom link appears here before the first session.</em></li>
     <li><strong>Add to calendar (.ics)</strong> downloads a calendar file with your sessions. If you download it before the Zoom links appear, download it again afterwards to include them.</li>
   </ul>
-  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div class="app-top"><div style="display:flex;justify-content:space-between"><div class="t"><small>CLEAR Learning</small>Instructor Portal</div><div style="font-size:11px;text-align:right"><b>Barton, Andrew</b><br>Guide · Sign out</div></div><div class="tabs2"><span class="">Programs<span class="n" style="background:#DDA838;color:#4A0620">2</span></span><span class="on">My assignments<span class="n" style="background:rgba(255,255,255,.2);color:#fff">2</span></span><span class="">Evaluation reports<span class="n" style="background:rgba(255,255,255,.2);color:#fff">1</span></span><span class="">Program files<span class="n" style="background:#DDA838;color:#4A0620">1</span></span></div></div>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div class="app-top"><div style="display:flex;justify-content:space-between"><div class="t"><small>CLEAR Learning</small>Instructor Portal</div><div style="font-size:11px;text-align:right"><b>Barton, Andrew</b><br>Guide · Sign out</div></div><div class="tabs2"><span class="">Programs<span class="n" style="background:#DDA838;color:#4A0620">2</span></span><span class="on">My assignments<span class="n" style="background:#F8EDD3;color:#64092C">2</span></span><span class="">Evaluation reports<span class="n" style="background:rgba(255,255,255,.2);color:#fff">1</span></span><span class="">Program files<span class="n" style="background:#DDA838;color:#4A0620">1</span></span></div></div>
 <div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;overflow:hidden">
 <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 16px;background:#FAF7F8;border-top:6px solid #64092C;border-bottom:1px solid #DEDCE0"><div style="display:flex;gap:10px;align-items:center"><span class="lg">NCIT B</span><div><b style="color:#64092C">Canadian NCIT - Basic Online Program</b><div class="facts">2027.01.07 NCIT B CAN Open</div></div></div><span class="btn ghost anc"><i class="co r">1</i>Add to calendar (.ics)</span></div>
 <div class="anc" style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid #EEECEF"><i class="co">2</i><div><b>Investigative Process</b><div style="font-size:12px">Tue, Jan 12, 1:00 PM – 3:00 PM ET</div><div style="font-size:12px">Zoom: <span style="color:#084D78">https://zoom.us/j/88140022…</span></div></div><span class="pill gold">Lead</span></div>
 <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px"><div><b>Report Writing</b><div style="font-size:12px">Tue, Jan 19, 1:00 PM – 4:00 PM ET</div><div class="facts">The Zoom link appears here before the first session.</div></div><span class="pill gold">Lead</span></div></div></div></div><figcaption><b>Figure 6.</b> My assignments, with Zoom links as they become available.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Download a calendar file with your sessions. Download it again after Zoom links appear to include them.</span></li><li><b class="n">2</b><span>Each session shows its date, time, your role and, once available, its Zoom link.</span></li></ol>
 <div class="important"><strong>Can no longer teach a session you're confirmed for?</strong> Please call the program facilitator as soon as possible. Changes after confirmation are handled by phone so nothing is missed.</div>
+</section>
+
+<section id="expenses">
+  <h2>Expenses and hours</h2>
+  <p>After you teach, submit your teaching hours, and any expenses, from <span class="ui">My assignments</span>. There's one report per program, and it goes straight to CLEAR Learning for approval.</p>
+  <ol class="steps">
+    <li>On <span class="ui">My assignments</span>, find the program and choose <span class="ui">Submit expenses and hours</span>. The button opens on the day of your last session; before that it shows the date it opens.</li>
+    <li>Check the details. Your name, email, the program and your teaching days are filled in for you, with the scheduled hours for each day and the modules you taught. Add or update your phone number and address, adjust any hours that were different, and enter the hours for any multi-day module.</li>
+    <li>Add any per diem days and, for an in-person program, your travel expenses. Online programs have no travel expenses.</li>
+    <li>Submit the report. Your pay is calculated from your hours and your CLEAR Learning rate, and the totals are worked out for you.</li>
+  </ol>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div class="app-top"><div style="display:flex;justify-content:space-between"><div class="t"><small>CLEAR Learning</small>Instructor Portal</div><div style="font-size:11px;text-align:right"><b>Barton, Andrew</b><br>Guide · Sign out</div></div><div class="tabs2"><span class="">Programs<span class="n" style="background:#DDA838;color:#4A0620">2</span></span><span class="on">My assignments<span class="n" style="background:#F8EDD3;color:#64092C">3</span></span><span class="">Evaluation reports<span class="n" style="background:rgba(255,255,255,.2);color:#fff">1</span></span><span class="">Program files<span class="n" style="background:#DDA838;color:#4A0620">1</span></span></div></div>
+<div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;overflow:hidden;margin-bottom:10px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 16px;background:#FAF7F8;border-top:6px solid #64092C;border-bottom:1px solid #DEDCE0"><div style="display:flex;gap:10px;align-items:center"><span class="lg">NCIT B</span><div><b style="color:#64092C">Canadian NCIT - Basic Online Program</b><div class="facts">2027.01.07 NCIT B CAN Open</div></div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="btn ghost">Add to calendar (.ics)</span><span class="btn ghost anc"><i class="co r">1</i>Submit another report</span></div></div>
+<div class="anc" style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid #EEECEF;background:#FAF7F8"><div><b><i class="co" style="position:static;display:inline-flex;vertical-align:middle;margin-right:6px;width:22px;height:22px;font-size:12px">2</i>Expense and hours report</b><div style="font-size:12px">Submitted Feb 3 · 5 hours · $625.00 · decided Feb 10</div><div class="facts">Report EXP-1801234567890</div></div><span class="pill green">Approved</span></div>
+<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px"><div><b>Investigative Process</b><div style="font-size:12px">Tue, Jan 12, 1:00 PM – 3:00 PM ET</div></div><span class="pill gold">Lead</span></div></div>
+<div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 16px;background:#FAF7F8;border-top:6px solid #084D78"><div style="display:flex;gap:10px;align-items:center"><span class="lg blue">SRA</span><div><b style="color:#084D78">SRA: Staffing a Board</b><div class="facts">2027.03.02 SRA SAB Open</div></div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="btn ghost">Add to calendar (.ics)</span><span class="btn ghost anc"><i class="co r">3</i>Expenses and hours <span style="font-weight:400;color:#6E6B70">(opens Mar 23)</span></span></div></div></div></div></div><figcaption><b>Figure 7.</b> Expenses and hours on My assignments.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Once you've submitted a report, the button changes to Submit another report, for anything you need to add.</span></li><li><b class="n">2</b><span>Each report you've submitted shows its total and its status: Submitted, Pending, Approved or Denied, with the date it was decided.</span></li><li><b class="n">3</b><span>Before your last session, the button shows the date it opens.</span></li></ol>
+<div class="note"><strong>Something wrong in the details filled in for you?</strong> If your name or rate looks wrong, email <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a> so we can correct your record for future reports.</div>
 </section>
 
 <section id="reports">
@@ -254,10 +287,10 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
     <li>Choose <span class="ui">View report</span> to open it in a new tab. New reports are marked <em>New</em> until you open them.</li>
     <li>To keep a copy, use your browser's print option and choose <span class="ui">Save as PDF</span>.</li>
     <li>Your reports are private: only you and CLEAR Learning staff can open them.</li>
-  </ul><figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div class="app-top"><div style="display:flex;justify-content:space-between"><div class="t"><small>CLEAR Learning</small>Instructor Portal</div><div style="font-size:11px;text-align:right"><b>Barton, Andrew</b><br>Guide · Sign out</div></div><div class="tabs2"><span class="">Programs<span class="n" style="background:#DDA838;color:#4A0620">2</span></span><span class="">My assignments<span class="n" style="background:rgba(255,255,255,.2);color:#fff">2</span></span><span class="on">Evaluation reports<span class="n" style="background:rgba(255,255,255,.2);color:#fff">1</span></span><span class="">Program files<span class="n" style="background:#DDA838;color:#4A0620">1</span></span></div></div>
+  </ul><figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org</span></div><div class="screen"><div class="app-top"><div style="display:flex;justify-content:space-between"><div class="t"><small>CLEAR Learning</small>Instructor Portal</div><div style="font-size:11px;text-align:right"><b>Barton, Andrew</b><br>Guide · Sign out</div></div><div class="tabs2"><span class="">Programs<span class="n" style="background:#DDA838;color:#4A0620">2</span></span><span class="">My assignments<span class="n" style="background:rgba(255,255,255,.2);color:#fff">2</span></span><span class="on">Evaluation reports<span class="n" style="background:#F8EDD3;color:#64092C">1</span></span><span class="">Program files<span class="n" style="background:#DDA838;color:#4A0620">1</span></span></div></div>
 <div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;overflow:hidden">
 <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid #EEECEF"><div class="anc"><i class="co r" style="left:auto;right:-30px">1</i><b>Evaluation Report - 2027.01.07 NCIT B CAN Open</b><div class="facts">Published Feb 18 <span class="pill red" style="margin-left:6px">New</span></div></div><span class="btn anc"><i class="co r">2</i>View report</span></div>
-<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px"><div><b>Evaluation Report - 2026.10.29 NCIT B US Open</b><div class="facts">Published Dec 3</div></div><span class="btn">View report</span></div></div></div></div><figcaption><b>Figure 7.</b> The Evaluation reports page.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>New reports are marked New until you open them.</span></li><li><b class="n">2</b><span>View report opens it in a new tab. To keep a copy, print it and choose Save as PDF.</span></li></ol>
+<div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 16px"><div><b>Evaluation Report - 2026.10.29 NCIT B US Open</b><div class="facts">Published Dec 3</div></div><span class="btn">View report</span></div></div></div></div><figcaption><b>Figure 8.</b> The Evaluation reports page.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>New reports are marked New until you open them.</span></li><li><b class="n">2</b><span>View report opens it in a new tab. To keep a copy, print it and choose Save as PDF.</span></li></ol>
 
 </section>
 
@@ -279,7 +312,7 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
 <div style="display:flex;gap:8px;align-items:center;padding:9px 16px;border-bottom:1px solid #EEECEF"><span style="flex:none;width:40px;text-align:center;background:#C43E1C;color:#fff;font-size:9.5px;font-weight:800;border-radius:4px;padding:2px 0">PPTX</span><div class="grow"><b>Module 2 - Planning the Investigation</b><div class="facts">7.1 MB, last changed Jan 6, 2027</div></div><span class="btn">Download</span></div>
 <div style="padding:6px 16px;background:#FAF7F8;border-bottom:1px solid #EEECEF;font-weight:700;font-size:12px;color:#484848">2 CAN Virtual</div>
 <div style="display:flex;gap:8px;align-items:center;padding:9px 16px;border-bottom:1px solid #EEECEF;border-bottom:0"><span style="flex:none;width:40px;text-align:center;background:#C43E1C;color:#fff;font-size:9.5px;font-weight:800;border-radius:4px;padding:2px 0">PPTX</span><div class="grow"><b>Module 1 - Foundations of Investigation (CAN)</b><div class="facts">9.2 MB, last changed Jan 6, 2027</div></div><span class="btn">Download</span></div></div>
-<div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 16px;background:#FAF7F8;border-top:6px solid #084D78"><b style="color:#084D78;font-size:14.5px">▸ SRA - Staffing a Board</b><span class="facts" style="font-weight:700">6 files</span></div></div></div></div><figcaption><b>Figure 8.</b> The Program files page.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>The number on the tab shows how many of your files have been updated since you downloaded them.</span></li><li><b class="n">2</b><span>Larger programs are divided under headings, such as the US and Canadian versions. Choose a program's name to show or hide its files.</span></li><li><b class="n">3</b><span>Updated means the file changed after you downloaded it. Download it again for the current version.</span></li></ol>
+<div style="background:#fff;border:1px solid #DEDCE0;border-radius:10px;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 16px;background:#FAF7F8;border-top:6px solid #084D78"><b style="color:#084D78;font-size:14.5px">▸ SRA - Staffing a Board</b><span class="facts" style="font-weight:700">6 files</span></div></div></div></div><figcaption><b>Figure 9.</b> The Program files page.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>The number on the tab shows how many of your files have been updated since you downloaded them.</span></li><li><b class="n">2</b><span>Larger programs are divided under headings, such as the US and Canadian versions. Choose a program's name to show or hide its files.</span></li><li><b class="n">3</b><span>Updated means the file changed after you downloaded it. Download it again for the current version.</span></li></ol>
 <div class="tip"><strong>Download your materials again shortly before you teach.</strong> Files can be updated between cohorts, so check for <em>Updated</em> badges in the days before your session to be sure you're presenting the latest version.</div>
 <p>You'll see the materials for every program you're approved to teach, not only the ones you're confirmed for, so you can prepare or refresh at any time.</p>
 </section>
@@ -311,6 +344,8 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
   <p>Program files shows the programs you're approved to teach. If one is missing, or a file you need isn't there, email <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</p>
   <h3>How do I know I have the latest version of a deck?</h3>
   <p>If a file shows <em>Updated</em>, it has changed since you downloaded it, so download it again. A file showing only the date you downloaded it hasn't changed since.</p>
+  <h3>I can't find the Submit expenses and hours button.</h3>
+  <p>It's on My assignments, beside each program you're confirmed for, and opens on the day of your last session in that program. Before then it shows the date it opens.</p>
   <h3>Can I use the portal on my phone?</h3>
   <p>Yes. The portal works on phones, tablets and computers. You can download program files on a phone too, though slide decks are easiest to open and present from a computer.</p>
   <h3>Who do I contact?</h3>
@@ -318,5 +353,6 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
 </section>
 <p class="foot">CLEAR Learning · Instructor Portal Guide</p>
 </main>
+</div>
 </body>
 </html>
