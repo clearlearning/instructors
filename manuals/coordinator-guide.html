@@ -169,6 +169,7 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
   <a href="#prepare">6. Prepare the cohort</a>
   <a href="#changes">7. Schedule changes</a>
   <a href="#reports">8. Evaluation reports</a>
+  <a href="#expenses">Expenses and hours</a>
   <a href="#records">Instructor records</a>
   <a href="#files">Program files</a>
   <a href="#email">Emails</a>
@@ -214,7 +215,7 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
     <div><b>After the response date:</b> answers lock; staff confirm instructors and send selection notices.</div>
     <div><b>By 1 week before the first live session:</b> Zoom links are in place. Anything missing appears on the Overview.</div>
     <div><b>Before the cohort starts:</b> download the cohort kit for the survey links, QR codes and welcome email, and check that the program's files in SharePoint are current. Instructors download them from Program files.</div>
-    <div><b>After the cohort:</b> publish evaluation reports to instructors.</div>
+    <div><b>After the cohort:</b> instructors submit expenses and hours from My assignments, from the day of their last session. Publish evaluation reports to instructors.</div>
   </div>
 </section>
 
@@ -475,6 +476,19 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
 <p>Names that don't match an instructor on the roster are listed instead of published; correct the name and publish again. <span class="ui">Reports published to the Instructor Portal</span>, at the bottom of the tool, shows each report, whether it has been viewed, and a <span class="ui">Withdraw</span> button.</p>
 </section>
 
+<section id="expenses">
+  <h2>Expenses and hours</h2>
+  <p>Confirmed instructors submit their teaching hours and expenses from the Instructor Portal instead of a separate form. Each report goes to the CLEAR expense system, marked as submitted through the Instructor Portal, and is reviewed and approved there as usual.</p>
+  <ul>
+    <li><strong>When it opens:</strong> each program on an instructor's My assignments page has an <span class="ui">Expenses and hours</span> button that opens on the day of their last session in that program. Before then it shows the date it opens. Only confirmed instructors have it.</li>
+    <li><strong>Filled in for them:</strong> their name, email, tier and rate come from the expense system's instructor list, matched by the email they sign in with, or by name if that fails. The program, cohort and teaching days come from their confirmed sessions, with the scheduled hours and modules for each day.</li>
+    <li><strong>Calculated by the portal:</strong> teaching pay (hours × rate), per diem and expense totals are recalculated when the report is submitted, so they can't be typed over. Travel expenses are only offered for in-person programs.</li>
+    <li><strong>Status:</strong> once you approve or deny a report in the expense system, the instructor sees the decision and its date on My assignments.</li>
+    <li>Staff can open the expense form from an instructor's Preview page to see what they see, but previews can't submit reports.</li>
+  </ul>
+  <div class="warn"><strong>Keep the expense system's instructor list up to date.</strong> If an instructor isn't on it, or is listed under a different email and name, their report has no tier or rate and their teaching pay comes to $0. Add each new instructor there with their tier, using the email they sign in to the portal with.</div>
+</section>
+
 <section id="records">
   <h2>Instructor and staff records</h2>
   <h3>Instructors tab</h3>
@@ -595,6 +609,8 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
       <tr><td>An instructor can't see a program's files</td><td>Check their teaching approvals, then open their Preview page and choose Program files. If the folder was added or renamed recently, ask the administrator to link it to its course.</td></tr>
       <tr><td>An instructor sees an old version of a file</td><td>Check the new version replaced the old one under the same name in SharePoint. If it was uploaded under a new name, delete the old file.</td></tr>
       <tr><td>Program files says it's unavailable</td><td>The SharePoint connection needs attention, often an expired credential. Contact the administrator; the rest of the portal keeps working.</td></tr>
+      <tr><td>An instructor can't find the expenses button</td><td>It opens on the day of their last session in that program, and only for confirmed instructors. Check their assignment is Confirmed on the Selection tab.</td></tr>
+      <tr><td>An expense report has the wrong rate, or $0 teaching pay</td><td>Check the instructor's entry in the expense system's instructor list: their tier, and an email matching the one they sign in with.</td></tr>
       <tr><td>A report name didn't match the roster</td><td>Fix the name with a data correction in the report tool, or on the Instructors tab, then publish again.</td></tr>
     </tbody>
   </table></div>
