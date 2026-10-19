@@ -25,6 +25,10 @@
      ZOOM_CLIENT_SECRET     (Secret) Client Secret of that app
      ZOOM_USER              the Zoom user TalentLMS creates meetings under (default clearlearning@clearhq.org)
 
+   Expenses and hours (optional; instructors submit through the CLEAR expense system)
+     EXPENSE_WORKER_URL     the expense system Worker, e.g. https://clear-lms-proxy.avance.workers.dev
+     EXPENSE_TOKEN          (Secret) the expense admin's X-Auth-Token; lets the portal read report status and the private instructor list
+
    Instructor Staffing Dashboard link (optional)
      STAFFING_DASHBOARD_URL full URL of instructor-staffing.html
 
@@ -151,6 +155,20 @@ export async function onRequest({ request, env }) {
     }
 
     if (a === 'report' && b && method === 'GET') return await viewReport(env, b, me);
+
+    if (a === 'expense') {
+      if (!env.EXPENSE_WORKER_URL) throw httpErr(501, 'Expense submission isn\'t set up yet.');
+      let inst = me.instructor;
+      const asId = url.searchParams.get('as');
+      if (asId && me.isStaff) inst = me.roster.find(r => r.id === asId) || null;
+      if (!inst) throw httpErr(403, 'Your email isn\'t linked to an instructor record.');
+      if (b === 'context' && method === 'GET') return json(await expenseContext(env, inst, url.searchParams.get('pid'), me));
+      if (b === 'submit' && method === 'POST') {
+        if (asId) throw httpErr(403, 'Staff previews can\'t submit reports.');
+        return json(await expenseSubmit(env, inst, body, me));
+      }
+      if (b === 'status' && method === 'GET') return json(await expenseStatus(env, inst));
+    }
 
     if (a === 'my-ics' && b && method === 'GET') {
       let inst = me.instructor;
@@ -372,7 +390,8 @@ async function portal(env, me, asId) {
   assignments.sort((x, y) => String(x.date).localeCompare(String(y.date)) || toMin(x.start) - toMin(y.start));
 
   const reports = (await getJSON(env, 'reports:' + inst.id, [])).map(r => ({ ...r, url: me.origin + '/api/report/' + r.slug }));
-  return { me: publicMe(me), instructor: instOut, viewingAs, today, programs, responses, assignments, reports };
+  const expenses = env.EXPENSE_WORKER_URL ? { enabled: true, submitted: await getJSON(env, 'expsub:' + inst.id, []) } : { enabled: false, submitted: [] };
+  return { me: publicMe(me), instructor: instOut, viewingAs, today, programs, responses, assignments, reports, expenses };
 }
 
 function assignRow(p, slot, s, role) {
@@ -454,6 +473,7 @@ async function adminData(env, me) {
       mailbox: env.NOTIFY_MAILBOX || '',
       portalUrl: me.origin,
       staffingUrl: env.STAFFING_DASHBOARD_URL || '',
+      expenses: !!env.EXPENSE_WORKER_URL,
       zoom: zoomConfigured(env),
       deadlineDays: DEADLINE_DAYS,
       autoReminders: !!env.CRON_SECRET,
@@ -1557,6 +1577,135 @@ async function viewReport(env, slug, me) {
   }
   // Reports are static pages: scripts are blocked so a report can't run code in the portal.
   return new Response(rec.html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Content-Security-Policy': "script-src 'none'; object-src 'none'; base-uri 'none'" } });
+}
+
+/* ======================= Expenses and hours ======================= */
+// Instructors submit expense and hours reports to the CLEAR expense system (its Worker and SharePoint list).
+// The portal fills in what it knows, reads only the signed-in instructor's own record from the expense system,
+// sets name, email, tier and rate itself, and recalculates the totals before forwarding the report.
+const EXPENSE_PROGRAM = {
+  '126': 'NCIT Basic', '128': 'NCIT Basic', 'ip-ncit-b-us': 'NCIT Basic', 'ip-ncit-b-can': 'NCIT Basic',
+  '129': 'NCIT Specialized', 'ip-ncit-s': 'NCIT Specialized', 'ip-ncit-ait': 'NCIT AIT',
+  '143': 'NCIT IRSM', '169': 'NCIT DDI', '146': 'NCIT Comms', '157': 'NCIT Ethics',
+  '138': 'ELPR', '147': 'SRA SAB', '142': 'BMT ACRG', '165': 'BCT GMFYB'
+};
+function expenseProgramFor(p) {
+  if (EXPENSE_PROGRAM[p.courseId]) return EXPENSE_PROGRAM[p.courseId];
+  const key = courseKeyOf(p);
+  return { NCITB: 'NCIT Basic', NCITS: 'NCIT Specialized', NCITAIT: 'NCIT AIT', NCITWIRSM: 'NCIT IRSM', NCITWDDI: 'NCIT DDI', NCITWCSAP: 'NCIT Comms', NCITWERI: 'NCIT Ethics', ELPR: 'ELPR', SRASAB: 'SRA SAB', ACRG: 'BMT ACRG', BCT: 'BCT GMFYB', IRG: 'BMT IRG' }[key] || '';
+}
+const expBase = env => String(env.EXPENSE_WORKER_URL || '').replace(/\/+$/, '');
+async function expenseFetch(env, path, opts = {}) {
+  const r = await fetch(expBase(env) + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(env.EXPENSE_TOKEN ? { 'X-Auth-Token': env.EXPENSE_TOKEN } : {}), ...(opts.headers || {}) } });
+  return r;
+}
+async function expenseConfig(env) {
+  const cfg = { perdiem: 75, travelPct: 75, mileage: 0.67, tier1: 0, tier2: 0 };
+  try { const r = await expenseFetch(env, '/expense/config'); if (r.ok) { const j = await r.json(); for (const k of Object.keys(cfg)) if (j[k] !== undefined && j[k] !== null && j[k] !== '') cfg[k] = Number(j[k]); } } catch (e) {}
+  return cfg;
+}
+// The instructor's own entry in the expense system's instructor list, matched by sign-in email, then by name.
+async function expenseInstructor(env, inst) {
+  let list = [];
+  try {
+    if (env.EXPENSE_TOKEN) {
+      const r = await expenseFetch(env, '/kv?key=expense_instructors');
+      if (r.ok) { const j = await r.json(); const v = j.value; list = typeof v === 'string' ? JSON.parse(v) : (v || []); }
+    }
+    if (!list.length) {
+      const r = await expenseFetch(env, '/expense/instructors');
+      if (r.ok) { const j = await r.json(); list = j.instructors || []; }
+    }
+  } catch (e) { list = []; }
+  const emails = (inst.emails || []).map(e => e.toLowerCase());
+  return list.find(x => x.email && emails.includes(String(x.email).toLowerCase()))
+    || list.find(x => normName(x.name) === normName(inst.name))
+    || list.find(x => { const n = normName(inst.name).split(','); return n.length === 2 && normName(x.name) === normName(n[1] + ' ' + n[0]); })
+    || null;
+}
+const rateFor = (cfg, tier) => String(tier || '').includes('1') ? cfg.tier1 : String(tier || '').includes('2') ? cfg.tier2 : 0;
+async function expenseContext(env, inst, pid, me) {
+  const prog = await getJSON(env, 'program:' + pid, null);
+  if (!prog || prog.status === 'draft') throw httpErr(404, 'That program isn\'t available.');
+  const mine = confirmedFor(await getJSON(env, 'assign:' + pid, null), inst.id);
+  if (!mine.length) throw httpErr(403, 'You aren\'t confirmed to teach in this program.');
+  const sessions = sessionsFor(prog, mine).slice().sort((a, b) => a.date.localeCompare(b.date) || toMin(a.start) - toMin(b.start));
+  const ip = isInPerson(prog);
+  // One teaching row per date: the scheduled hours and what was taught.
+  const byDate = new Map();
+  const add = (date, hours, label) => { const d = byDate.get(date) || { date, hours: 0, modules: [] }; d.hours += hours; if (label && !d.modules.includes(label)) d.modules.push(label); byDate.set(date, d); };
+  if (!sessions.length) {
+    for (let d = prog.startDate; d && d <= (prog.endDate || prog.startDate); d = addDays(d, 1)) add(d, 0, 'Entire program');
+  } else for (const s of sessions) {
+    if (s.endDate && s.endDate > s.date) { for (let d = s.date; d <= s.endDate; d = addDays(d, 1)) add(d, 0, s.title); } // multi-day module: hours entered by the instructor
+    else add(s.date, Math.max(0, (toMin(s.end) - toMin(s.start)) / 60), s.title);
+  }
+  const days = [...byDate.values()].map(d => ({ date: d.date, hours: Math.round(d.hours * 4) / 4, modules: d.modules.join('; ') }));
+  const cfg = await expenseConfig(env);
+  const rec = await expenseInstructor(env, inst);
+  const last = days.length ? days[days.length - 1].date : prog.endDate;
+  const subs = (await getJSON(env, 'expsub:' + inst.id, [])).filter(s => s.pid === pid);
+  return {
+    ok: true, cfg,
+    me: { name: rec ? rec.name || inst.name : inst.name, portalName: inst.name, email: (rec && rec.email) || (inst.emails || [])[0] || me.email,
+      phone: rec ? rec.phone || '' : '', street: rec ? rec.street || '' : '', city: rec ? rec.city || '' : '', state: rec ? rec.state || '' : '',
+      zip: rec ? rec.zip || '' : '', country: rec ? rec.country || '' : '', tier: rec ? String(rec.tier || '') : '', rate: rec ? rateFor(cfg, rec.tier) : 0, found: !!rec },
+    program: { id: prog.id, title: prog.title, cohort: prog.cohort || '', option: expenseProgramFor(prog), delivery: ip ? 'in-person' : 'virtual',
+      destination: ip ? (prog.location || '') : 'Virtual', first: days.length ? days[0].date : prog.startDate, last },
+    days, opensOn: last, open: todayET() >= last, submitted: subs
+  };
+}
+async function expenseSubmit(env, inst, body, me) {
+  const pid = String(body.pid || '');
+  const ctx = await expenseContext(env, inst, pid, me);
+  if (!ctx.open) throw httpErr(409, `Expense and hours reports for this program open on ${longDate(ctx.opensOn)}, after your last session.`);
+  const r = body.report || {};
+  const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+  const teachingDays = (Array.isArray(r.teachingDays) ? r.teachingDays : []).slice(0, 60).map(d => ({ date: cleanDate(d.date), hours: Math.max(0, Math.min(24, num(d.hours))), program: String(d.program || '').slice(0, 300) })).filter(d => d.date || d.hours);
+  const perDiemDays = (Array.isArray(r.perDiemDays) ? r.perDiemDays : []).slice(0, 60);
+  const expenseLines = ctx.program.delivery === 'in-person' ? (Array.isArray(r.expenseLines) ? r.expenseLines : []).slice(0, 100) : [];
+  const totalHours = teachingDays.reduce((s, d) => s + d.hours, 0);
+  if (!totalHours) throw httpErr(400, 'Enter the hours for at least one teaching day.');
+  const rate = num(ctx.me.rate), teachingPay = Math.round(totalHours * rate * 100) / 100;
+  const perDiemTotal = Math.round(perDiemDays.reduce((s, d) => s + num(d.allowance), 0) * 100) / 100;
+  const expenseTotal = Math.round(expenseLines.reduce((s, e) => s + num(e.amount), 0) * 100) / 100;
+  const grandTotal = Math.round((teachingPay + perDiemTotal + expenseTotal) * 100) / 100;
+  const id = 'EXP-' + Date.now();
+  const report = {
+    ...r, id, status: 'Pending', submittedAt: new Date().toISOString(), type: 'instructor',
+    name: ctx.me.name, email: ctx.me.email, instructorName: ctx.me.name, instructorTier: ctx.me.tier, instructorRate: rate,
+    phone: String(r.phone || ctx.me.phone || '').slice(0, 60), address: String(r.address || '').slice(0, 400),
+    event: ctx.program.option || ctx.program.title, cohort: ctx.program.cohort,
+    destination: ctx.program.delivery === 'virtual' ? 'Virtual' : String(r.destination || ctx.program.destination).slice(0, 200),
+    teachingDays, perDiemDays, expenseLines, totalHours, teachingPay, perDiemTotal, expenseTotal, grandTotal,
+    reimbursementTotal: grandTotal, personalMeals: 0, totalAmex: 0, submittedVia: 'Instructor Portal'
+  };
+  const res = await expenseFetch(env, '/expense/volunteer-submit', { method: 'POST', body: JSON.stringify(report) });
+  if (res.status >= 400) throw httpErr(502, `The expense system didn't accept the report (${res.status}). Please try again, or contact clearlearning@clearhq.org.`);
+  const list = await getJSON(env, 'expsub:' + inst.id, []);
+  list.unshift({ id, pid, title: ctx.program.title, cohort: ctx.program.cohort, submittedAt: report.submittedAt, grandTotal, totalHours });
+  await putJSON(env, 'expsub:' + inst.id, list.slice(0, 100));
+  await log(env, me.email, 'Submitted an expense and hours report', `${inst.name}: ${ctx.program.title}${ctx.program.cohort ? ' (' + ctx.program.cohort + ')' : ''}, $${grandTotal.toFixed(2)}`);
+  return { ok: true, id, grandTotal };
+}
+// Report status from the expense system (needs EXPENSE_TOKEN). Only this instructor's reports are returned.
+async function expenseStatus(env, inst) {
+  const mine = await getJSON(env, 'expsub:' + inst.id, []);
+  if (!env.EXPENSE_TOKEN || !mine.length) return { ok: true, statuses: {} };
+  try {
+    const r = await expenseFetch(env, '/expense/getall', { method: 'POST', body: '{}' });
+    if (!r.ok) return { ok: true, statuses: {} };
+    const data = await r.json();
+    const rows = Array.isArray(data) ? data : (data.value || data.items || []);
+    const choice = v => v && typeof v === 'object' ? (v.Value || v.value || '') : (v || '');
+    const ids = new Set(mine.map(x => x.id)), out = {};
+    for (const x of rows) {
+      const id = x.Title || x.id || '';
+      if (!ids.has(id)) continue;
+      out[id] = { status: choice(x.field_18) || choice(x.Status) || x.status || 'Pending', decidedAt: x.field_20 || x.DecidedAt || x.decidedAt || '' };
+    }
+    return { ok: true, statuses: out };
+  } catch (e) { return { ok: true, statuses: {} }; }
 }
 
 /* ======================= Program Scheduler ======================= */
