@@ -179,6 +179,18 @@ export async function onRequest({ request, env }) {
       return icsResponse(out.ics, out.name);
     }
 
+    if (a === 'files') {
+      const asId = url.searchParams.get('as');
+      const viewingAs = !!(asId && me.isStaff);
+      const inst = viewingAs ? (me.roster.find(r => r.id === asId) || null) : me.instructor;
+      if (viewingAs && !inst) throw httpErr(404, 'That instructor isn\'t on the roster.');
+      return ProgramFiles.handle(request, env, {
+        email: me.email, isStaff: me.isStaff, viewingAs,
+        key: inst ? inst.id : 'staff:' + me.email,
+        name: inst ? inst.name : (me.staffName || me.email),
+        quals: inst ? (inst.quals || []) : '*'
+      });
+    }
     // ---------- Staff routes ----------
     if (a === 'admin') {
       if (!me.isStaff) throw httpErr(403, 'This area is for CLEAR Learning staff.');
