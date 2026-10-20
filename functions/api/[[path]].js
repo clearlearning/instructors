@@ -156,6 +156,23 @@ export async function onRequest({ request, env }) {
 
     if (a === 'report' && b && method === 'GET') return await viewReport(env, b, me);
 
+    // Program files (SharePoint, read live through Microsoft Graph). Staff previewing an instructor see exactly that
+    // instructor's folders; staff on their own see every folder.
+    if (a === 'files') {
+      let inst = me.instructor, viewingAs = false;
+      const asId = url.searchParams.get('as');
+      if (asId && me.isStaff) {
+        inst = me.roster.find(r => r.id === asId) || null; viewingAs = true;
+        if (!inst) throw httpErr(404, 'That instructor isn\'t on the roster.');
+      }
+      if (!inst && !me.isStaff) throw httpErr(403, 'Your email isn\'t linked to an instructor record.');
+      const who = { isStaff: !!me.isStaff, email: me.email, viewingAs,
+        name: inst ? inst.name : (me.staffName || me.email),
+        key: inst ? inst.id : 'staff:' + String(me.email).toLowerCase(),
+        quals: inst ? (inst.quals || []) : '*' };
+      return await ProgramFiles.handle(request, env, who);
+    }
+
     if (a === 'headshot' && b && method === 'GET') return await getHeadshot(env, b, me);
     if (a === 'my-profile') {
       let inst = me.instructor;
@@ -1916,3 +1933,248 @@ function b64urlBytes(s) {
   return out;
 }
 function b64urlText(s) { return new TextDecoder().decode(b64urlBytes(s)); }
+
+/* ======================= Program files (SharePoint) =======================
+   It is self-contained (everything lives inside ProgramFiles), so none of its names clash with the rest of the file.
+
+   Reads the "Instructor Program Files" folder in SharePoint live through Microsoft Graph. Nothing is copied:
+   what instructors download is always the current file in SharePoint.
+
+   Routes (GET, behind the existing Access login; wired up in onRequest):
+     /api/files                 the instructor's program folders and files
+     /api/files/download/:id    records the download, then redirects to SharePoint's short-lived download link
+     /api/files/log.csv         staff only: every download, newest first
+     /api/files/check           staff only: setup diagnostics and which folders each course key opens
+
+   Variables (Pages project > Settings > Variables and Secrets)
+     GRAPH_TENANT_ID            Directory (tenant) ID of the Entra app registration
+     GRAPH_CLIENT_ID            Application (client) ID
+     GRAPH_CLIENT_SECRET        (Secret) client secret value
+     GRAPH_SECRET_EXPIRES       YYYY-MM-DD the secret expires; staff see a warning 30 days before
+     FILES_SHARE_URL            sharing link to the Instructor Program Files folder
+     GRAPH_DRIVE_ID, GRAPH_FOLDER_ID   optional: pin the folder by ID (shown by /api/files/check)
+
+   Who sees what: a folder opens to an instructor when its course key is in their Teaching approvals (roster quals),
+   using the same rule as program eligibility: no approvals recorded = every folder, and a folder with no
+   recognised course is open to every instructor. Uses IA_KV with the keys pflog:, pfseen: and pfcfg:.
+*/
+const ProgramFiles = (() => {
+  const GRAPH = 'https://graph.microsoft.com/v1.0';
+  const MAX_DEPTH = 3;                      // folder levels shown: the program folder plus two levels of subfolders
+  const LOG_TTL = 60 * 60 * 24 * 730;       // keep download log entries for two years
+  const WORKSHOPS = ['NCITWS', 'NCITWDDI', 'NCITWIRSM', 'NCITWCSAP', 'NCITWERI'];
+
+  // SharePoint folder name -> course keys from the Teaching approvals grid. Exact names win; the patterns
+  // below cover renamed or new folders. Run /api/files/check after adding or renaming a folder.
+  const FOLDER_COURSES = {
+    'BMT - Advanced Concepts in Regulatory Governance': ['ACRG'],
+    'BMT - Getting the Most From Your Board': ['BCT'],
+    'NCIT Applied Investigative Techniques': ['NCITAIT'],
+    'NCIT Basic': ['NCITB'],
+    'NCIT Specialized': ['NCITS'],
+    'NCIT Workshops': WORKSHOPS,
+    'SRA - Executive Leadership Program for Regulators': ['ELPR'],
+    'SRA - Staffing a Board': ['SRASAB'],
+    // null = hidden from instructors (staff still see it). Replace null with the course key once the course is published.
+    'SRA - Soft Skills for Regulators': null,
+  };
+  const FOLDER_PATTERNS = [
+    [/Applied Investigative|\bAIT\b/i, ['NCITAIT']], [/Drug Diversion/i, ['NCITWDDI']], [/Sexual Misconduct/i, ['NCITWIRSM']],
+    [/Art of Persuasion|Communications/i, ['NCITWCSAP']], [/Ethics/i, ['NCITWERI']], [/Workshop/i, WORKSHOPS],
+    [/Specialized/i, ['NCITS']], [/NCIT.*Basic|Basic.*NCIT/i, ['NCITB']], [/Staffing a Board/i, ['SRASAB']],
+    [/Advanced Concepts|\bACRG\b/i, ['ACRG']], [/Executive Leadership|\bELPR\b/i, ['ELPR']],
+    [/Getting the Most|Board Chair/i, ['BCT']], [/Introduction to Regulatory Governance|\bIRG\b/i, ['IRG']]
+  ];
+  function coursesFor(folder) {
+    if (folder in FOLDER_COURSES) return FOLDER_COURSES[folder];
+    const hit = FOLDER_PATTERNS.find(r => r[0].test(folder));
+    return hit ? hit[1] : [];
+  }
+  // Same rule as eligible(): no approvals = everything; a folder with no course = everyone.
+  function visible(folder, quals) {
+    if (quals === '*') return true;
+    const keys = coursesFor(folder);
+    if (keys === null) return false;
+    if (!quals.length) return true;
+    return !keys.length || keys.some(k => quals.includes(k));
+  }
+
+  async function handle(request, env, who) {
+    const path = new URL(request.url).pathname.replace(/\/+$/, '');
+    if (request.method !== 'GET') return json({ error: 'Method not allowed.' }, 405);
+    try {
+      if (!configured(env)) throw fail("Program files aren't set up yet.", 503, true);
+      if (path === '/api/files') return await listRoute(env, who);
+      if (path.startsWith('/api/files/download/')) return await downloadRoute(env, who, decodeURIComponent(path.slice(20)));
+      if (path === '/api/files/log.csv') return await logRoute(env, who);
+      if (path === '/api/files/check') return await checkRoute(env, who);
+      return json({ error: 'Not found.' }, 404);
+    } catch (e) {
+      console.error('program files:', e.message);
+      const msg = e.expose || who.isStaff ? e.message
+        : 'Program files are unavailable right now. Try again in a few minutes, or email clearlearning@clearhq.org.';
+      return json({ error: msg }, e.status || 502);
+    }
+  }
+
+  /* ---------- Routes ---------- */
+
+  async function listRoute(env, who) {
+    const [data, seen] = await Promise.all([listAllowed(env, who), seenMap(env, who.key)]);
+    const body = { programs: data.programs.map(p => ({ name: p.name, files: p.files })), seen };
+    if (who.isStaff) body.staff = { secretExpires: env.GRAPH_SECRET_EXPIRES || null };
+    return json(body);
+  }
+
+  async function downloadRoute(env, who, id) {
+    // Re-list what this person may see and require the file to be in it, so an item ID from anywhere
+    // else in SharePoint can never be downloaded through the portal.
+    const data = await listAllowed(env, who);
+    let file = null, program = null;
+    for (const p of data.programs) { const f = p.files.find(x => x.id === id); if (f) { file = f; program = p; break; } }
+    if (!file) throw fail("That file isn't available to you. Reload the page to see the current list.", 404, true);
+
+    const item = await graph(env, `/drives/${data.root.driveId}/items/${encodeURIComponent(id)}`);
+    const url = item['@microsoft.graph.downloadUrl'];
+    if (!url) throw fail('SharePoint did not return a download link for this file.', 502);
+
+    const now = new Date().toISOString();
+    const writes = [env.IA_KV.put(`pflog:${String(9e15 - Date.now()).padStart(16, '0')}:${crypto.randomUUID().slice(0, 8)}`, '', {
+      expirationTtl: LOG_TTL,
+      metadata: { at: now, by: who.email, for: cut(who.name || who.email, 120), program: cut(program.name), file: cut(item.name), preview: !!who.viewingAs }
+    })];
+    if (!who.viewingAs) writes.push(env.IA_KV.put(`pfseen:${who.key}:${id}`, '', { metadata: { at: now, mod: item.lastModifiedDateTime } }));
+    await Promise.all(writes);
+    return new Response(null, { status: 302, headers: { Location: url, 'Cache-Control': 'no-store' } });
+  }
+
+  async function logRoute(env, who) {
+    if (!who.isStaff) throw fail('Staff only.', 403, true);
+    const et = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', dateStyle: 'short', timeStyle: 'short' });
+    const rows = [['Date and time (ET)', 'Downloaded by', 'Instructor', 'Program', 'File', 'Staff preview']];
+    let cursor, pages = 0;
+    do {
+      const r = await env.IA_KV.list({ prefix: 'pflog:', cursor });
+      for (const k of r.keys) {
+        const m = k.metadata || {};
+        rows.push([m.at ? et.format(new Date(m.at)) : '', m.by, m.for, m.program, m.file, m.preview ? 'Yes' : '']);
+      }
+      cursor = r.list_complete ? null : r.cursor;
+    } while (cursor && ++pages < 20);
+    const csv = '\uFEFF' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+    return new Response(csv, { headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="program-file-downloads-${new Date().toISOString().slice(0, 10)}.csv"`,
+      'Cache-Control': 'no-store'
+    } });
+  }
+
+  async function checkRoute(env, who) {
+    if (!who.isStaff) throw fail('Staff only.', 403, true);
+    const out = { ok: false, secretExpires: env.GRAPH_SECRET_EXPIRES || 'not set (add GRAPH_SECRET_EXPIRES)' };
+    try {
+      await token(env);
+      out.microsoftSignIn = 'ok';
+      const rt = await root(env);
+      out.folder = { name: rt.name || '(pinned by ID)', GRAPH_DRIVE_ID: rt.driveId, GRAPH_FOLDER_ID: rt.id,
+        foundBy: env.GRAPH_DRIVE_ID && env.GRAPH_FOLDER_ID ? 'GRAPH_DRIVE_ID and GRAPH_FOLDER_ID' : 'FILES_SHARE_URL' };
+      const top = (await children(env, rt.driveId, rt.id)).filter(x => x.folder && !hidden(x.name)).sort(byName);
+      out.programFolders = top.map(f => {
+        const keys = coursesFor(f.name);
+        const row = { folder: f.name, openTo: keys === null ? 'staff only (hidden from instructors in FOLDER_COURSES)'
+          : keys.length ? 'instructors approved for ' + keys.join(', ') : 'every instructor (no course key matched)' };
+        if (who.viewingAs) row.visibleToThisInstructor = visible(f.name, who.quals);
+        return row;
+      });
+      if (who.viewingAs) out.instructor = { name: who.name, approvals: who.quals.length ? who.quals : 'none recorded, so every folder' };
+      out.ok = true;
+    } catch (e) { out.error = e.message; }
+    return json(out);
+  }
+
+  /* ---------- SharePoint ---------- */
+
+  async function listAllowed(env, who) {
+    const rt = await root(env);
+    const top = (await children(env, rt.driveId, rt.id)).filter(x => x.folder && !hidden(x.name));
+    const mine = top.filter(f => visible(f.name, who.quals)).sort(byName);
+    const programs = await Promise.all(mine.map(async f => ({ name: f.name, id: f.id, files: await walk(env, rt.driveId, f.id, '', 1) })));
+    return { root: rt, programs };
+  }
+
+  async function walk(env, driveId, id, group, depth) {
+    const items = (await children(env, driveId, id)).filter(x => !hidden(x.name)).sort(byName);
+    const files = items.filter(x => x.file).map(x => ({ id: x.id, name: x.name, size: x.size || 0, modified: x.lastModifiedDateTime, group }));
+    if (depth >= MAX_DEPTH) return files;
+    const nested = await Promise.all(items.filter(x => x.folder).map(s => walk(env, driveId, s.id, group ? `${group} / ${s.name}` : s.name, depth + 1)));
+    return files.concat(...nested);
+  }
+
+  async function root(env) {
+    if (env.GRAPH_DRIVE_ID && env.GRAPH_FOLDER_ID) return { driveId: env.GRAPH_DRIVE_ID, id: env.GRAPH_FOLDER_ID };
+    const cached = await env.IA_KV.get('pfcfg:root', 'json');
+    if (cached && cached.src === env.FILES_SHARE_URL) return cached;
+    const enc = 'u!' + btoa(String(env.FILES_SHARE_URL).trim()).replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-');
+    const j = await graph(env, `/shares/${enc}/driveItem?$select=id,name,parentReference`);
+    const rt = { driveId: j.parentReference.driveId, id: j.id, name: j.name, src: env.FILES_SHARE_URL };
+    await env.IA_KV.put('pfcfg:root', JSON.stringify(rt), { expirationTtl: 86400 });
+    return rt;
+  }
+
+  async function children(env, driveId, itemId) {
+    let next = `/drives/${driveId}/items/${itemId}/children?$select=id,name,folder,file,size,lastModifiedDateTime&$top=200`;
+    const out = [];
+    while (next) { const j = await graph(env, next); out.push(...(j.value || [])); next = j['@odata.nextLink']; }
+    return out;
+  }
+
+  async function graph(env, path) {
+    const r = await fetch(path.startsWith('http') ? path : GRAPH + path, { headers: { Authorization: 'Bearer ' + await token(env) } });
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      throw fail(`Microsoft Graph returned ${r.status} for ${path.split('?')[0]}: ${t.slice(0, 300)}`, 502);
+    }
+    return r.json();
+  }
+
+  let memToken = null;
+  async function token(env) {
+    const fresh = t => t && t.exp > Date.now() + 60000;
+    if (fresh(memToken)) return memToken.value;
+    const cached = await env.IA_KV.get('pfcfg:token', 'json');
+    if (fresh(cached)) { memToken = cached; return cached.value; }
+    const r = await fetch(`https://login.microsoftonline.com/${env.GRAPH_TENANT_ID}/oauth2/v2.0/token`, {
+      method: 'POST',
+      body: new URLSearchParams({ client_id: env.GRAPH_CLIENT_ID, client_secret: env.GRAPH_CLIENT_SECRET, grant_type: 'client_credentials', scope: 'https://graph.microsoft.com/.default' })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.access_token) throw fail(`Microsoft sign-in failed (${r.status}): ${j.error_description || j.error || 'no details'}. If the client secret expired, renew it (see SETUP-program-files.md).`, 502);
+    const ttl = Math.max(60, (j.expires_in || 3600) - 300);
+    memToken = { value: j.access_token, exp: Date.now() + ttl * 1000 };
+    await env.IA_KV.put('pfcfg:token', JSON.stringify(memToken), { expirationTtl: ttl });
+    return memToken.value;
+  }
+
+  /* ---------- Helpers ---------- */
+
+  async function seenMap(env, key) {
+    const out = {}, prefix = `pfseen:${key}:`;
+    let cursor;
+    do {
+      const r = await env.IA_KV.list({ prefix, cursor });
+      for (const k of r.keys) out[k.name.slice(prefix.length)] = k.metadata || {};
+      cursor = r.list_complete ? null : r.cursor;
+    } while (cursor);
+    return out;
+  }
+  // Hidden from instructors: Office lock files, system files, and anything starting with "_" or "."
+  // (so staff can keep drafts or an _Archive folder alongside the live files).
+  const hidden = n => /^(~\$|_|\.)/.test(n) || /^(thumbs\.db|desktop\.ini)$/i.test(n);
+  const byName = (a, b) => a.name.localeCompare(b.name, 'en', { numeric: true, sensitivity: 'base' });
+  const cut = (s, n = 200) => String(s || '').slice(0, n);
+  const csvCell = v => { const s = String(v ?? ''); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const configured = env => env.GRAPH_TENANT_ID && env.GRAPH_CLIENT_ID && env.GRAPH_CLIENT_SECRET && (env.FILES_SHARE_URL || (env.GRAPH_DRIVE_ID && env.GRAPH_FOLDER_ID));
+  function fail(message, status = 502, expose = false) { const e = new Error(message); e.status = status; e.expose = expose; return e; }
+
+  return { handle };
+})();
