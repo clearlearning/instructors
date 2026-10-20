@@ -212,9 +212,9 @@ details.proc>div{padding:0 18px 12px}
       <tr><td><code>welcome-emails.html</code></td><td><code>/welcome-emails</code></td><td>Behind the scenes</td><td>Builds welcome emails for cohort kits. Must stay in the repository.</td></tr>
       <tr><td><code>expenses.html</code></td><td><code>/expenses</code></td><td>Instructors</td><td>The expense and hours report form, opened from My assignments.</td></tr>
       <tr><td><code>SETUP-program-files.md</code></td><td>(reference)</td><td>Administrators</td><td>Detailed setup notes for the Program files connection: the app registration, the site permission and the Cloudflare settings.</td></tr>
-      <tr><td><code>coordinator-guide.html</code></td><td><code>/coordinator-guide</code></td><td>Staff</td><td>Program Coordinator Guide.</td></tr>
-      <tr><td><code>instructor-guide.html</code></td><td><code>/instructor-guide</code></td><td>Instructors</td><td>Instructor Portal Guide.</td></tr>
-      <tr><td><code>administrator-guide.html</code></td><td><code>/administrator-guide</code></td><td>Administrators</td><td>This guide.</td></tr>
+      <tr><td><code>coordinator-guide.html</code></td><td><code>/manuals/coordinator-guide</code></td><td>Staff</td><td>Program Coordinator Guide.</td></tr>
+      <tr><td><code>instructor-guide.html</code></td><td><code>/manuals/instructor-guide</code></td><td>Instructors</td><td>Instructor Portal Guide.</td></tr>
+      <tr><td><code>administrator-guide.html</code></td><td><code>/manuals/administrator-guide</code></td><td>Administrators</td><td>This guide.</td></tr>
       <tr><td><code>functions/api/[[path]].js</code></td><td><code>/api/…</code></td><td>Every page</td><td>The API: sign-in checks, permissions, data, emails, Zoom, reminders, reports, expenses, profiles and program files. The comment block at the top lists most settings; the Program files block at the end of the file lists its own settings and the folder-to-course list (<code>FOLDER_COURSES</code>).</td></tr>
       <tr><td><code>images/*.svg</code></td><td><code>/images/…</code></td><td>Every page</td><td>Program logos: NCITB, NCITS, NCITAIT, NCITWS, NCITWDDI, NCITWIRSM, NCITWCSAP, NCITWERI, SRASAB, ACRG, ELPR, BCT, IRG.</td></tr>
     </tbody>
@@ -333,7 +333,7 @@ details.proc>div{padding:0 18px 12px}
     <thead><tr><th>Application</th><th>Hostnames and paths</th><th>Policies</th></tr></thead>
     <tbody>
       <tr><td><strong>Instructor Portal</strong></td><td>The pages.dev address (and the custom domain once live), with <em>no path</em>, which covers the whole site.</td><td>Allow: Include groups CLEAR Instructors and CLEAR Learning Staff.<br>Service Auth: Include service token <code>instructor-availability-cron</code>.</td></tr>
-      <tr><td><strong>Instructor Portal – Staff</strong></td><td>The same hostname(s), once for each path: <code>admin-dashboard</code>, <code>api/admin</code>, <code>program-scheduler</code>, <code>agenda-generator</code>, <code>welcome-emails</code>, <code>evaluation-reports</code>, <code>coordinator-guide</code>, <code>administrator-guide</code>.</td><td>Allow: Include group CLEAR Learning Staff.</td></tr>
+      <tr><td><strong>Instructor Portal – Staff</strong></td><td>The same hostname(s), once for each path: <code>admin-dashboard</code>, <code>api/admin</code>, <code>program-scheduler</code>, <code>agenda-generator</code>, <code>welcome-emails</code>, <code>evaluation-reports</code>, <code>manuals/coordinator-guide</code>, <code>manuals/administrator-guide</code>.</td><td>Allow: Include group CLEAR Learning Staff.</td></tr>
     </tbody>
   </table></div>
   <div class="warn"><strong>Every new staff page must be added to the Staff application.</strong> If a new staff-only page is added to the repository but not listed here, any signed-in instructor could open it. Its data stays protected by the API, but the page itself would be visible.</div>
