@@ -121,6 +121,25 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .deadline-box.locked{background:#ECEAEE}
 .desc{padding:14px 22px 0;color:var(--charcoal);max-width:75ch;white-space:pre-wrap}
 
+/* Program files */
+.f-prog>summary{cursor:pointer;list-style:none}
+.f-prog>summary::-webkit-details-marker{display:none}
+.f-prog>summary h2::before{content:"\25B8";display:inline-block;width:1.1em;color:var(--muted);transition:transform .15s}
+.f-prog[open]>summary h2::before{transform:rotate(90deg)}
+.f-prog:not([open])>summary{border-bottom:0}
+.f-sum{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:600;color:var(--charcoal)}
+.f-group{padding:8px 22px;font-size:13px;font-weight:700;color:var(--charcoal);background:#FAF7F8;border-bottom:1px solid #EEECEF}
+.f-name{display:flex;gap:12px;align-items:center;min-width:0}
+.f-name .s-title{overflow-wrap:anywhere}
+.f-ext{flex:none;width:46px;padding:4px 0;border-radius:4px;background:var(--charcoal);color:#fff;font-size:11px;font-weight:800;text-align:center;letter-spacing:.02em}
+.f-ext.pptx,.f-ext.ppt,.f-ext.potx{background:#C43E1C}
+.f-ext.pdf{background:var(--burgundy)}
+.f-ext.docx,.f-ext.doc{background:#185ABD}
+.f-ext.xlsx,.f-ext.xls{background:#107C41}
+.f-act{display:flex;gap:12px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.f-dl{font-size:12px;color:var(--muted);white-space:nowrap}
+.f-row.is-upd{background:#FFFBF1}
+@media (max-width:720px){.f-act{justify-content:flex-start}.f-group{padding-left:16px}}
 .pf-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
 .pf-card h3{margin:0 0 10px;font-size:16px;color:var(--burgundy)}
 .pf-grid{display:grid;gap:12px;margin-bottom:10px}.pf-grid.g1{grid-template-columns:1fr}.pf-grid.g2{grid-template-columns:1fr 1fr}.pf-grid.g3{grid-template-columns:1.4fr 1fr .8fr}.pf-grid.g4{grid-template-columns:1fr 1fr 1fr 110px}
@@ -217,6 +236,7 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
   <nav class="tabs" role="tablist" id="tabs">
     <button class="tab" role="tab" data-tab="programs" aria-selected="true">Programs<span class="n" id="n-programs">0</span></button>
     <button class="tab" role="tab" data-tab="mine" aria-selected="false">My assignments<span class="n" id="n-mine">0</span></button>
+    <button class="tab" role="tab" data-tab="files" aria-selected="false">Program files<span class="n" id="n-files" hidden>0</span></button>
     <button class="tab" role="tab" data-tab="reports" aria-selected="false">Evaluation reports<span class="n" id="n-reports">0</span></button>
     <button class="tab" role="tab" data-tab="profile" aria-selected="false">My profile</button>
   </nav>
@@ -332,6 +352,7 @@ async function load(){
     for (const p of S.data.programs) resetDraft(p.id);
     S.dirty.clear();
     route();
+    loadFiles();
   }catch(e){
     document.getElementById('main').innerHTML = `<div class="err"><strong>Couldn't load your page.</strong> ${esc(e.message)}</div>`;
   }
@@ -377,7 +398,7 @@ function route(){
   const m=location.hash.match(/^#\/program\/([\w-]+)/);
   const pid=m&&S.data.programs.some(p=>p.id===m[1])?m[1]:null;
   if(pid){ S.view=pid; S.tab='programs'; }
-  else { S.view=null; if(location.hash==='#/mine'||location.hash==='#/reports'||location.hash==='#/profile'){ S.tab=location.hash.slice(2); history.replaceState(null,'','#/'); } }
+  else { S.view=null; if(['#/mine','#/reports','#/files','#/profile'].includes(location.hash)){ S.tab=location.hash.slice(2); history.replaceState(null,'','#/'); } }
   rerender(true);
 }
 window.addEventListener('hashchange',()=>{
@@ -394,7 +415,7 @@ function renderWho(){
   const name = d.instructor ? d.instructor.name : (me.staffName || me.email);
   document.getElementById('who').innerHTML =
     `<strong>${esc(name)}</strong>${esc(me.email)}<br>` +
-    (me.isStaff ? `<a href="/admin-dashboard">Staff dashboard</a> &nbsp; ` : '') +
+    (me.isStaff ? `<a href="/admin-dashboard">Staff dashboard</a> &nbsp; <a href="/api/files/log.csv" title="Download a spreadsheet of every program file download">File downloads</a> &nbsp; ` : '') +
     `<a href="/instructor-guide" target="_blank">Guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
 }
 
@@ -408,6 +429,7 @@ function render(){
   setN('n-mine', new Set(d.assignments.map(a=>a.programId+a.sessionId)).size, false, 'Confirmed assignments');
   const rp=d.reports||[], unread=rp.filter(r=>!r.viewedAt).length;
   setN('n-reports', unread||rp.length, unread>0, unread?`${unread} new report${unread>1?'s':''}`:`${rp.length} reports`);
+  updFilesN();
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.tab===S.tab));
   document.getElementById('savebar').hidden = !(S.view && S.dirty.has(S.view));
 
@@ -418,11 +440,12 @@ function render(){
     main.innerHTML = html + `<div class="empty"><h3>Your email isn't linked to an instructor record</h3><p>You're signed in as staff. Open the <a href="/admin-dashboard">staff dashboard</a>, or add ${esc(d.me.email)} to an instructor on the Instructors tab.</p></div>`;
     return;
   }
-  html += tzBar();
+  if (S.view || !['files','profile'].includes(S.tab)) html += tzBar();
   if (S.view) html += renderDetail(d.programs.find(p=>p.id===S.view));
   else if (S.tab==='programs') html += prefCard() + renderList(progs);
   else if (S.tab==='reports') html += renderReports();
   else if (S.tab==='profile') html += renderProfile();
+  else if (S.tab==='files') html += renderFiles();
   else { html += renderMine(); loadExpenseStatus(); }
   main.innerHTML = html;
 }
@@ -576,6 +599,64 @@ async function loadExpenseStatus(){
   S.expLoaded=true;
   try{ const r=await api('expense/status'+(asId?'?as='+encodeURIComponent(asId):'')); S.expStatus=r.statuses||{}; if(S.tab==='mine') rerender(); }catch(e){}
 }
+/* ---------- Program files (live from SharePoint via /api/files) ---------- */
+async function loadFiles(){
+  try{ S.files=await api('files'+(asId?'?as='+encodeURIComponent(asId):'')); S.filesErr=null; }
+  catch(e){ S.filesErr=e.message; }
+  // Only redraw the page if it's showing files; elsewhere just update the tab count so nothing being typed is lost.
+  if(S.tab==='files' && !S.view) rerender(); else updFilesN();
+}
+function fileUpdated(f){ const s=((S.files||{}).seen||{})[f.id]; return !!(s && s.mod && Date.parse(f.modified)>Date.parse(s.mod)); }
+function updFilesN(){
+  const el=document.getElementById('n-files'); if(!el) return;
+  if(!S.files){ el.hidden=true; return; }
+  const all=(S.files.programs||[]).flatMap(p=>p.files), upd=all.filter(fileUpdated).length;
+  el.hidden=false; el.textContent=upd||all.length; el.classList.toggle('hot',upd>0);
+  el.title=upd?`${upd} file${upd>1?'s':''} updated since you downloaded`:`${all.length} files`;
+}
+const fmtISO = iso => iso ? new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : '';
+function fmtSize(b){ if(!b) return ''; if(b<1024*1024) return Math.max(1,Math.round(b/1024))+' KB'; return (b/1048576).toFixed(b<10485760?1:0)+' MB'; }
+const folderTrk = n => /^NCIT/i.test(n)?'tr-ncit':/^SRA/i.test(n)?'tr-blue':/^BMT/i.test(n)?'tr-gold':'';
+function staffFilesNotice(){
+  const st=S.files.staff; if(!S.data.me.isStaff||!st||!st.secretExpires) return '';
+  const n=daysBetween(S.data.today, st.secretExpires); if(n>30) return '';
+  return `<div class="${n<0?'err':'notice'}"><strong>Staff:</strong> the Microsoft connection for program files ${n<0?'expired':'expires'} on ${esc(fmtLong(st.secretExpires))}${n>=0?` (${n} day${n===1?'':'s'} from now)`:''}. Renew the client secret in Entra ID and update GRAPH_CLIENT_SECRET and GRAPH_SECRET_EXPIRES in Cloudflare; SETUP-program-files.md has the steps.</div>`;
+}
+function renderFiles(){
+  if(S.filesErr && !S.files) return `<div class="err"><strong>Couldn't load program files.</strong> ${esc(S.filesErr)}</div>`;
+  if(!S.files) return `<div class="loading">Loading program files…</div>`;
+  const progs=S.files.programs||[];
+  let h=staffFilesNotice();
+  if(!progs.length) return h+`<div class="empty"><h3>No program files yet</h3><p>Materials appear here for each program you're approved to teach. If you expected to see a program, email <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</p></div>`;
+  h+=`<div class="intro"><p>Current materials for the programs you're approved to teach. Every download comes straight from CLEAR Learning's library, so it's always the latest version. Files marked <strong>Updated</strong> have changed since you last downloaded them.</p></div>`;
+  const collapse=progs.length>2;
+  return h+progs.map(p=>{
+    const upd=p.files.filter(fileUpdated).length;
+    let rows='', last=null;
+    for(const f of p.files){ if(f.group!==last){ if(f.group) rows+=`<div class="f-group">${esc(f.group)}</div>`; last=f.group; } rows+=fileRow(f); }
+    return `<details class="a-prog f-prog" ${!collapse||upd?'open':''}><summary class="a-head ${folderTrk(p.name)}"><h2>${esc(p.name)}</h2>
+      <span class="f-sum">${p.files.length} file${p.files.length===1?'':'s'}${upd?`<span class="badge part">${upd} updated</span>`:''}</span></summary>
+      ${rows||'<div class="assign"><div class="s-time">No files in this folder yet.</div></div>'}</details>`;
+  }).join('');
+}
+function fileRow(f){
+  const ext=((f.name.match(/\.([a-z0-9]+)$/i)||[])[1]||'').toLowerCase();
+  const title=ext?f.name.slice(0,-(ext.length+1)):f.name;
+  const s=(S.files.seen||{})[f.id], upd=fileUpdated(f);
+  const meta=[fmtSize(f.size), f.modified?'last changed '+fmtISO(f.modified):''].filter(Boolean).join(', ');
+  const status=upd?`<span class="badge part">Updated</span>`:s?`<span class="f-dl">Downloaded ${esc(fmtISO(s.at))}</span>`:'';
+  const href='/api/files/download/'+encodeURIComponent(f.id)+(asId?'?as='+encodeURIComponent(asId):'');
+  return `<div class="assign f-row${upd?' is-upd':''}"><div class="f-name"><span class="f-ext ${esc(ext)}" aria-hidden="true">${esc(ext.toUpperCase()||'FILE')}</span>
+    <div><div class="s-title">${esc(title)}</div><div class="s-time">${esc(meta)}</div></div></div>
+    <div class="ans-wrap f-act">${status}<a class="btn small${s&&!upd?' ghost':''}" href="${esc(href)}" style="text-decoration:none" onclick="fileClicked('${esc(f.id)}')">Download</a></div></div>`;
+}
+function fileClicked(id){
+  const f=(S.files.programs||[]).flatMap(p=>p.files).find(x=>x.id===id);
+  if(f && !S.data.viewingAs){ S.files.seen=S.files.seen||{}; S.files.seen[id]={at:new Date().toISOString(),mod:f.modified}; }
+  toast('Downloading '+(f?f.name:'file')+'…');
+  setTimeout(()=>{ if(S.tab==='files'&&!S.view) rerender(); updFilesN(); }, 400);
+}
+
 /* ---------- My profile ---------- */
 const US_STATES=[['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','District of Columbia'],['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],['AS','American Samoa'],['GU','Guam'],['MP','Northern Mariana Islands'],['PR','Puerto Rico'],['VI','U.S. Virgin Islands']];
 const CA_PROV=[['AB','Alberta'],['BC','British Columbia'],['MB','Manitoba'],['NB','New Brunswick'],['NL','Newfoundland and Labrador'],['NS','Nova Scotia'],['NT','Northwest Territories'],['NU','Nunavut'],['ON','Ontario'],['PE','Prince Edward Island'],['QC','Quebec'],['SK','Saskatchewan'],['YT','Yukon']];
