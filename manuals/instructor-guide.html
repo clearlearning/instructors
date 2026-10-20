@@ -16,20 +16,22 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Open Sans",Aria
 a{color:var(--blue)}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .top{background:#fff}
-.top-in{max-width:980px;margin:0 auto;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.top-in{max-width:1240px;margin:0 auto;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .top img{width:220px;height:auto;display:block}
 .top a.btn{background:var(--burgundy);color:#fff;text-decoration:none;font-weight:700;padding:9px 16px;border-radius:6px;font-size:14px}
 .top a.btn:hover{background:var(--burgundy-dk)}
 .goldbar{height:4px;background:var(--gold)}
 .hero{background:var(--burgundy);color:#fff}
-.hero-in{max-width:980px;margin:0 auto;padding:32px 28px 28px}
+.hero-in{max-width:1240px;margin:0 auto;padding:32px 28px 28px}
 .hero small{display:block;font-weight:700;font-size:13px;opacity:.85}
 .hero h1{margin:4px 0 8px;font-size:32px;line-height:1.15;font-weight:800}
 .hero p{margin:0;max-width:66ch;opacity:.93}
-main{max-width:980px;margin:0 auto;padding:26px 28px 70px}
-.toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
-.toc a{background:#fff;border:1px solid var(--line);border-radius:18px;padding:5px 14px;font-size:14px;font-weight:600;color:var(--burgundy);text-decoration:none}
-.toc a:hover{border-color:var(--burgundy)}
+.layout{max-width:1240px;margin:0 auto;padding:28px 32px 80px;display:grid;grid-template-columns:250px minmax(0,1fr);gap:32px;align-items:start}
+nav.toc{position:sticky;top:20px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 8px;font-size:13.5px;max-height:calc(100vh - 40px);overflow:auto}
+nav.toc strong{display:block;padding:2px 12px 8px;color:var(--burgundy);font-size:13px}
+nav.toc a{display:block;padding:5px 12px;border-radius:6px;text-decoration:none;color:var(--charcoal)}
+nav.toc a:hover{background:var(--soft);color:var(--burgundy)}
+main{min-width:0}
 section{background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px 30px;margin-bottom:20px}
 h2{margin:0 0 8px;color:var(--burgundy);font-size:23px}
 h3{margin:20px 0 6px;color:var(--burgundy);font-size:17px}
@@ -123,8 +125,9 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
 .screen .note2{background:#F8EDD3;border-left:4px solid #DDA838;padding:8px 11px;border-radius:0;margin-bottom:10px;font-size:12px}
 .screen .err2{background:#FBE9EC;border-left:4px solid #9B1C1C;padding:8px 11px;border-radius:0;margin-bottom:10px;font-size:12px}
 
+@media (max-width:1000px){.layout{grid-template-columns:1fr}nav.toc{position:static;max-height:none}}
 @media (max-width:820px){.journey{grid-template-columns:1fr 1fr}}
-@media (max-width:520px){.journey{grid-template-columns:1fr}section{padding:22px 18px}.hero h1{font-size:26px}main,.top-in,.hero-in{padding-left:16px;padding-right:16px}}
+@media (max-width:520px){.journey{grid-template-columns:1fr}section{padding:22px 18px}.hero h1{font-size:26px}.layout,.top-in,.hero-in{padding-left:16px;padding-right:16px}}
 @media print{figure.mock{break-inside:avoid}.frame{box-shadow:none}.co,ol.key li b.n,.screen *{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{background:#fff}.toc,.top a.btn{display:none}section{border:0;padding:10px 0}.hero,.goldbar,.jstep::before,th,.answer span.on{-webkit-print-color-adjust:exact;print-color-adjust:exact}.jstep{break-inside:avoid}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
@@ -135,11 +138,24 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
 <div class="hero"><div class="hero-in"><small>For CLEAR Learning instructors</small><h1>Instructor Portal Guide</h1>
 <p>The Instructor Portal is where you see upcoming CLEAR Learning programs, tell us which sessions you can teach, and find everything for the sessions you're confirmed to teach, including Zoom links and your evaluation reports.</p></div></div>
 
-<main>
-<nav class="toc" aria-label="Contents">
-  <a href="#how">How it works</a><a href="#signin">Signing in</a><a href="#formats">Your formats</a><a href="#programs">Finding programs</a><a href="#answer">Answering</a>
-  <a href="#timezones">Time zones</a><a href="#assignments">My assignments</a><a href="#expenses">Expenses and hours</a><a href="#files">Program files</a><a href="#reports">Evaluation reports</a><a href="#profile">My profile</a><a href="#emails">Emails</a><a href="#questions">Questions</a>
+<div class="layout">
+<nav class="toc" aria-label="Contents"><strong>Contents</strong>
+  <a href="#how">How it works</a>
+  <a href="#signin">Signing in</a>
+  <a href="#formats">Your formats</a>
+  <a href="#programs">Finding programs</a>
+  <a href="#answer">Answering</a>
+  <a href="#timezones">Time zones</a>
+  <a href="#assignments">My assignments</a>
+  <a href="#expenses">Expenses and hours</a>
+  <a href="#files">Program files</a>
+  <a href="#reports">Evaluation reports</a>
+  <a href="#profile">My profile</a>
+  <a href="#emails">Emails you’ll receive</a>
+  <a href="#questions">Common questions</a>
 </nav>
+
+<main>
 
 <section id="how">
   <h2>How it works</h2>
@@ -374,5 +390,6 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
 </section>
 <p class="foot">CLEAR Learning · Instructor Portal Guide</p>
 </main>
+</div>
 </body>
 </html>
