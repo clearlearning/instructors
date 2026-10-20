@@ -121,6 +121,22 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .deadline-box.locked{background:#ECEAEE}
 .desc{padding:14px 22px 0;color:var(--charcoal);max-width:75ch;white-space:pre-wrap}
 
+.pf-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
+.pf-card h3{margin:0 0 10px;font-size:16px;color:var(--burgundy)}
+.pf-grid{display:grid;gap:12px;margin-bottom:10px}.pf-grid.g1{grid-template-columns:1fr}.pf-grid.g2{grid-template-columns:1fr 1fr}.pf-grid.g3{grid-template-columns:1.4fr 1fr .8fr}.pf-grid.g4{grid-template-columns:1fr 1fr 1fr 110px}
+.pf-f label{display:block;font-size:13px;font-weight:700;margin-bottom:4px}.pf-f .req{color:var(--burgundy)}
+.pf-f input,.pf-f select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff}
+.pf-f input:focus,.pf-f select:focus{outline:3px solid var(--gold);outline-offset:1px}
+.pf-shot{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.pf-photo{width:130px;height:130px;border-radius:50%;overflow:hidden;background:var(--soft,#FAF7F8);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);flex:none}
+.pf-photo img{width:100%;height:100%;object-fit:cover}
+.pf-actions{position:sticky;bottom:0;background:var(--bg);display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:12px 0}
+.rte-bar{display:flex;gap:4px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-bottom:0;border-radius:var(--radius-sm) var(--radius-sm) 0 0;background:#FAF7F8;padding:5px 6px}
+.rte-bar button{border:1px solid transparent;background:none;border-radius:4px;padding:3px 9px;font-size:13px;cursor:pointer}
+.rte-bar button:hover{background:#fff;border-color:var(--line)}.rte-bar .sep{width:1px;height:18px;background:var(--line);margin:0 4px}
+.rte{min-height:180px;max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:10px 12px;background:#fff;line-height:1.6}
+.rte:focus{outline:3px solid var(--gold);outline-offset:1px}.rte:empty::before{content:attr(data-ph);color:var(--muted)}.rte p{margin:0 0 10px}
+@media (max-width:700px){.pf-grid.g2,.pf-grid.g3,.pf-grid.g4{grid-template-columns:1fr}}
 .btn{border:0;border-radius:var(--radius-sm);padding:9px 16px;font-weight:700;cursor:pointer;background:var(--burgundy);color:#fff;white-space:nowrap}
 .btn:hover{background:var(--burgundy-dk)}
 .btn:disabled{background:#CFCBD0;cursor:default}
@@ -178,26 +194,6 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;max-width:90vw}
 .toast.show{opacity:1}
 
-/* Program files */
-.f-prog>summary{cursor:pointer;list-style:none}
-.f-prog>summary::-webkit-details-marker{display:none}
-.f-prog>summary h2::before{content:"\25B8";display:inline-block;width:1.1em;color:var(--muted);transition:transform .15s}
-.f-prog[open]>summary h2::before{transform:rotate(90deg)}
-.f-prog:not([open])>summary{border-bottom:0}
-.f-sum{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:600;color:var(--charcoal)}
-.f-group{padding:8px 22px;font-size:13px;font-weight:700;color:var(--charcoal);background:#FAF7F8;border-bottom:1px solid #EEECEF}
-.f-name{display:flex;gap:12px;align-items:center;min-width:0}
-.f-name .s-title{overflow-wrap:anywhere}
-.f-ext{flex:none;width:46px;padding:4px 0;border-radius:4px;background:var(--charcoal);color:#fff;font-size:11px;font-weight:800;text-align:center;letter-spacing:.02em}
-.f-ext.pptx,.f-ext.ppt,.f-ext.potx{background:#C43E1C}
-.f-ext.pdf{background:var(--burgundy)}
-.f-ext.docx,.f-ext.doc{background:#185ABD}
-.f-ext.xlsx,.f-ext.xls{background:#107C41}
-.f-act{display:flex;gap:12px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
-.f-dl{font-size:12px;color:var(--muted);white-space:nowrap}
-.f-row.is-upd{background:#FFFBF1}
-@media (max-width:720px){.f-act{justify-content:flex-start}.f-group{padding-left:16px}}
-
 @media (max-width:720px){
   .top-in{padding:18px 16px 0}.tabs{padding:0 8px}main{padding:16px 16px 110px}
   .brand h1{font-size:23px}.who{text-align:left}
@@ -222,7 +218,7 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
     <button class="tab" role="tab" data-tab="programs" aria-selected="true">Programs<span class="n" id="n-programs">0</span></button>
     <button class="tab" role="tab" data-tab="mine" aria-selected="false">My assignments<span class="n" id="n-mine">0</span></button>
     <button class="tab" role="tab" data-tab="reports" aria-selected="false">Evaluation reports<span class="n" id="n-reports">0</span></button>
-    <button class="tab" role="tab" data-tab="files" aria-selected="false">Program files<span class="n" id="n-files" hidden>0</span></button>
+    <button class="tab" role="tab" data-tab="profile" aria-selected="false">My profile</button>
   </nav>
 </header>
 
@@ -336,7 +332,6 @@ async function load(){
     for (const p of S.data.programs) resetDraft(p.id);
     S.dirty.clear();
     route();
-    loadFiles();
   }catch(e){
     document.getElementById('main').innerHTML = `<div class="err"><strong>Couldn't load your page.</strong> ${esc(e.message)}</div>`;
   }
@@ -382,7 +377,7 @@ function route(){
   const m=location.hash.match(/^#\/program\/([\w-]+)/);
   const pid=m&&S.data.programs.some(p=>p.id===m[1])?m[1]:null;
   if(pid){ S.view=pid; S.tab='programs'; }
-  else { S.view=null; if(['#/mine','#/reports','#/files'].includes(location.hash)){ S.tab=location.hash.slice(2); history.replaceState(null,'','#/'); } }
+  else { S.view=null; if(location.hash==='#/mine'||location.hash==='#/reports'||location.hash==='#/profile'){ S.tab=location.hash.slice(2); history.replaceState(null,'','#/'); } }
   rerender(true);
 }
 window.addEventListener('hashchange',()=>{
@@ -399,7 +394,7 @@ function renderWho(){
   const name = d.instructor ? d.instructor.name : (me.staffName || me.email);
   document.getElementById('who').innerHTML =
     `<strong>${esc(name)}</strong>${esc(me.email)}<br>` +
-    (me.isStaff ? `<a href="/admin-dashboard">Staff dashboard</a> &nbsp; <a href="/api/files/log.csv" title="Download a spreadsheet of every program file download">File downloads</a> &nbsp; ` : '') +
+    (me.isStaff ? `<a href="/admin-dashboard">Staff dashboard</a> &nbsp; ` : '') +
     `<a href="/instructor-guide" target="_blank">Guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
 }
 
@@ -413,7 +408,6 @@ function render(){
   setN('n-mine', new Set(d.assignments.map(a=>a.programId+a.sessionId)).size, false, 'Confirmed assignments');
   const rp=d.reports||[], unread=rp.filter(r=>!r.viewedAt).length;
   setN('n-reports', unread||rp.length, unread>0, unread?`${unread} new report${unread>1?'s':''}`:`${rp.length} reports`);
-  updFilesN();
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.tab===S.tab));
   document.getElementById('savebar').hidden = !(S.view && S.dirty.has(S.view));
 
@@ -424,11 +418,11 @@ function render(){
     main.innerHTML = html + `<div class="empty"><h3>Your email isn't linked to an instructor record</h3><p>You're signed in as staff. Open the <a href="/admin-dashboard">staff dashboard</a>, or add ${esc(d.me.email)} to an instructor on the Instructors tab.</p></div>`;
     return;
   }
-  if (S.view || S.tab!=='files') html += tzBar();
+  html += tzBar();
   if (S.view) html += renderDetail(d.programs.find(p=>p.id===S.view));
   else if (S.tab==='programs') html += prefCard() + renderList(progs);
   else if (S.tab==='reports') html += renderReports();
-  else if (S.tab==='files') html += renderFiles();
+  else if (S.tab==='profile') html += renderProfile();
   else { html += renderMine(); loadExpenseStatus(); }
   main.innerHTML = html;
 }
@@ -582,69 +576,118 @@ async function loadExpenseStatus(){
   S.expLoaded=true;
   try{ const r=await api('expense/status'+(asId?'?as='+encodeURIComponent(asId):'')); S.expStatus=r.statuses||{}; if(S.tab==='mine') rerender(); }catch(e){}
 }
+/* ---------- My profile ---------- */
+const US_STATES=[['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','District of Columbia'],['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],['AS','American Samoa'],['GU','Guam'],['MP','Northern Mariana Islands'],['PR','Puerto Rico'],['VI','U.S. Virgin Islands']];
+const CA_PROV=[['AB','Alberta'],['BC','British Columbia'],['MB','Manitoba'],['NB','New Brunswick'],['NL','Newfoundland and Labrador'],['NS','Nova Scotia'],['NT','Northwest Territories'],['NU','Nunavut'],['ON','Ontario'],['PE','Prince Edward Island'],['QC','Quebec'],['SK','Saskatchewan'],['YT','Yukon']];
+const SUFFIXES=['','Jr.','Sr.','II','III','IV','V'];
+async function loadProfile(){
+  try{ const r=await api('my-profile'+(asId?'?as='+encodeURIComponent(asId):'')); S.prof=r; S.profDirty=false; }
+  catch(e){ S.prof={error:e.message}; }
+  if(S.tab==='profile') rerender();
+}
+function pf(id){ const el=document.getElementById(id); return el?el.value:''; }
+function profDirty(){ S.profDirty=true; const b=document.getElementById('pf-save'); if(b) b.disabled=false; const s=document.getElementById('pf-state'); if(s) s.textContent='Unsaved changes'; }
+function countryChange(){
+  const c=pf('pf-country'); const other=document.getElementById('pf-country-other-wrap'); if(other) other.hidden=(c!=='Other');
+  document.getElementById('pf-region-wrap').innerHTML=regionField(c==='Other'?pf('pf-country-other'):c,'');
+  document.getElementById('pf-postal-l').textContent=c==='United States'?'ZIP code':'Postal code';
+  document.getElementById('pf-postal').placeholder=c==='United States'?'e.g. 40356':c==='Canada'?'e.g. K1A 0B1':'';
+  profDirty();
+}
+function regionField(country,val){
+  const list=country==='United States'?US_STATES:country==='Canada'?CA_PROV:null;
+  const lbl=country==='United States'?'State':country==='Canada'?'Province or territory':'State, province or region';
+  if(list) return `<label for="pf-region">${lbl}</label><select id="pf-region" onchange="profDirty()"><option value="">Choose…</option>${list.map(([k,n])=>`<option value="${k}" ${val===k?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
+  return `<label for="pf-region">${lbl}</label><input id="pf-region" type="text" value="${esc(val)}" oninput="profDirty()">`;
+}
+function renderProfile(){
+  if(!S.prof){ loadProfile(); return '<p class="et">Loading your profile…</p>'; }
+  if(S.prof.error) return `<div class="empty"><h3>Your profile couldn't be loaded</h3><p>${esc(S.prof.error)}</p></div>`;
+  const p=S.prof.profile, a=p.address||{}, known=['United States','Canada'].includes(a.country||'United States'), ctry=known?(a.country||'United States'):'Other';
+  const iid=(S.data.instructor||{}).id, shot=p.headshotAt?`/api/headshot/${encodeURIComponent(iid)}?t=${encodeURIComponent(p.headshotAt)}`:'';
+  const inp=(id,label,val,extra='')=>`<div class="pf-f"><label for="${id}">${label}</label><input id="${id}" type="text" value="${esc(val||'')}" oninput="profDirty()" ${extra}></div>`;
+  return `<div class="intro"><p>Keep your details current. CLEAR Learning uses them to contact you, for program materials and announcements, and on expense reports. ${S.prof.saved&&p.updatedAt?`Last saved ${esc(fmtStamp(p.updatedAt).split(',')[0])}.`:'Your name and email are filled in from CLEAR\u2019s records until you save.'}</p></div>
+  ${asId?'<div class="notice" style="margin-bottom:14px">Staff preview: this is the instructor\u2019s profile. Changes can\u2019t be saved from a preview.</div>':''}
+  <div class="pf-card"><h3>Name</h3><div class="pf-grid g4">
+    ${inp('pf-first','First name <span class="req">*</span>',p.first,'autocomplete="given-name"')}${inp('pf-middle','Middle name',p.middle,'autocomplete="additional-name"')}${inp('pf-last','Last name <span class="req">*</span>',p.last,'autocomplete="family-name"')}
+    <div class="pf-f"><label for="pf-suffix">Suffix</label><select id="pf-suffix" onchange="profDirty()">${SUFFIXES.map(s=>`<option value="${s}" ${p.suffix===s?'selected':''}>${s||'None'}</option>`).join('')}</select></div></div>
+    <div class="pf-grid g2">${inp('pf-preferred','Preferred name <span class="et">(if different)</span>',p.preferred,'placeholder="e.g. Andy"')}</div></div>
+  <div class="pf-card"><h3>Professional</h3><div class="pf-grid g2">${inp('pf-title','Job title',p.title,'autocomplete="organization-title"')}${inp('pf-employer','Employer',p.employer,'autocomplete="organization"')}</div></div>
+  <div class="pf-card"><h3>Contact</h3><div class="pf-grid g2">${inp('pf-phone','Phone number',p.phone,'type="tel" autocomplete="tel" placeholder="e.g. 859-555-0123"')}${inp('pf-email','Email address',p.email,'type="email" autocomplete="email"')}</div>
+    <p class="et" style="margin:6px 0 0">This is the email CLEAR Learning uses to contact you. You sign in with ${esc((S.prof.signInEmails||[]).join(' or ')||'the address on file')}; to change your sign-in email, contact <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</p></div>
+  <div class="pf-card"><h3>Mailing address</h3><div class="pf-grid g2">
+    <div class="pf-f"><label for="pf-country">Country</label><select id="pf-country" onchange="countryChange()"><option ${ctry==='United States'?'selected':''}>United States</option><option ${ctry==='Canada'?'selected':''}>Canada</option><option value="Other" ${ctry==='Other'?'selected':''}>Another country</option></select></div>
+    <div class="pf-f" id="pf-country-other-wrap" ${ctry==='Other'?'':'hidden'}><label for="pf-country-other">Country name</label><input id="pf-country-other" type="text" value="${esc(known?'':a.country||'')}" oninput="profDirty()" autocomplete="country-name"></div></div>
+    <div class="pf-grid g1">${inp('pf-line1','Street address',a.line1,'autocomplete="address-line1"')}${inp('pf-line2','Apartment, suite or unit <span class="et">(optional)</span>',a.line2,'autocomplete="address-line2"')}</div>
+    <div class="pf-grid g3">${inp('pf-city','City',a.city,'autocomplete="address-level2"')}<div class="pf-f" id="pf-region-wrap">${regionField(ctry==='Other'?a.country:ctry,a.region||'')}</div>
+      <div class="pf-f"><label for="pf-postal" id="pf-postal-l">${ctry==='United States'?'ZIP code':'Postal code'}</label><input id="pf-postal" type="text" value="${esc(a.postal||'')}" oninput="profDirty()" autocomplete="postal-code" placeholder="${ctry==='United States'?'e.g. 40356':ctry==='Canada'?'e.g. K1A 0B1':''}"></div></div></div>
+  <div class="pf-card"><h3>Headshot</h3><div class="pf-shot">
+    <div class="pf-photo">${shot?`<img src="${shot}" alt="Your headshot">`:'<span>No photo yet</span>'}</div>
+    <div><p class="et" style="margin:0 0 8px">A clear, professional photo of your head and shoulders. JPEG or PNG; large photos are resized automatically.</p>
+      <label class="btn ghost small" style="cursor:pointer;${asId?'pointer-events:none;opacity:.5':''}">${shot?'Replace photo':'Upload a photo'}<input type="file" accept="image/jpeg,image/png,image/webp" hidden onchange="uploadHeadshot(this)"></label>
+      ${shot&&!asId?'<button class="btn link small" onclick="removeHeadshot()">Remove</button>':''}<div id="pf-shot-msg" class="et" style="margin-top:6px"></div></div></div></div>
+  <div class="pf-card"><h3>Professional bio</h3><p class="et" style="margin:0 0 8px">Used when CLEAR introduces you to participants. Write in the third person, for example "Andrew Barton is…".</p>
+    <div class="rte-bar" role="toolbar" aria-label="Formatting" aria-controls="pf-bio">
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('bold')" aria-label="Bold"><strong>B</strong></button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('italic')" aria-label="Italic"><em>I</em></button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('underline')" aria-label="Underline"><u>U</u></button><span class="sep"></span>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('insertUnorderedList')" aria-label="Bulleted list">• List</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('insertOrderedList')" aria-label="Numbered list">1. List</button><span class="sep"></span>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteLink()" aria-label="Add link">Link</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('removeFormat')" aria-label="Clear formatting">Clear</button></div>
+    <div id="pf-bio" class="rte" contenteditable="${asId?'false':'true'}" role="textbox" aria-multiline="true" aria-label="Professional bio" data-ph="Your professional background, experience and credentials." oninput="profDirty()">${p.bio||''}</div></div>
+  <div class="pf-actions"><span id="pf-state" class="et">${S.profDirty?'Unsaved changes':''}</span><button class="btn" id="pf-save" onclick="saveProfile()" ${asId?'disabled':''}>Save profile</button></div>`;
+}
+function rteCmd(c){ document.getElementById('pf-bio').focus(); try{ document.execCommand('defaultParagraphSeparator',false,'p'); }catch(e){} document.execCommand(c,false,null); profDirty(); }
+function rteLink(){
+  const sel=window.getSelection(); if(!sel||sel.isCollapsed){ toast('Select the text to turn into a link first.'); return; }
+  const range=sel.getRangeAt(0); let url=prompt('Link address (https://)','https://'); if(!url) return; url=url.trim();
+  if(!/^(https:\/\/|mailto:)/i.test(url)){ toast('Links must start with https://'); return; }
+  sel.removeAllRanges(); sel.addRange(range); document.getElementById('pf-bio').focus(); document.execCommand('createLink',false,url); profDirty();
+}
+function rteHtml(el){
+  const out=[]; let run='';
+  const flush=()=>{ if(run.replace(/<br>|&nbsp;|\s/g,'')) out.push('<p>'+run+'</p>'); run=''; };
+  el.childNodes.forEach(n=>{
+    if(n.nodeType===1&&/^(P|DIV|UL|OL|H[1-6]|BLOCKQUOTE)$/.test(n.tagName)){ flush(); out.push(n.outerHTML); }
+    else if(n.nodeType===1&&n.tagName==='BR'){ if(run) run+='<br>'; else flush(); }
+    else run+=n.nodeType===3?esc(n.textContent):n.outerHTML;
+  });
+  flush(); return out.join('');
+}
+async function saveProfile(){
+  const c=pf('pf-country');
+  const profile={first:pf('pf-first'),middle:pf('pf-middle'),last:pf('pf-last'),suffix:pf('pf-suffix'),preferred:pf('pf-preferred'),title:pf('pf-title'),employer:pf('pf-employer'),phone:pf('pf-phone'),email:pf('pf-email'),
+    address:{country:c==='Other'?pf('pf-country-other'):c,line1:pf('pf-line1'),line2:pf('pf-line2'),city:pf('pf-city'),region:pf('pf-region'),postal:pf('pf-postal')},bio:rteHtml(document.getElementById('pf-bio'))};
+  const btn=document.getElementById('pf-save'); btn.disabled=true; document.getElementById('pf-state').textContent='Saving…';
+  try{ const r=await api('my-profile',{method:'PUT',body:JSON.stringify({profile})}); S.prof.profile={...S.prof.profile,...r.profile}; S.prof.saved=true; S.profDirty=false; rerender(); toast('Profile saved'); }
+  catch(e){ btn.disabled=false; document.getElementById('pf-state').textContent=''; toast(e.message); }
+}
+// Resize in the browser (longest side 1,600 px, high-quality JPEG) before uploading.
+async function uploadHeadshot(input){
+  const f=input.files[0]; if(!f) return; const msg=document.getElementById('pf-shot-msg');
+  if(!/^image\/(jpeg|png|webp)$/.test(f.type)){ msg.textContent='Choose a JPEG, PNG or WebP image.'; return; }
+  msg.textContent='Preparing your photo…';
+  try{
+    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('That file couldn\u2019t be read as an image.')); i.src=URL.createObjectURL(f); });
+    const scale=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));
+    const cv=document.createElement('canvas'); cv.width=Math.round(img.naturalWidth*scale); cv.height=Math.round(img.naturalHeight*scale);
+    const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height); ctx.drawImage(img,0,0,cv.width,cv.height);
+    const dataUrl=cv.toDataURL('image/jpeg',0.88);
+    msg.textContent='Uploading…';
+    const r=await api('my-profile/headshot',{method:'PUT',body:JSON.stringify({dataUrl})});
+    S.prof.profile.headshotAt=r.headshotAt; rerender(); toast('Photo saved');
+  }catch(e){ msg.textContent=e.message; }
+}
+async function removeHeadshot(){ if(!confirm('Remove your photo?')) return; try{ await api('my-profile/headshot',{method:'DELETE'}); S.prof.profile.headshotAt=''; rerender(); toast('Photo removed'); }catch(e){ toast(e.message); } }
+window.addEventListener('beforeunload',e=>{ if(S.profDirty){ e.preventDefault(); e.returnValue=''; } });
+
 function renderReports(){
   const rp=S.data.reports||[];
   if(!rp.length) return `<div class="empty"><h3>No evaluation reports yet</h3><p>When CLEAR Learning publishes a report on your module evaluations, it appears here and you'll receive an email.</p></div>`;
   return `<div class="intro"><p>Each report summarizes participant ratings and comments from your module evaluations. Reports open in a new tab; to keep a copy, use your browser's print option and choose Save as PDF.</p></div>
     <div class="a-prog">${rp.map(r=>`<div class="assign"><div><div class="s-title">${esc(r.title)}</div><div class="s-time">Published ${esc(fmtStamp(r.createdAt).split(',')[0])}${r.viewedAt?'':' <span class="badge need" style="margin-left:6px">New</span>'}</div></div>
       <div class="ans-wrap"><a class="btn small" href="${esc(r.url)}" target="_blank" rel="noopener" style="text-decoration:none" onclick="setTimeout(load,1500)">View report</a></div></div>`).join('')}</div>`;
-}
-/* ---------- Program files (live from SharePoint via /api/files) ---------- */
-async function loadFiles(){
-  try{ S.files=await api('files'+(asId?'?as='+encodeURIComponent(asId):'')); S.filesErr=null; }
-  catch(e){ S.filesErr=e.message; }
-  // Only redraw the page if it's showing files; elsewhere just update the tab count so nothing being typed is lost.
-  if(S.tab==='files' && !S.view) rerender(); else updFilesN();
-}
-function fileUpdated(f){ const s=((S.files||{}).seen||{})[f.id]; return !!(s && s.mod && Date.parse(f.modified)>Date.parse(s.mod)); }
-function updFilesN(){
-  const el=document.getElementById('n-files'); if(!el) return;
-  if(!S.files){ el.hidden=true; return; }
-  const all=(S.files.programs||[]).flatMap(p=>p.files), upd=all.filter(fileUpdated).length;
-  el.hidden=false; el.textContent=upd||all.length; el.classList.toggle('hot',upd>0);
-  el.title=upd?`${upd} file${upd>1?'s':''} updated since you downloaded`:`${all.length} files`;
-}
-const fmtISO = iso => iso ? new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}) : '';
-function fmtSize(b){ if(!b) return ''; if(b<1024*1024) return Math.max(1,Math.round(b/1024))+' KB'; return (b/1048576).toFixed(b<10485760?1:0)+' MB'; }
-const folderTrk = n => /^NCIT/i.test(n)?'tr-ncit':/^SRA/i.test(n)?'tr-blue':/^BMT/i.test(n)?'tr-gold':'';
-function staffFilesNotice(){
-  const st=S.files.staff; if(!S.data.me.isStaff||!st||!st.secretExpires) return '';
-  const n=daysBetween(S.data.today, st.secretExpires); if(n>30) return '';
-  return `<div class="${n<0?'err':'notice'}"><strong>Staff:</strong> the Microsoft connection for program files ${n<0?'expired':'expires'} on ${esc(fmtLong(st.secretExpires))}${n>=0?` (${n} day${n===1?'':'s'} from now)`:''}. Renew the client secret in Entra ID and update GRAPH_CLIENT_SECRET and GRAPH_SECRET_EXPIRES in Cloudflare; SETUP-program-files.md has the steps.</div>`;
-}
-function renderFiles(){
-  if(S.filesErr && !S.files) return `<div class="err"><strong>Couldn't load program files.</strong> ${esc(S.filesErr)}</div>`;
-  if(!S.files) return `<div class="loading">Loading program files…</div>`;
-  const progs=S.files.programs||[];
-  let h=staffFilesNotice();
-  if(!progs.length) return h+`<div class="empty"><h3>No program files yet</h3><p>Materials appear here for each program you're approved to teach. If you expected to see a program, email <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</p></div>`;
-  h+=`<div class="intro"><p>Current materials for the programs you're approved to teach. Every download comes straight from CLEAR Learning's library, so it's always the latest version. Files marked <strong>Updated</strong> have changed since you last downloaded them.</p></div>`;
-  const collapse=progs.length>2;
-  return h+progs.map(p=>{
-    const upd=p.files.filter(fileUpdated).length;
-    let rows='', last=null;
-    for(const f of p.files){ if(f.group!==last){ if(f.group) rows+=`<div class="f-group">${esc(f.group)}</div>`; last=f.group; } rows+=fileRow(f); }
-    return `<details class="a-prog f-prog" ${!collapse||upd?'open':''}><summary class="a-head ${folderTrk(p.name)}"><h2>${esc(p.name)}</h2>
-      <span class="f-sum">${p.files.length} file${p.files.length===1?'':'s'}${upd?`<span class="badge part">${upd} updated</span>`:''}</span></summary>
-      ${rows||'<div class="assign"><div class="s-time">No files in this folder yet.</div></div>'}</details>`;
-  }).join('');
-}
-function fileRow(f){
-  const ext=((f.name.match(/\.([a-z0-9]+)$/i)||[])[1]||'').toLowerCase();
-  const title=ext?f.name.slice(0,-(ext.length+1)):f.name;
-  const s=(S.files.seen||{})[f.id], upd=fileUpdated(f);
-  const meta=[fmtSize(f.size), f.modified?'last changed '+fmtISO(f.modified):''].filter(Boolean).join(', ');
-  const status=upd?`<span class="badge part">Updated</span>`:s?`<span class="f-dl">Downloaded ${esc(fmtISO(s.at))}</span>`:'';
-  const href='/api/files/download/'+encodeURIComponent(f.id)+(asId?'?as='+encodeURIComponent(asId):'');
-  return `<div class="assign f-row${upd?' is-upd':''}"><div class="f-name"><span class="f-ext ${esc(ext)}" aria-hidden="true">${esc(ext.toUpperCase()||'FILE')}</span>
-    <div><div class="s-title">${esc(title)}</div><div class="s-time">${esc(meta)}</div></div></div>
-    <div class="ans-wrap f-act">${status}<a class="btn small${s&&!upd?' ghost':''}" href="${esc(href)}" style="text-decoration:none" onclick="fileClicked('${esc(f.id)}')">Download</a></div></div>`;
-}
-function fileClicked(id){
-  const f=(S.files.programs||[]).flatMap(p=>p.files).find(x=>x.id===id);
-  if(f && !S.data.viewingAs){ S.files.seen=S.files.seen||{}; S.files.seen[id]={at:new Date().toISOString(),mod:f.modified}; }
-  toast('Downloading '+(f?f.name:'file')+'…');
-  setTimeout(()=>{ if(S.tab==='files'&&!S.view) rerender(); updFilesN(); }, 400);
 }
 async function getIcs(pid){
   try{
