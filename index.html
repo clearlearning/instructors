@@ -416,7 +416,7 @@ function renderWho(){
   document.getElementById('who').innerHTML =
     `<strong>${esc(name)}</strong>${esc(me.email)}<br>` +
     (me.isStaff ? `<a href="/admin-dashboard">Staff dashboard</a> &nbsp; <a href="/api/files/log.csv" title="Download a spreadsheet of every program file download">File downloads</a> &nbsp; ` : '') +
-    `<a href="/instructor-guide" target="_blank">Guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
+    `<a href="/manuals/instructor-guide" target="_blank">Guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
 }
 
 function render(){
