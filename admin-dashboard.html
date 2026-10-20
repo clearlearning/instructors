@@ -312,7 +312,7 @@ async function load(keep=true){
 
 function render(){
   const me=D.me;
-  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/program-scheduler">Program Scheduler</a> &nbsp; <a href="/coordinator-guide" target="_blank">Coordinator guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
+  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/program-scheduler">Program Scheduler</a> &nbsp; <a href="/manuals/coordinator-guide" target="_blank">Coordinator guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===U.tab));
   const fn={overview:vOverview,responses:vResponses,selection:vSelection,programs:vPrograms,roster:vRoster,staff:vStaff,log:vLog}[U.tab];
   const y=window.scrollY, ae=document.activeElement, refocus=ae&&ae.type==='search'?{pos:ae.selectionStart}:null;
