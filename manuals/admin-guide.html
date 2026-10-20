@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instructor Portal: Administrator Guide | CLEAR Learning</title>
+<link rel="icon" type="image/png" href="https://assets-002.noviams.com/novi-file-uploads/clear/structure/clearlogo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--burgundy:#64092C;--burgundy-dk:#4A0620;--gold:#C9933A;--gold-lt:#F8EDD3;--blue:#084D78;--blue-lt:#E2EDF4;--ink:#1A1014;--charcoal:#484848;--muted:#6E6B70;--line:#E4DCE0;--soft:#FAF4F6;--bg:#F5F0F2;--green:#1F6B3F;--green-lt:#E3F1E8;--red:#9B1C1C}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Open Sans",Arial,sans-serif;font-size:15.5px;line-height:1.65}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.top{background:#fff}
+.top-in{max-width:1260px;margin:0 auto;padding:22px 32px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.top img{width:230px;height:auto;display:block}
+.top .tag{font-size:13px;color:var(--muted);font-weight:600}
+.goldbar{height:4px;background:var(--gold)}
+.hero{background:var(--burgundy);color:#fff}
+.hero-in{max-width:1260px;margin:0 auto;padding:34px 32px 30px}
+.hero small{display:block;font-weight:700;font-size:13px;opacity:.85}
+.hero h1{margin:4px 0 8px;font-size:34px;line-height:1.15;font-weight:800}
+.hero p{margin:0;max-width:76ch;opacity:.93}
+.layout{max-width:1260px;margin:0 auto;padding:28px 32px 80px;display:grid;grid-template-columns:260px minmax(0,1fr);gap:32px;align-items:start}
+nav.toc{position:sticky;top:20px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 8px;font-size:13.5px;max-height:calc(100vh - 40px);overflow:auto}
+nav.toc strong{display:block;padding:2px 12px 8px;color:var(--burgundy);font-size:13px}
+nav.toc a{display:block;padding:4px 12px;border-radius:6px;text-decoration:none;color:var(--charcoal)}
+nav.toc a:hover{background:var(--soft);color:var(--burgundy)}
+nav.toc a.sub{padding-left:24px;font-size:13px;color:var(--muted)}
+nav.toc .grp{display:block;padding:10px 12px 3px;font-size:11.5px;font-weight:800;color:var(--muted);letter-spacing:.03em}
+main{min-width:0}
+section{background:#fff;border:1px solid var(--line);border-radius:12px;padding:28px 32px;margin-bottom:22px}
+section.start{border:2px solid var(--burgundy)}
+h2{margin:0 0 6px;color:var(--burgundy);font-size:24px;line-height:1.25}
+h3{margin:26px 0 8px;color:var(--burgundy);font-size:18px}
+h4{margin:18px 0 6px;font-size:15.5px}
+p{margin:0 0 12px;max-width:82ch}
+.lead{font-size:16.5px;color:var(--charcoal)}
+ul,ol{margin:0 0 14px;padding-left:22px;max-width:82ch}
+li{margin-bottom:6px}
+.ui{font-weight:700;color:var(--burgundy-dk)}
+code,.path{font-family:Consolas,"Courier New",monospace;font-size:13.5px;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 5px;word-break:break-word}
+.note,.tip,.warn{border-radius:8px;padding:12px 16px;margin:14px 0;max-width:88ch}
+.note{background:var(--blue-lt);border-left:4px solid var(--blue)}
+.tip{background:var(--gold-lt);border-left:4px solid var(--gold)}
+.warn{background:#FBE9EC;border-left:4px solid var(--red)}
+.note strong,.tip strong,.warn strong{display:block;margin-bottom:2px}
+table{border-collapse:collapse;width:100%;margin:10px 0 16px;font-size:14px}
+th{background:var(--soft);color:var(--burgundy);text-align:left;font-size:12.5px;padding:8px 11px;border-bottom:2px solid var(--gold);vertical-align:bottom}
+td{padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl{overflow-x:auto}
+td.fill{background:#FFFDF6;border-bottom:1px dashed var(--gold);min-width:180px;color:var(--muted);font-style:italic}
+ol.steps{list-style:none;padding-left:0;counter-reset:st}
+ol.steps>li{counter-increment:st;position:relative;padding-left:40px;margin-bottom:10px}
+ol.steps>li::before{content:counter(st);position:absolute;left:0;top:1px;width:26px;height:26px;border-radius:50%;background:var(--gold-lt);color:var(--burgundy);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;border:1px solid var(--gold)}
+details.proc{border:1px solid var(--line);border-radius:10px;margin:10px 0;background:#fff}
+details.proc>summary{cursor:pointer;padding:12px 16px;font-weight:700;color:var(--burgundy);list-style:none;display:flex;justify-content:space-between;gap:10px}
+details.proc>summary::-webkit-details-marker{display:none}
+details.proc>summary::after{content:"Show steps";font-size:12.5px;color:var(--blue);font-weight:600;white-space:nowrap}
+details.proc[open]>summary::after{content:"Hide steps"}
+details.proc>div{padding:0 18px 12px}
+
+/* Architecture diagram */
+.arch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.box{border:1px solid var(--line);border-top:5px solid var(--burgundy);border-radius:10px;padding:12px 14px;background:#fff}
+.box.b{border-top-color:var(--blue)}.box.g{border-top-color:var(--gold)}.box.n{border-top-color:var(--green)}.box.x{border-top-color:#7A6F75}
+.box h4{margin:0 0 4px;color:var(--burgundy);font-size:15px}
+.box p{font-size:13px;margin:0;color:var(--charcoal)}
+.box .ar{display:block;margin-top:6px;font-size:12px;color:var(--blue);font-weight:600}
+.span2{grid-column:span 2}.span3{grid-column:1 / -1}
+.foot{text-align:center;color:var(--muted);font-size:13px}
+@media (max-width:1000px){.layout{grid-template-columns:1fr}nav.toc{position:static;max-height:none}.arch{grid-template-columns:1fr}.span2{grid-column:auto}}
+@media (max-width:600px){section{padding:22px 18px}.hero h1{font-size:27px}.layout,.top-in,.hero-in{padding-left:16px;padding-right:16px}}
+@media print{body{background:#fff;font-size:10.5pt}nav.toc{display:none}.layout{display:block;padding:0}section{border:0;padding:10px 0}details.proc{border:0}details.proc>div{display:block!important}details.proc>summary::after{content:""}.hero,.goldbar,th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><img src="https://assets-002.noviams.com/novi-file-uploads/clear/logos/CLEAR_Learning_Logo_horizontal__2_.png" alt="CLEAR Learning"><span class="tag">Administrator guide · Confidential: internal use</span></div></header>
+<div class="goldbar"></div>
+<div class="hero"><div class="hero-in"><small>Instructor Portal</small><h1>Administrator Guide</h1>
+<p>How the Instructor Portal is built, where every part lives, who can do what, and how to keep it running, change it, and recover it. Written so that someone who did not build the system can take it over.</p></div></div>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents"><strong>Contents</strong>
+  <a href="#start">Start here</a>
+  <span class="grp">HOW IT'S BUILT</span>
+  <a href="#arch">Architecture</a>
+  <a href="#inventory">Inventory of accounts and parts</a>
+  <a href="#files">Files in the repository</a>
+  <a href="#settings">Settings and secrets</a>
+  <a href="#data">Where the data lives</a>
+  <span class="grp">PERMISSIONS</span>
+  <a href="#perm">How access works</a>
+  <a href="#access">Cloudflare Access setup</a>
+  <span class="grp">RUNNING IT</span>
+  <a href="#routine">Routine schedule</a>
+  <a href="#procs">Procedures</a>
+  <a href="#p-staff" class="sub">People and access</a>
+  <a href="#p-code" class="sub">Code and deployments</a>
+  <a href="#p-settings" class="sub">Settings and secrets</a>
+  <a href="#p-services" class="sub">Email, Zoom, reminders</a>
+  <a href="#p-data" class="sub">Backups and data</a>
+  <a href="#p-domain" class="sub">Domain</a>
+  <span class="grp">WHEN THINGS GO WRONG</span>
+  <a href="#trouble">Troubleshooting</a>
+  <a href="#recovery">Recovery</a>
+  <span class="grp">CONTINUITY</span>
+  <a href="#handover">Handover checklist</a>
+  <a href="#glossary">Glossary</a>
+</nav>
+
+<main>
+<!-- ================= START HERE ================= -->
+<section id="start" class="start">
+  <h2>Start here</h2>
+  <p class="lead">If you're taking over the Instructor Portal, read this section first. Nothing in the portal needs daily attention: it runs on its own. Your first job is to make sure you can get into every account that holds a part of it.</p>
+  <h3>Your first day</h3>
+  <ol class="steps">
+    <li><strong>Get access to the accounts that hold the system</strong> (see <a href="#inventory">Inventory</a>): the Cloudflare account, the GitHub organization, the Power Automate flow, the Zoom app, and the CLEAR expense system. A CLEAR Microsoft 365 administrator can reset access to anything tied to a CLEAR email address.</li>
+    <li><strong>Add yourself as a portal administrator:</strong> follow <a href="#p-staff">Make someone an administrator</a>.</li>
+    <li><strong>Check the system is healthy:</strong> open the staff dashboard Overview. The Zoom links card shows when the daily check last ran (it should be this morning). Open <span class="ui">Activity</span> to see recent work.</li>
+    <li><strong>Read <a href="#arch">Architecture</a> and <a href="#perm">How access works</a>.</strong> Those two sections explain almost every question that will come up.</li>
+    <li><strong>Find the secrets.</strong> Secret values can't be read back out of Cloudflare. If CLEAR's password manager doesn't have them, you'll create new ones when needed. Every secret can be replaced, and <a href="#p-settings">Settings and secrets</a> explains how.</li>
+  </ol>
+  <h3>The most important things to know</h3>
+  <ul>
+    <li><strong>The code lives in GitHub; the data lives in Cloudflare.</strong> Editing a file in GitHub publishes it to the site within a minute or two. The data (programs, answers, selections, schedule, reports) is stored in Cloudflare KV and is not in GitHub.</li>
+    <li><strong>Two layers of permission:</strong> Cloudflare Access decides who can open the site at all; the portal's own lists decide what they can do once in. Adding or removing a person usually means changing both (see <a href="#perm">How access works</a>).</li>
+    <li><strong>A changed setting needs a redeploy:</strong> after changing any setting in Cloudflare Pages, choose <span class="ui">Retry deployment</span>, or the change won't take effect.</li>
+    <li><strong>Every bad change can be undone:</strong> any earlier version of the site can be restored in two clicks (<a href="#p-code">Roll back a deployment</a>).</li>
+  </ul>
+  <div class="warn"><strong>Keep a copy of this guide outside the portal.</strong> This guide is hosted inside the portal, so if the portal is down you can't open it. Save a PDF copy (print, then Save as PDF) in CLEAR's shared documents and update it when the system changes.</div>
+</section>
+
+<!-- ================= ARCHITECTURE ================= -->
+<section id="arch">
+  <h2>Architecture</h2>
+  <p class="lead">The portal is a small website with a built-in back end, hosted entirely on Cloudflare, with three outside services connected to it.</p>
+  <div class="arch">
+    <div class="box x"><h4>GitHub repository</h4><p>Holds all the code: the web pages and the API. Saving a change here starts a new deployment automatically.</p><span class="ar">→ deploys to Cloudflare Pages</span></div>
+    <div class="box"><h4>Cloudflare Pages</h4><p>Hosts the website and runs the API (a "Pages Function", <code>functions/api/[[path]].js</code>) that every page talks to.</p><span class="ar">↔ reads and writes Cloudflare KV</span></div>
+    <div class="box"><h4>Cloudflare KV</h4><p>The database: programs, instructor answers, selections, the roster, the shared schedule, reports and the activity log.</p></div>
+    <div class="box b span3" style="border-top-color:var(--burgundy-dk)"><h4>Cloudflare Access (Zero Trust)</h4><p>Sits in front of the whole site. Nobody reaches any page or the API without signing in with a one-time code sent to an approved email address. Staff pages have a second, stricter Access application.</p></div>
+    <div class="box b"><h4>Daily Worker</h4><p><code>instructor-availability-cron</code> runs every morning at 14:00 UTC and asks the portal to send reminders and check Zoom.</p><span class="ar">→ portal API, through Access with a service token</span></div>
+    <div class="box g"><h4>Power Automate flow</h4><p>Sends every email the portal produces, from the clearlearning@clearhq.org shared mailbox.</p><span class="ar">← portal API posts each email to it</span></div>
+    <div class="box g"><h4>Zoom app</h4><p>A read-only Server-to-Server OAuth app. The portal reads meetings TalentLMS created and matches their links to sessions.</p><span class="ar">← portal API reads meetings</span></div>
+    <div class="box g"><h4>CLEAR expense system</h4><p>The <code>clear-lms-proxy</code> Worker, its Power Automate flows and the SharePoint list behind the expense admin. Instructor expense and hours reports are submitted to it through the portal.</p><span class="ar">← portal API reads the instructor's record and status; submits reports</span></div>
+    <div class="box n"><h4>SurveyMonkey proxy Worker</h4><p>A separate Worker, owned outside this project, that the evaluation report tool uses to read survey responses.</p><span class="ar">← evaluation report page, in the browser</span></div>
+    <div class="box n"><h4>Instructor Staffing Dashboard</h4><p>A separate tool in its own repository. The portal links to it for each instructor's teaching history and evaluations.</p></div>
+    <div class="box x"><h4>DNS (clearhq.org)</h4><p>Managed by CLEAR's IT provider, outside Cloudflare. A CNAME record points the custom domain at the Pages site.</p></div>
+  </div>
+  <h3>How a request flows</h3>
+  <ol>
+    <li>Someone opens the portal. Cloudflare Access checks they've signed in with an approved email; if not, it shows the one-time code screen.</li>
+    <li>The page loads and calls the API. The API checks the Access sign-in token again, then works out the person's role from the portal's own lists (administrator, staff or instructor).</li>
+    <li>The API reads or writes KV and returns the result. For emails it posts to Power Automate; for Zoom links it calls Zoom; for expense reports it calls the CLEAR expense system.</li>
+  </ol>
+  <div class="note"><strong>Why two checks?</strong> Access keeps strangers out entirely. The API's own check decides what a signed-in person may do, so even if an Access setting were wrong, an instructor still couldn't use staff features.</div>
+</section>
+
+<!-- ================= INVENTORY ================= -->
+<section id="inventory">
+  <h2>Inventory of accounts and parts</h2>
+  <p>Fill in the blank cells (shaded) the first time you read this, and keep them current. Never write passwords or secret values here.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Part</th><th>Name or location</th><th>Who has access</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Cloudflare account</strong></td><td>dash.cloudflare.com · account that holds the Pages project, KV, Worker and Zero Trust</td><td class="fill">Owner and super administrators</td></tr>
+      <tr><td><strong>Pages project</strong></td><td><code>clear-instructors</code> · <code>https://clear-instructors.pages.dev</code></td><td class="fill">(as above)</td></tr>
+      <tr><td><strong>Custom domain</strong> (planned)</td><td><code>instructors.clearhq.org</code></td><td class="fill">DNS contact at CLEAR's IT provider</td></tr>
+      <tr><td><strong>KV namespace</strong></td><td><code>instructor-availability</code>, bound to the Pages project as <code>IA_KV</code></td><td>Cloudflare account members</td></tr>
+      <tr><td><strong>Zero Trust team domain</strong></td><td class="fill">something.cloudflareaccess.com (Zero Trust → Settings → Custom pages / team domain)</td><td>Cloudflare account members</td></tr>
+      <tr><td><strong>Access applications</strong></td><td>"Instructor Portal" and "Instructor Portal – Staff"</td><td>Cloudflare account members</td></tr>
+      <tr><td><strong>Access groups</strong></td><td>"CLEAR Instructors" and "CLEAR Learning Staff"</td><td>Cloudflare account members</td></tr>
+      <tr><td><strong>Access service token</strong></td><td><code>instructor-availability-cron</code></td><td class="fill">Expiry date, if any</td></tr>
+      <tr><td><strong>Daily Worker</strong></td><td><code>instructor-availability-cron</code> (Workers &amp; Pages)</td><td>Cloudflare account members</td></tr>
+      <tr><td><strong>GitHub repository</strong></td><td class="fill">github.com/ORGANIZATION/instructor-availability</td><td class="fill">Organization owners</td></tr>
+      <tr><td><strong>Power Automate flow</strong></td><td>"Instructor Portal – Email" (make.powerautomate.com)</td><td class="fill">Owner and co-owners</td></tr>
+      <tr><td><strong>Shared mailbox</strong></td><td><code>clearlearning@clearhq.org</code></td><td class="fill">People with Send As permission</td></tr>
+      <tr><td><strong>Zoom app</strong></td><td>"CLEAR Instructor Portal" (Server-to-Server OAuth, marketplace.zoom.us)</td><td class="fill">Zoom admin account</td></tr>
+      <tr><td><strong>Zoom user that TalentLMS uses</strong></td><td><code>clearlearning@clearhq.org</code></td><td class="fill"></td></tr>
+      <tr><td><strong>Expense system Worker</strong></td><td><code>clear-lms-proxy</code> (<code>https://clear-lms-proxy.avance.workers.dev</code>), with the expense admin page and its Power Automate flows and SharePoint list</td><td class="fill">Cloudflare account and flow owners</td></tr>
+      <tr><td><strong>SurveyMonkey proxy Worker</strong></td><td class="fill">Worker name and address</td><td class="fill"></td></tr>
+      <tr><td><strong>Instructor Staffing Dashboard</strong></td><td class="fill">Repository and address of instructor-staffing.html</td><td class="fill"></td></tr>
+      <tr><td><strong>Password manager entry</strong></td><td class="fill">Where the secrets listed under Settings are stored</td><td class="fill"></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= FILES ================= -->
+<section id="files">
+  <h2>Files in the repository</h2>
+  <p>Every page is a single, self-contained HTML file. The file name is the page's address: <code>admin-dashboard.html</code> is served at <code>/admin-dashboard</code>.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>File</th><th>Address</th><th>Who uses it</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>index.html</code></td><td><code>/</code></td><td>Instructors</td><td>The Instructor Portal: programs, answers, My assignments, Evaluation reports, My profile.</td></tr>
+      <tr><td><code>admin-dashboard.html</code></td><td><code>/admin-dashboard</code></td><td>Staff</td><td>The staff dashboard.</td></tr>
+      <tr><td><code>program-scheduler.html</code></td><td><code>/program-scheduler</code></td><td>Staff</td><td>Quarterly planning, program agendas, publishing.</td></tr>
+      <tr><td><code>evaluation-reports.html</code></td><td><code>/evaluation-reports</code></td><td>Staff</td><td>Module evaluation reports; publishes reports to instructors.</td></tr>
+      <tr><td><code>agenda-generator.html</code></td><td><code>/agenda-generator</code></td><td>Behind the scenes</td><td>Builds program agendas and portal programs for the scheduler. Must stay in the repository.</td></tr>
+      <tr><td><code>welcome-emails.html</code></td><td><code>/welcome-emails</code></td><td>Behind the scenes</td><td>Builds welcome emails for cohort kits. Must stay in the repository.</td></tr>
+      <tr><td><code>expenses.html</code></td><td><code>/expenses</code></td><td>Instructors</td><td>The expense and hours report form, opened from My assignments.</td></tr>
+      <tr><td><code>coordinator-guide.html</code></td><td><code>/coordinator-guide</code></td><td>Staff</td><td>Program Coordinator Guide.</td></tr>
+      <tr><td><code>instructor-guide.html</code></td><td><code>/instructor-guide</code></td><td>Instructors</td><td>Instructor Portal Guide.</td></tr>
+      <tr><td><code>administrator-guide.html</code></td><td><code>/administrator-guide</code></td><td>Administrators</td><td>This guide.</td></tr>
+      <tr><td><code>functions/api/[[path]].js</code></td><td><code>/api/…</code></td><td>Every page</td><td>The API: sign-in checks, permissions, data, emails, Zoom, reminders, reports. The comment block at the top lists every setting it uses.</td></tr>
+      <tr><td><code>images/*.svg</code></td><td><code>/images/…</code></td><td>Every page</td><td>Program logos: NCITB, NCITS, NCITAIT, NCITWS, NCITWDDI, NCITWIRSM, NCITWCSAP, NCITWERI, SRASAB, ACRG, ELPR, BCT, IRG.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Outside this repository:</strong> the daily Worker's code (<code>worker.js</code>, edited in Cloudflare under Workers &amp; Pages → <code>instructor-availability-cron</code>), the Instructor Staffing Dashboard (its own repository), and the SurveyMonkey proxy Worker.</p>
+</section>
+
+<!-- ================= SETTINGS ================= -->
+<section id="settings">
+  <h2>Settings and secrets</h2>
+  <p>Settings for the portal are in Cloudflare: <span class="ui">Workers &amp; Pages</span> → <code>clear-instructors</code> → <span class="ui">Settings</span> → <span class="ui">Variables and Secrets</span> (and <span class="ui">Bindings</span> for KV). Secrets are encrypted: once saved, their values can't be viewed, only replaced.</p>
+  <h3>Pages project</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Name</th><th>Type</th><th>What it is</th><th>If it's wrong or missing</th></tr></thead>
+    <tbody>
+      <tr><td><code>IA_KV</code></td><td>KV binding</td><td>Connects the API to the <code>instructor-availability</code> KV namespace.</td><td>Nothing loads. Every page shows an error about the KV binding.</td></tr>
+      <tr><td><code>ACCESS_TEAM_DOMAIN</code></td><td>Text</td><td>The Zero Trust team domain, without https://.</td><td>Nobody can use the API (sign-in errors).</td></tr>
+      <tr><td><code>ACCESS_AUD</code></td><td>Text</td><td>The AUD tags of both Access applications, separated by a comma. Found in each application's settings.</td><td>Sign-in errors on the pages behind the application whose tag is missing.</td></tr>
+      <tr><td><code>ADMIN_EMAILS</code></td><td>Text</td><td>Comma-separated emails of portal administrators. Administrators are always staff and can change the staff list.</td><td>No one can edit the Staff tab.</td></tr>
+      <tr><td><code>PORTAL_URL</code></td><td>Text</td><td>The portal's full address, starting with https://. Used for links in emails.</td><td>Links in emails and report links are broken.</td></tr>
+      <tr><td><code>NOTIFY_FLOW_URL</code></td><td>Secret</td><td>The Power Automate flow's HTTP address. Anyone with it can send email as CLEAR.</td><td>No emails send; the dashboard says email isn't set up.</td></tr>
+      <tr><td><code>NOTIFY_MAILBOX</code></td><td>Text</td><td><code>clearlearning@clearhq.org</code></td><td>No emails send.</td></tr>
+      <tr><td><code>CRON_SECRET</code></td><td>Secret</td><td>Shared with the daily Worker; proves the daily request is genuine.</td><td>No automatic reminders or daily Zoom check.</td></tr>
+      <tr><td><code>REMINDER_DAYS</code></td><td>Text</td><td>Days before the response date to send reminders. Default <code>7,2</code>.</td><td>Defaults to 7 and 2.</td></tr>
+      <tr><td><code>ZOOM_ACCOUNT_ID</code>, <code>ZOOM_CLIENT_ID</code></td><td>Text</td><td>From the Zoom app's App Credentials page.</td><td>Zoom links aren't found.</td></tr>
+      <tr><td><code>ZOOM_CLIENT_SECRET</code></td><td>Secret</td><td>From the Zoom app's App Credentials page.</td><td>Zoom links aren't found.</td></tr>
+      <tr><td><code>ZOOM_USER</code></td><td>Text (optional)</td><td>The Zoom user TalentLMS creates meetings under. Default <code>clearlearning@clearhq.org</code>.</td><td>Zoom links aren't found if TalentLMS moves to another user.</td></tr>
+      <tr><td><code>EXPENSE_WORKER_URL</code></td><td>Text</td><td>The expense system Worker's address, e.g. <code>https://clear-lms-proxy.avance.workers.dev</code>.</td><td>The expense buttons don't appear on My assignments.</td></tr>
+      <tr><td><code>EXPENSE_TOKEN</code></td><td>Secret</td><td>The same auth token used to open the expense admin. Lets the portal read the private instructor list and report status.</td><td>Reports still submit, but status doesn't show, and instructor details come from the public list instead.</td></tr>
+      <tr><td><code>STAFFING_DASHBOARD_URL</code></td><td>Text (optional)</td><td>Address of the Instructor Staffing Dashboard.</td><td>The ↗ history links don't appear.</td></tr>
+      <tr><td><code>CF_ACCOUNT_ID</code>, <code>CF_ACCESS_GROUP_ID</code>, <code>CF_API_TOKEN</code></td><td>Optional</td><td>Turn on automatic syncing of the instructor Access group from the roster. Not set up at the time of writing.</td><td>Instructor access changes are made by hand (see <a href="#p-staff">procedures</a>).</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Daily Worker (<code>instructor-availability-cron</code>)</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Name</th><th>Type</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td><code>PORTAL_URL</code></td><td>Text</td><td>The portal's full address, starting with https://.</td></tr>
+      <tr><td><code>CF_ACCESS_CLIENT_ID</code>, <code>CF_ACCESS_CLIENT_SECRET</code></td><td>Secret</td><td>The Access service token's ID and secret, so the Worker can get past Access.</td></tr>
+      <tr><td><code>CRON_SECRET</code></td><td>Secret</td><td>Must match the Pages project's <code>CRON_SECRET</code> exactly.</td></tr>
+      <tr><td>Cron trigger</td><td>Schedule</td><td><code>0 14 * * *</code>: daily at 14:00 UTC (9 AM Eastern in winter, 10 AM in summer).</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tip"><strong>Keep the secrets in CLEAR's password manager.</strong> Store <code>NOTIFY_FLOW_URL</code>, <code>CRON_SECRET</code>, <code>ZOOM_CLIENT_SECRET</code>, <code>EXPENSE_TOKEN</code> and the service token's client secret there whenever you create or replace them.</div>
+</section>
+
+<!-- ================= DATA ================= -->
+<section id="data">
+  <h2>Where the data lives</h2>
+  <p>All data is in the KV namespace <code>instructor-availability</code>. You can browse it in Cloudflare under <span class="ui">Storage &amp; Databases</span> → <span class="ui">KV</span>. Don't edit or delete keys by hand unless a procedure tells you to.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Key</th><th>Holds</th></tr></thead>
+    <tbody>
+      <tr><td><code>program:&lt;id&gt;</code></td><td>One program: title, cohort label, dates, sessions, Zoom links, status, response date, welcome email details.</td></tr>
+      <tr><td><code>resp:&lt;instructor id&gt;</code></td><td>One instructor's answers for every program, with change history.</td></tr>
+      <tr><td><code>assign:&lt;program id&gt;</code></td><td>Selections for one program, staffing notes, selection history, and which emails were sent.</td></tr>
+      <tr><td><code>roster</code></td><td>Every instructor: name, emails, active status, approvals, format.</td></tr>
+      <tr><td><code>config:staff</code></td><td>The staff list (Staff tab).</td></tr>
+      <tr><td><code>schedule</code></td><td>The shared Program Scheduler schedule, with a version number.</td></tr>
+      <tr><td><code>ics:&lt;program id&gt;</code></td><td>The calendar file for in-person programs.</td></tr>
+      <tr><td><code>report:&lt;link code&gt;</code>, <code>reports:&lt;instructor id&gt;</code></td><td>Published evaluation reports and each instructor's list of them.</td></tr>
+      <tr><td><code>profile:&lt;instructor id&gt;</code></td><td>The instructor's own profile: name parts, preferred name, title, employer, phone, contact email, mailing address, bio.</td></tr>
+      <tr><td><code>headshot:&lt;instructor id&gt;</code></td><td>The instructor's headshot (resized JPEG). Only the instructor and staff can open it.</td></tr>
+      <tr><td><code>expsub:&lt;instructor id&gt;</code></td><td>A list of the expense and hours reports the instructor submitted through the portal. The reports themselves are in the expense system's SharePoint list.</td></tr>
+      <tr><td><code>zoom:last</code>, <code>zoom:review</code></td><td>The last Zoom check and meetings waiting for staff to choose.</td></tr>
+      <tr><td><code>reminded:…</code></td><td>Records that a reminder went out, so it isn't sent twice. Removed automatically after 90 days.</td></tr>
+      <tr><td><code>log:…</code></td><td>The Activity log. Removed automatically after two years.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Nothing else stores portal data. Zoom, TalentLMS and Novi are only read from or used alongside it. Expense reports are stored by the CLEAR expense system, not the portal.</p>
+  <h3>Profiles and the roster</h3>
+  <p>The roster (Instructors tab) is staff-managed: its <em>Last, First</em> name is what evaluation reports and expense reports match on, and its emails are the sign-in addresses. Instructors' profiles are separate and never change the roster. When a profile's name or contact email differs, the Instructors tab flags it for staff to decide.</p>
+</section>
+
+<!-- ================= PERMISSIONS ================= -->
+<section id="perm">
+  <h2>How access works</h2>
+  <p class="lead">Two layers decide what someone can do. A person needs both layers set correctly.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Layer</th><th>Where it's set</th><th>What it controls</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1. Cloudflare Access</strong></td><td>Zero Trust → Access → Groups and Applications</td><td>Whether a person can open the site at all, and whether they can open staff pages.</td></tr>
+      <tr><td><strong>2. The portal's own lists</strong></td><td><code>ADMIN_EMAILS</code> setting, Staff tab, Instructors tab</td><td>What a signed-in person can do: administrator, staff or instructor.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>The three roles</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Role</th><th>Access group needed</th><th>Portal list</th><th>Can</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Administrator</strong></td><td>CLEAR Learning Staff</td><td><code>ADMIN_EMAILS</code> setting</td><td>Everything staff can do, plus edit the Staff tab.</td></tr>
+      <tr><td><strong>Staff</strong></td><td>CLEAR Learning Staff</td><td>Staff tab</td><td>Use the staff dashboard, Program Scheduler and evaluation report tool; see all instructors' data; send emails.</td></tr>
+      <tr><td><strong>Instructor</strong></td><td>CLEAR Instructors</td><td>Instructors tab (an email listed for an active instructor)</td><td>See their approved programs, answer, see their own assignments and reports, submit expense and hours reports, and edit their own profile.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Instructors only see programs that match their teaching approvals and chosen formats. Staff aren't limited.</p>
+</section>
+
+<section id="access">
+  <h2>Cloudflare Access setup</h2>
+  <p>Zero Trust is at one.dash.cloudflare.com, or from the Cloudflare dashboard → <span class="ui">Zero Trust</span>. Sign-in uses <strong>One-time PIN</strong> (a code by email).</p>
+  <h3>Groups</h3>
+  <ul>
+    <li><strong>CLEAR Instructors:</strong> one "Emails" rule listing every active instructor's sign-in address.</li>
+    <li><strong>CLEAR Learning Staff:</strong> one "Emails" rule listing every staff member.</li>
+  </ul>
+  <h3>Applications</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Application</th><th>Hostnames and paths</th><th>Policies</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Instructor Portal</strong></td><td>The pages.dev address (and the custom domain once live), with <em>no path</em>, which covers the whole site.</td><td>Allow: Include groups CLEAR Instructors and CLEAR Learning Staff.<br>Service Auth: Include service token <code>instructor-availability-cron</code>.</td></tr>
+      <tr><td><strong>Instructor Portal – Staff</strong></td><td>The same hostname(s), once for each path: <code>admin-dashboard</code>, <code>api/admin</code>, <code>program-scheduler</code>, <code>agenda-generator</code>, <code>welcome-emails</code>, <code>evaluation-reports</code>, <code>coordinator-guide</code>, <code>administrator-guide</code>.</td><td>Allow: Include group CLEAR Learning Staff.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="warn"><strong>Every new staff page must be added to the Staff application.</strong> If a new staff-only page is added to the repository but not listed here, any signed-in instructor could open it. Its data stays protected by the API, but the page itself would be visible.</div>
+  <p>Each application has an <strong>AUD tag</strong> (in its settings, under Overview or Basic information). Both tags must be in the <code>ACCESS_AUD</code> setting, separated by a comma.</p>
+</section>
+
+<!-- ================= ROUTINE ================= -->
+<section id="routine">
+  <h2>Routine schedule</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>When</th><th>What</th><th>Who</th></tr></thead>
+    <tbody>
+      <tr><td>Every day, 14:00 UTC</td><td>Reminders to instructors who haven't responded (7 and 2 days before each response date) and the Zoom link check.</td><td>Automatic</td></tr>
+      <tr><td>Each quarter</td><td>Plan, publish, announce, select, kits, reports (see the Program Coordinator Guide).</td><td>Coordinators</td></tr>
+      <tr><td>When people join or leave</td><td>Update Access groups and portal lists (<a href="#p-staff">procedures</a>).</td><td>Administrator</td></tr>
+      <tr><td>Monthly</td><td>Glance at the Overview's Zoom card and the Activity log for anything unusual. Download a scheduler backup.</td><td>Administrator</td></tr>
+      <tr><td>Each year</td><td>Review both Access groups and the Staff tab; remove people who have left. Check the service token's expiry date. Confirm the Power Automate licence. Update this guide's Inventory.</td><td>Administrator</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= PROCEDURES ================= -->
+<section id="procs">
+  <h2>Procedures</h2>
+  <p>Open a procedure to see its steps.</p>
+
+  <h3 id="p-staff">People and access</h3>
+  <details class="proc"><summary>Add an instructor</summary><div><ol class="steps">
+    <li>Staff dashboard → <span class="ui">Instructors</span>: add the instructor (name as Last, First) and every email they may sign in with. Save.</li>
+    <li>On <span class="ui">Teaching approvals</span>, tick the programs they're approved to teach. Save approvals.</li>
+    <li>Zero Trust → <span class="ui">Access</span> → <span class="ui">Groups</span> → <span class="ui">CLEAR Instructors</span> → <span class="ui">Edit</span>: add their email(s) to the Emails rule. Save.</li>
+    <li>Ask them to sign in. If they can't, see <a href="#trouble">Troubleshooting</a>.</li>
+  </ol></div></details>
+  <details class="proc"><summary>Remove an instructor</summary><div><ol class="steps">
+    <li>Staff dashboard → <span class="ui">Instructors</span>: untick <em>Active</em> (keeps their history) and save.</li>
+    <li>Remove their email(s) from the <span class="ui">CLEAR Instructors</span> Access group.</li>
+    <li>Check any upcoming confirmed selections on the Selection tab and reassign them.</li>
+  </ol></div></details>
+  <details class="proc"><summary>Add or remove a staff member</summary><div><ol class="steps">
+    <li>An administrator opens the staff dashboard → <span class="ui">Staff</span>, adds or removes the person's name and email, and saves.</li>
+    <li>Zero Trust → <span class="ui">Access</span> → <span class="ui">Groups</span> → <span class="ui">CLEAR Learning Staff</span>: add or remove their email. Save.</li>
+    <li>When removing someone, also remove them from the Cloudflare account, GitHub organization and Power Automate flow if they had access.</li>
+  </ol></div></details>
+  <details class="proc" id="p-admin"><summary>Make someone an administrator</summary><div><ol class="steps">
+    <li>Add them as staff (procedure above).</li>
+    <li>Cloudflare → <span class="ui">Workers &amp; Pages</span> → <code>clear-instructors</code> → <span class="ui">Settings</span> → <span class="ui">Variables and Secrets</span>: edit <code>ADMIN_EMAILS</code> and add their email, separated from the others by a comma.</li>
+    <li><span class="ui">Deployments</span> → newest deployment → <span class="ui">Retry deployment</span>.</li>
+  </ol></div></details>
+  <details class="proc"><summary>Let the daily Worker past Access (service token)</summary><div>
+    <p>The Worker signs in with a service token named <code>instructor-availability-cron</code>, allowed by a <em>Service Auth</em> policy on the Instructor Portal application. If the token expires or is deleted, reminders and the daily Zoom check stop.</p>
+    <ol class="steps">
+      <li>Zero Trust → <span class="ui">Access</span> → <span class="ui">Service credentials</span> → <span class="ui">Service Tokens</span> → <span class="ui">Create Service Token</span>. Copy the Client ID and Client Secret (the secret is shown once).</li>
+      <li>Instructor Portal application → <span class="ui">Policies</span>: make sure a Service Auth policy includes this token.</li>
+      <li>Worker <code>instructor-availability-cron</code> → <span class="ui">Settings</span> → <span class="ui">Variables and Secrets</span>: update <code>CF_ACCESS_CLIENT_ID</code> and <code>CF_ACCESS_CLIENT_SECRET</code>. Deploy.</li>
+      <li>Test with the dry run (see <a href="#p-services">Check the daily Worker</a>), then delete the old token.</li>
+    </ol></div></details>
+
+  <h3 id="p-code">Code and deployments</h3>
+  <details class="proc"><summary>Change a page or the API</summary><div><ol class="steps">
+    <li>In GitHub, open the repository and the file, then choose the pencil icon to edit (or paste in a new version).</li>
+    <li>Choose <span class="ui">Commit changes</span>, committing directly to the main branch.</li>
+    <li>Cloudflare deploys automatically. Watch <span class="ui">Workers &amp; Pages</span> → <code>clear-instructors</code> → <span class="ui">Deployments</span>: the newest one should say <em>Success</em> within a minute or two.</li>
+    <li>Open the page and press Ctrl+F5 to load the new version.</li>
+  </ol>
+  <div class="tip"><strong>If a page goes blank after an edit</strong>, press F12, open the Console, and read the red error and its line number. The most common cause is an apostrophe inside text that's wrapped in single quotes; write it as <code>\'</code> or use a curly apostrophe (’).</div></div></details>
+  <details class="proc"><summary>Roll back a deployment</summary><div><ol class="steps">
+    <li><span class="ui">Workers &amp; Pages</span> → <code>clear-instructors</code> → <span class="ui">Deployments</span>.</li>
+    <li>Find the last deployment that worked, open its menu (⋯), and choose <span class="ui">Rollback to this deployment</span>.</li>
+    <li>The site switches back immediately. Data isn't affected. Then fix the file in GitHub; the next commit becomes the live version.</li>
+  </ol></div></details>
+  <details class="proc"><summary>Add a new staff-only page</summary><div><ol class="steps">
+    <li>Add the HTML file to the repository root and commit.</li>
+    <li>Add its path (the file name without .html) to the <strong>Instructor Portal – Staff</strong> Access application, for every hostname.</li>
+    <li>Link to it from the staff dashboard if needed.</li>
+  </ol></div></details>
+
+  <h3 id="p-settings">Settings and secrets</h3>
+  <details class="proc"><summary>Change a setting</summary><div><ol class="steps">
+    <li><span class="ui">Workers &amp; Pages</span> → <code>clear-instructors</code> → <span class="ui">Settings</span> → <span class="ui">Variables and Secrets</span>. Edit the value and save.</li>
+    <li><span class="ui">Deployments</span> → newest → <span class="ui">Retry deployment</span>. Settings only take effect on a new deployment.</li>
+  </ol></div></details>
+  <details class="proc"><summary>Replace CRON_SECRET</summary><div><ol class="steps">
+    <li>Make a new random string of about 40 letters and numbers. Save it in the password manager.</li>
+    <li>Set it as <code>CRON_SECRET</code> on the Pages project, then Retry deployment.</li>
+    <li>Set the same value as <code>CRON_SECRET</code> on the Worker, then Deploy.</li>
+    <li>Run the dry run to confirm.</li>
+  </ol></div></details>
+  <details class="proc"><summary>Replace the Zoom secret</summary><div><ol class="steps">
+    <li>marketplace.zoom.us → <span class="ui">Manage</span> → the "CLEAR Instructor Portal" app → <span class="ui">App Credentials</span> → regenerate the Client Secret.</li>
+    <li>Update <code>ZOOM_CLIENT_SECRET</code> on the Pages project, then Retry deployment.</li>
+    <li>Staff dashboard → Overview → <span class="ui">Find Zoom links now</span> to confirm.</li>
+  </ol></div></details>
+
+  <h3 id="p-services">Email, Zoom and reminders</h3>
+  <details class="proc"><summary>Check the daily Worker</summary><div><ol class="steps">
+    <li>Open the Worker's address with your CRON_SECRET: <code>https://instructor-availability-cron.&lt;account&gt;.workers.dev/?key=CRON_SECRET&amp;dry=1</code>. Nothing is sent.</li>
+    <li>You should see today's date, which programs reach a reminder day, and a Zoom summary. "Access did not accept the service token" means the token or its policy needs fixing.</li>
+    <li>The Worker's <span class="ui">Logs</span> tab shows each morning's run.</li>
+  </ol></div></details>
+  <details class="proc"><summary>Fix or rebuild the email flow</summary><div>
+    <p>The flow receives each email from the portal and sends it from the shared mailbox. It needs a Power Automate licence that includes premium features, because the HTTP trigger is premium.</p>
+    <ol class="steps">
+      <li>make.powerautomate.com → <span class="ui">My flows</span> → "Instructor Portal – Email" → <span class="ui">28-day run history</span>. Open a failed run to see which step failed and why.</li>
+      <li>To rebuild it: create an Instant cloud flow with the trigger <em>When an HTTP request is received</em> (Who can trigger: Anyone). Paste this schema: <code>{"type":"object","properties":{"to":{"type":"string"},"bcc":{"type":"string"},"replyTo":{"type":"string"},"subject":{"type":"string"},"html":{"type":"string"}}}</code></li>
+      <li>Add the action <em>Send an email from a shared mailbox (V2)</em>: Original Mailbox Address <code>clearlearning@clearhq.org</code>; To = <code>to</code>; Subject = <code>subject</code>; Body = <code>html</code>; BCC = <code>bcc</code>; Reply To = <code>replyTo</code>.</li>
+      <li>Save, copy the trigger's HTTP URL into <code>NOTIFY_FLOW_URL</code>, then Retry deployment.</li>
+      <li>The flow owner needs Send As permission on the shared mailbox (Exchange admin center → Recipients → Mailboxes → clearlearning → Delegation → Send as).</li>
+    </ol>
+    <div class="tip"><strong>Add a co-owner to the flow</strong> (open the flow → <span class="ui">Edit</span> under Co-owners) so it doesn't depend on one person's account.</div></div></details>
+  <details class="proc"><summary>Fix the Zoom connection</summary><div><ol class="steps">
+    <li>marketplace.zoom.us, signed in with the Zoom admin account → <span class="ui">Manage</span> → "CLEAR Instructor Portal". Make sure it's activated and has the scope <code>meeting:read:list_meetings:admin</code>.</li>
+    <li>Check <code>ZOOM_ACCOUNT_ID</code>, <code>ZOOM_CLIENT_ID</code> and <code>ZOOM_CLIENT_SECRET</code> match the app's App Credentials.</li>
+    <li>If TalentLMS now creates meetings under a different Zoom user, set <code>ZOOM_USER</code> to that address.</li>
+  </ol></div></details>
+
+  <details class="proc"><summary>Fix the expense connection</summary><div>
+    <p>The portal reads each instructor's own entry from the expense system's instructor list, adds their pay rate from its configuration, and submits reports to <code>/expense/volunteer-submit</code>. Status comes from <code>/expense/getall</code>.</p>
+    <ol class="steps">
+      <li>If the expense buttons don't appear: check <code>EXPENSE_WORKER_URL</code> is set, then Retry deployment.</li>
+      <li>If an instructor's name, rate or details don't fill in: in the expense admin's instructor list, make sure their email matches the one on the Instructors tab.</li>
+      <li>If submitting fails with "The expense system didn't accept the report": check the <code>clear-lms-proxy</code> Worker and its submission flow in Power Automate (run history).</li>
+      <li>If status never changes from Submitted: check <code>EXPENSE_TOKEN</code> matches the expense admin's token, and that the expense admin can load reports.</li>
+    </ol>
+    <div class="warn"><strong>Keep the public instructor list closed.</strong> The expense Worker's <code>/expense/instructors</code> route used to list every instructor's address and pay tier without signing in. The portal doesn't need it once <code>EXPENSE_TOKEN</code> is set; leave it removed or protected.</div></div></details>
+  <details class="proc"><summary>An instructor's name or sign-in email changes</summary><div><ol class="steps">
+    <li>Instructors tab: update their roster name (Last, First) and add the new email to their emails. Save.</li>
+    <li>Add the new email to the <span class="ui">CLEAR Instructors</span> Access group; remove the old one once they've signed in with the new one.</li>
+    <li>Update their entry in the expense admin's instructor list to match, so expense reports keep their rate.</li>
+  </ol></div></details>
+
+  <h3 id="p-data">Backups and data</h3>
+  <details class="proc"><summary>Back up the data</summary><div><ol class="steps">
+    <li><strong>Schedule:</strong> Program Scheduler → <span class="ui">Facilitators and days off</span> → <span class="ui">Download backup</span>.</li>
+    <li><strong>Answers:</strong> staff dashboard → <span class="ui">Responses</span> → <span class="ui">Export all open programs</span> (a spreadsheet in the coordinator's original layout).</li>
+    <li><strong>Selections:</strong> <span class="ui">Selection</span> → <span class="ui">Export selections</span>.</li>
+    <li><strong>Profiles:</strong> <span class="ui">Instructors</span> → <span class="ui">Export profiles</span>. Headshots aren't included; download any you need from each profile.</li>
+    <li>Store the files in CLEAR's shared documents. Cloudflare keeps the live data safely; these copies protect against accidental deletion.</li>
+  </ol></div></details>
+  <details class="proc"><summary>Restore the schedule</summary><div><ol class="steps">
+    <li>Program Scheduler → <span class="ui">Facilitators and days off</span> → <span class="ui">Restore from backup</span>, then choose the file.</li>
+    <li>This replaces the shared schedule for everyone. Published programs in the portal aren't changed until you publish again.</li>
+  </ol></div></details>
+
+  <h3 id="p-domain">Domain</h3>
+  <details class="proc"><summary>Switch to (or change) the custom domain</summary><div><ol class="steps">
+    <li>Pages project → <span class="ui">Custom domains</span> → <span class="ui">Set up a custom domain</span>, and enter the new address first.</li>
+    <li>Ask CLEAR's IT provider to add a CNAME record: Name <code>instructors</code>, Target <code>clear-instructors.pages.dev</code>.</li>
+    <li>When the domain shows Active, add it to both Access applications (all staff paths on the Staff application).</li>
+    <li>Update <code>PORTAL_URL</code> on the Pages project (Retry deployment) and on the Worker (Deploy).</li>
+    <li>Test signing in as an instructor and as staff in a private browser window.</li>
+  </ol></div></details>
+</section>
+
+<!-- ================= TROUBLESHOOTING ================= -->
+<section id="trouble">
+  <h2>Troubleshooting</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>Someone never receives a sign-in code</td><td>Their email isn't in the right Access group, or the code went to junk mail.</td><td>Add them to the group; ask them to check junk mail.</td></tr>
+      <tr><td>Signed in, but "isn't on the CLEAR Learning instructor list"</td><td>Access let them in, but their email isn't on the Instructors tab (or they're inactive).</td><td>Add the email to the instructor on the Instructors tab.</td></tr>
+      <tr><td>Staff member gets "This area is for CLEAR Learning staff"</td><td>Missing from the Staff tab.</td><td>An administrator adds them on the Staff tab.</td></tr>
+      <tr><td>Every page shows a sign-in or AUD error</td><td><code>ACCESS_AUD</code> or <code>ACCESS_TEAM_DOMAIN</code> is wrong, or an Access application was recreated (new AUD tag).</td><td>Copy both AUD tags into <code>ACCESS_AUD</code>; Retry deployment.</td></tr>
+      <tr><td>A page is blank after an edit</td><td>A typo in the edited file.</td><td>Roll back, then check the Console error (F12).</td></tr>
+      <tr><td>Emails don't arrive</td><td>Flow failing, licence lapsed, or Send As permission removed.</td><td>Check the flow's run history (<a href="#p-services">Fix the email flow</a>).</td></tr>
+      <tr><td>No reminders, Zoom card not updated today</td><td>Daily Worker can't reach the portal.</td><td>Run the dry run; check the service token and CRON_SECRET.</td></tr>
+      <tr><td>Zoom check error</td><td>Zoom app deactivated, secret changed, or scope missing.</td><td><a href="#p-services">Fix the Zoom connection</a>.</td></tr>
+      <tr><td>Report tool can't load data</td><td>SurveyMonkey proxy Worker or its token, or its allowed sites don't include the portal's address.</td><td>Re-enter the proxy settings in the tool; add the portal's address to the proxy Worker's allowed origins.</td></tr>
+      <tr><td>Expense form says the instructor's details couldn't be found</td><td>Their email in the expense admin's instructor list doesn't match a sign-in email.</td><td>Correct the email in the expense admin.</td></tr>
+      <tr><td>An instructor's profile won't save</td><td>A required field or address format is missing (US ZIP code, Canadian postal code A1A 1A1).</td><td>The page says which field; fix it and save again.</td></tr>
+      <tr><td>Links in emails go to the wrong place</td><td><code>PORTAL_URL</code> missing https:// or out of date.</td><td>Fix <code>PORTAL_URL</code>; Retry deployment.</td></tr>
+      <tr><td>"Someone else changed the schedule"</td><td>Two people edited the scheduler at once.</td><td>Load their version, or keep yours (which replaces theirs).</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= RECOVERY ================= -->
+<section id="recovery">
+  <h2>Recovery</h2>
+  <h3>The whole site is down</h3>
+  <ol class="steps">
+    <li>Check cloudflarestatus.com for a Cloudflare outage. If there is one, wait.</li>
+    <li>Check the newest deployment. If it failed or broke the site, roll back.</li>
+    <li>Check the KV binding (<code>IA_KV</code>) and settings are still in place.</li>
+  </ol>
+  <h3>Data was deleted or changed by mistake</h3>
+  <ul>
+    <li><strong>An instructor's answers:</strong> re-enter the correct answer on the Responses tab (it's recorded as a staff entry). Earlier versions are stored with each instructor's record in KV (<code>resp:&lt;instructor id&gt;</code>, under <em>history</em>) if you need to look one up.</li>
+    <li><strong>Selections:</strong> re-enter them on the Selection tab from your last <em>Export selections</em> file. Earlier versions are also stored in KV (<code>assign:&lt;program id&gt;</code>, under <em>history</em>).</li>
+    <li><strong>The schedule:</strong> restore the last scheduler backup.</li>
+    <li><strong>A deleted program:</strong> republish the cohort from the Program Scheduler to recreate it. Instructors' earlier answers stay in their records but don't reattach to the new program, so they would need to answer again. To avoid this, use <em>Archived</em> rather than deleting programs.</li>
+  </ul>
+  <h3>Rebuilding from scratch</h3>
+  <p>If the Cloudflare project were lost, the code is safe in GitHub. You would recreate the Pages project from the repository, create a KV namespace and bind it as <code>IA_KV</code>, recreate both Access applications and groups, re-enter every setting from <a href="#settings">Settings and secrets</a>, and recreate the Worker with its cron trigger. Data not covered by backups would be lost, which is why monthly backups matter.</p>
+</section>
+
+<!-- ================= HANDOVER ================= -->
+<section id="handover">
+  <h2>Handover checklist</h2>
+  <p>When the administrator changes, work through this list together if possible. If the previous administrator isn't available, a Microsoft 365 administrator can reset access to anything tied to a CLEAR email address.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Done</th><th>Item</th></tr></thead>
+    <tbody>
+      <tr><td>☐</td><td>New administrator added to the Cloudflare account with Super Administrator (or Administrator) rights.</td></tr>
+      <tr><td>☐</td><td>New administrator added as an owner of the GitHub organization or repository.</td></tr>
+      <tr><td>☐</td><td>New administrator added as co-owner of the "Instructor Portal – Email" flow, with Send As on clearlearning@clearhq.org.</td></tr>
+      <tr><td>☐</td><td>Zoom admin access confirmed for the "CLEAR Instructor Portal" app.</td></tr>
+      <tr><td>☐</td><td>Access to the SurveyMonkey proxy Worker and the Instructor Staffing Dashboard repository confirmed.</td></tr>
+      <tr><td>☐</td><td>Access to the expense system confirmed: the <code>clear-lms-proxy</code> Worker, the expense admin token, and the expense Power Automate flows and SharePoint list.</td></tr>
+      <tr><td>☐</td><td>New administrator added to <code>ADMIN_EMAILS</code>, the Staff tab and the CLEAR Learning Staff Access group.</td></tr>
+      <tr><td>☐</td><td>Secrets confirmed in the password manager, or replaced and stored.</td></tr>
+      <tr><td>☐</td><td>Service token expiry noted.</td></tr>
+      <tr><td>☐</td><td>DNS contact at CLEAR's IT provider confirmed.</td></tr>
+      <tr><td>☐</td><td>The Inventory in this guide updated, and a fresh PDF copy saved outside the portal.</td></tr>
+      <tr><td>☐</td><td>Previous administrator's access removed, where appropriate.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= GLOSSARY ================= -->
+<section id="glossary">
+  <h2>Glossary</h2>
+  <div class="tbl"><table><tbody>
+    <tr><td style="width:220px"><strong>Cloudflare Pages</strong></td><td>Cloudflare's website hosting. It publishes the GitHub repository automatically.</td></tr>
+    <tr><td><strong>Pages Function</strong></td><td>Code that runs on Cloudflare when a page calls <code>/api/…</code>. This is the portal's back end.</td></tr>
+    <tr><td><strong>KV</strong></td><td>Cloudflare's key-value storage; the portal's database.</td></tr>
+    <tr><td><strong>Worker</strong></td><td>A small program that runs on Cloudflare. The daily Worker runs on a schedule (a "cron trigger").</td></tr>
+    <tr><td><strong>Cloudflare Access / Zero Trust</strong></td><td>Cloudflare's sign-in protection. It decides who can open the site.</td></tr>
+    <tr><td><strong>Access application</strong></td><td>A set of addresses Access protects, with the rules (policies) for who may enter.</td></tr>
+    <tr><td><strong>Access group</strong></td><td>A named list of emails used in policies.</td></tr>
+    <tr><td><strong>AUD tag</strong></td><td>An application's unique ID. The API uses it to confirm a sign-in came from the right application.</td></tr>
+    <tr><td><strong>Service token</strong></td><td>A sign-in for a program rather than a person, used by the daily Worker.</td></tr>
+    <tr><td><strong>One-time PIN</strong></td><td>Sign-in with a code sent by email; there are no passwords.</td></tr>
+    <tr><td><strong>Deployment</strong></td><td>One published version of the site. Earlier deployments can be restored.</td></tr>
+    <tr><td><strong>Power Automate HTTP trigger</strong></td><td>A web address that starts a flow when the portal sends it an email to deliver.</td></tr>
+    <tr><td><strong>Server-to-Server OAuth app</strong></td><td>A Zoom app that lets the portal read meetings without a person signing in.</td></tr>
+    <tr><td><strong>CNAME record</strong></td><td>A DNS entry that points a web address (like instructors.clearhq.org) at another (the pages.dev address).</td></tr>
+  </tbody></table></div>
+</section>
+<p class="foot">CLEAR Learning · Instructor Portal Administrator Guide · Keep a PDF copy outside the portal</p>
+</main>
+</div>
+</body>
+</html>
