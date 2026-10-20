@@ -171,6 +171,7 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
   <a href="#reports">8. Evaluation reports</a>
   <a href="#expenses">9. Expenses and hours</a>
   <a href="#records">Instructor records</a>
+  <a href="#files">Program files</a>
   <a href="#email">Emails</a>
   <a href="#help">Troubleshooting</a>
 </nav>
@@ -195,6 +196,7 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
   </div>
   <div class="legend"><span><i style="background:var(--blue-lt);border:1px solid var(--blue)"></i>Staff work</span><span><i style="background:var(--green-lt);border:1px solid var(--green)"></i>Instructors' work</span><span><i style="background:var(--gold-lt);border:1px solid var(--gold)"></i>Happens automatically</span></div>
   <p style="margin-top:12px">Unchanged: the programs are still built in Novi and TalentLMS as they are today, and Zoom meetings are still created in TalentLMS. Instructors who need to withdraw after being confirmed, or who can't cover a session, still call the program facilitator.</p>
+  <p>Program PowerPoints and PDFs no longer need to be emailed. They stay in SharePoint, and approved instructors download the current versions from the portal's <span class="ui">Program files</span> tab. See <a href="#files">Program files</a>.</p>
 
   <h3 id="tools">The tools</h3>
   <div class="tools">
@@ -214,7 +216,7 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
     <div><b>7 and 2 days before the response date:</b> reminders go to approved instructors who haven't responded.</div>
     <div><b>After the response date:</b> answers lock; staff confirm instructors and send selection notices.</div>
     <div><b>By 1 week before the first live session:</b> Zoom links are in place. Anything missing appears on the Overview.</div>
-    <div><b>Before the cohort starts:</b> download the cohort kit for the survey links, QR codes and welcome email.</div>
+    <div><b>Before the cohort starts:</b> download the cohort kit for the survey links, QR codes and welcome email, and check that the program's files in SharePoint are current. Instructors download them from Program files.</div>
     <div><b>From each instructor's last session:</b> they can submit their expense and hours report.</div>
     <div><b>After the cohort:</b> publish evaluation reports to instructors.</div>
   </div>
@@ -501,7 +503,7 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
   <h3>Instructors tab</h3>
   <ul>
     <li><strong>Contact details:</strong> each instructor's name (Last, First), every email they may sign in with, active status, notes, and the format they teach (<em>Teaches</em>). Instructors set their own format in the portal; staff can change it here.</li>
-    <li><strong>Teaching approvals:</strong> tick the programs each instructor is approved to teach.</li>
+    <li><strong>Teaching approvals:</strong> tick the programs each instructor is approved to teach. Approvals also decide which folders they see on the <a href="#files">Program files</a> tab.</li>
     <li><span class="ui">Paste names and emails</span> adds or updates several instructors at once, for example from the master instructor file. Each instructor has a <span class="ui">Preview page</span> link that shows their portal exactly as they see it.</li>
   </ul>
   <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/admin-dashboard</span></div><div class="screen"><div class="app-top"><div class="t">Instructor Portal Staff Dashboard</div><div class="tabs2"><span class="">Overview</span><span class="">Responses</span><span class="">Selection</span><span class="">Programs</span><span class="on">Instructors</span><span class="">Staff</span><span class="">Activity</span></div></div>
@@ -533,6 +535,72 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
   </ul>
 </section>
 
+<section id="files">
+  <h2>Program files</h2>
+  <p class="lead">Instructors download program PowerPoints and PDFs from the <span class="ui">Program files</span> tab of the Instructor Portal. The files are read straight from SharePoint each time, so there's nothing to upload to the portal: update a file in SharePoint and instructors get the new version immediately.</p>
+  <p>The files live in the <strong>Instructor Program Files</strong> folder on the CLEAR Staff SharePoint site, with one folder per program. Instructors never see SharePoint or need a Microsoft account; each download goes through a private link that expires within the hour.</p>
+
+  <h3>Updating a file</h3>
+  <ol class="steps">
+    <li>Open the program's folder in <strong>Instructor Program Files</strong> in SharePoint.</li>
+    <li>Upload the new version <strong>with the same file name</strong> and choose <span class="ui">Replace</span>, or edit the file in place.</li>
+    <li>That's all. Instructors who downloaded the earlier version now see an <em>Updated</em> badge on it, and a count on their Program files tab.</li>
+  </ol>
+  <div class="note"><strong>A new file name makes a new file.</strong> If you upload a file under a different name, instructors see it as a new file and the old one stays alongside it. Delete the old one from SharePoint so nobody downloads it by mistake.</div>
+  <div class="tip"><strong>Keep drafts out of sight.</strong> Anything whose name starts with an underscore, such as a <span class="path">_Drafts</span> or <span class="path">_Archive</span> folder, is hidden from instructors. Office's temporary lock files are hidden automatically.</div>
+
+  <h3>Organizing a program's folder</h3>
+  <ul>
+    <li><strong>Files directly in the program folder</strong> appear first, with no heading. This suits material every instructor needs, like a participant guide.</li>
+    <li><strong>Subfolders become headings.</strong> For example, NCIT Basic could hold <em>US Virtual</em>, <em>CAN Virtual</em> and <em>In-Person</em> folders. One more level works too: <em>In-Person &gt; US</em> shows as the heading <em>In-Person / US</em>. Files any deeper than that don't appear.</li>
+    <li><strong>Order is alphabetical</strong>, with numbers in order (2 before 10). Start names with numbers, such as <em>1 US Virtual</em>, to set the order yourself.</li>
+  </ul>
+
+  <h3>Who sees which folder</h3>
+  <p>An instructor sees a program's folder when they're approved for that program on the <a href="#records">Teaching approvals</a> grid. Everyone approved for a program sees every subfolder in it.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>SharePoint folder</th><th>Seen by instructors approved for</th></tr></thead>
+    <tbody>
+      <tr><td>BMT - Advanced Concepts in Regulatory Governance</td><td>ACRG</td></tr>
+      <tr><td>BMT - Getting the Most From Your Board</td><td>Board Chair Training (Getting the Most From Your Board)</td></tr>
+      <tr><td>NCIT Applied Investigative Techniques</td><td>NCIT AIT</td></tr>
+      <tr><td>NCIT Basic</td><td>NCIT Basic</td></tr>
+      <tr><td>NCIT Specialized</td><td>NCIT Specialized</td></tr>
+      <tr><td>NCIT Workshops</td><td>Any NCIT workshop</td></tr>
+      <tr><td>SRA - Executive Leadership Program for Regulators</td><td>ELPR</td></tr>
+      <tr><td>SRA - Staffing a Board</td><td>SRA: Staffing a Board</td></tr>
+      <tr><td>SRA - Soft Skills for Regulators</td><td>Nobody yet: hidden from instructors until the course is published</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li>An instructor with <strong>no approvals ticked</strong> sees every folder, just as they see every program.</li>
+    <li><strong>Before adding a new program folder or renaming one</strong>, tell the administrator so it can be linked to the right course. A folder the portal doesn't recognize is open to every instructor.</li>
+    <li>Approvals don't depend on format: an instructor approved for NCIT Basic sees the US, Canadian and in-person materials alike.</li>
+  </ul>
+
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>instructors.clearhq.org/?as=i_barton#/files</span></div><div class="screen"><div class="app-top"><div class="t"><small>CLEAR Learning</small>Instructor Portal</div><div class="tabs2"><span class="">Programs<span class="n" style="background:#DDA838;color:#4A0620">2</span></span><span class="">My assignments<span class="n" style="background:rgba(255,255,255,.2);color:#fff">2</span></span><span class="on anc"><i class="co r">1</i>Program files<span class="n" style="background:rgba(255,255,255,.2);color:#fff">1</span></span><span class="">Evaluation reports<span class="n" style="background:rgba(255,255,255,.2);color:#fff">1</span></span><span class="">My profile</span></div></div>
+<div class="note2">You're previewing <b>Barton, Andrew</b>'s page as staff. Buttons are turned off here; enter answers for an instructor from the Responses tab of the dashboard.</div>
+<div class="card" style="padding:0;overflow:hidden"><div class="ph" style="margin:0;border-radius:0"><h3 style="flex:1">▾ NCIT Basic</h3><span class="facts" style="font-weight:700">23 files</span><span class="pill gold">1 updated</span></div>
+<div class="row" style="padding:8px 15px;border-bottom:1px solid #EEECEF"><span style="flex:none;width:40px;text-align:center;background:#64092C;color:#fff;font-size:9.5px;font-weight:800;border-radius:4px;padding:2px 0">PDF</span><div class="grow"><b>Participant Guide</b><div class="facts">793 KB, last changed Jan 6, 2027</div></div><span class="facts">Downloaded Jan 8, 2027</span><span class="btn ghost">Download</span></div>
+<div style="padding:6px 15px;background:#FAF7F8;border-bottom:1px solid #EEECEF;font-weight:700;font-size:12px;color:#484848" ><i class="co" style="position:static;display:inline-flex;vertical-align:middle;margin-right:6px;width:22px;height:22px;font-size:12px">2</i>1 US Virtual</div>
+<div class="row anc" style="padding:8px 15px;background:#FFFBF1;border-bottom:1px solid #EEECEF"><span style="flex:none;width:40px;text-align:center;background:#C43E1C;color:#fff;font-size:9.5px;font-weight:800;border-radius:4px;padding:2px 0">PPTX</span><div class="grow"><b>Module 1 - Foundations of Investigation</b><div class="facts">9.4 MB, last changed Feb 15, 2027</div></div><i class="co" style="position:static;display:inline-flex;vertical-align:middle;margin-right:6px;width:22px;height:22px;font-size:12px">3</i><span class="pill gold">Updated</span><span class="btn">Download</span></div>
+<div class="row" style="padding:8px 15px;border-bottom:1px solid #EEECEF"><span style="flex:none;width:40px;text-align:center;background:#C43E1C;color:#fff;font-size:9.5px;font-weight:800;border-radius:4px;padding:2px 0">PPTX</span><div class="grow"><b>Module 2 - Planning the Investigation</b><div class="facts">7.1 MB, last changed Jan 6, 2027</div></div><span class="btn">Download</span></div>
+<div style="padding:6px 15px;background:#FAF7F8;border-bottom:1px solid #EEECEF;font-weight:700;font-size:12px;color:#484848">2 CAN Virtual</div>
+<div class="row" style="padding:8px 15px;border-bottom:0"><span style="flex:none;width:40px;text-align:center;background:#C43E1C;color:#fff;font-size:9.5px;font-weight:800;border-radius:4px;padding:2px 0">PPTX</span><div class="grow"><b>Module 1 - Foundations of Investigation (CAN)</b><div class="facts">9.2 MB, last changed Jan 6, 2027</div></div><span class="btn">Download</span></div></div>
+<div class="card" style="padding:0;overflow:hidden;margin:0"><div class="ph blue" style="margin:0;border-radius:0"><h3 style="flex:1;color:#084D78">▸ SRA - Staffing a Board</h3><span class="facts" style="font-weight:700">6 files</span></div></div></div></div><figcaption><b>Figure 18.</b> The Program files tab, previewed for an instructor from the Instructors tab.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>The count on the tab is the number of files updated since the instructor last downloaded them, or the total number of files when nothing has changed.</span></li><li><b class="n">2</b><span>Each subfolder in SharePoint becomes a heading. The number at the start of the folder name sets the order.</span></li><li><b class="n">3</b><span>Updated means the file changed in SharePoint after this instructor downloaded it. Files they've already got show the date they downloaded them.</span></li></ol>
+
+  <h3>Checking what an instructor has</h3>
+  <p>Open the instructor's <span class="ui">Preview page</span> from the Instructors tab and choose <span class="ui">Program files</span>. You see their folders, which files they've downloaded and when, and anything updated since. Downloading from a preview is fine: it's logged as a staff preview and doesn't change the instructor's <em>Updated</em> badges.</p>
+
+  <h3>Download log</h3>
+  <p>When you're signed in as staff, the top of the Instructor Portal (for example, on any Preview page) has a <span class="ui">File downloads</span> link. It downloads a spreadsheet of every program file download, newest first, kept for two years. Filter it by instructor or file to answer "does she have the latest deck?"</p>
+  <figure class="mock"><div class="frame"><div class="chrome"><i></i><i></i><i></i><span>program-file-downloads-2027-02-18.csv</span></div><div class="screen" style="background:#fff"><table class="t"><thead><tr><th>Date and time (ET)</th><th>Downloaded by</th><th>Instructor</th><th>Program</th><th>File</th><th class="anc"><i class="co r">1</i>Staff preview</th></tr></thead><tbody>
+<tr><td>2/18/27, 10:42 AM</td><td>abarton@example.com</td><td>Barton, Andrew</td><td>NCIT Basic</td><td>Module 1 - Foundations of Investigation.pptx</td><td></td></tr>
+<tr><td>2/17/27, 3:15 PM</td><td>staff@clearhq.org</td><td>Cooley, Mandi</td><td>NCIT Basic</td><td>Participant Guide.pdf</td><td>Yes</td></tr>
+<tr><td>2/16/27, 9:03 AM</td><td>mcooley@example.com</td><td>Cooley, Mandi</td><td>SRA - Staffing a Board</td><td>Staffing a Board deck.pptx</td><td></td></tr></tbody></table></div></div><figcaption><b>Figure 19.</b> The download log, opened in Excel.</figcaption></figure><ol class="key"><li><b class="n">1</b><span>Yes marks a download made by staff while previewing that instructor's page, not by the instructor.</span></li></ol>
+
+  <div class="note"><strong>Staff warning on the Program files tab.</strong> The portal's connection to SharePoint uses a Microsoft credential that has to be renewed every two years. From 30 days before it expires, staff see a warning at the top of the Program files tab. Let the administrator know when it appears; renewal takes a few minutes and instructors aren't affected if it's done in time.</div>
+</section>
 <section id="email">
   <h2>Emails the portal sends</h2>
   <div class="tbl"><table>
@@ -562,6 +630,9 @@ ol.key li b.n{width:24px;height:24px;border-radius:50%;background:#DDA838;color:
       <tr><td>The agenda window doesn't open</td><td>Allow pop-ups for the portal in your browser, then try again.</td></tr>
       <tr><td>An instructor can't find the expense button, or it says it isn't open</td><td>Reports open on the day of their last confirmed session. Check they're Confirmed on the Selection tab for that program.</td></tr>
       <tr><td>An instructor's name, pay rate or details don't fill in on the expense form</td><td>Their email in the expense admin's instructor list doesn't match the email they sign in with. Update it in the expense admin.</td></tr>
+<tr><td>An instructor can't see a program's files</td><td>Check their teaching approvals, then open their Preview page and choose Program files. If the folder was added or renamed recently, ask the administrator to link it to its course.</td></tr>
+      <tr><td>An instructor sees an old version of a file</td><td>Check the new version replaced the old one under the same name in SharePoint. If it was uploaded under a new name, delete the old file.</td></tr>
+      <tr><td>Program files says it's unavailable</td><td>The SharePoint connection needs attention, often an expired credential. Contact the administrator; the rest of the portal keeps working.</td></tr>
       <tr><td>A report name didn't match the roster</td><td>Fix the name with a data correction in the report tool, or on the Instructors tab, then publish again.</td></tr>
     </tbody>
   </table></div>
