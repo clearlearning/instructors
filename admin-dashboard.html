@@ -312,7 +312,7 @@ async function load(keep=true){
 
 function render(){
   const me=D.me;
-  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/program-scheduler">Program Scheduler</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
+  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/program-scheduler">Program Scheduler</a> &nbsp; <a href="/coordinator-guide" target="_blank">Coordinator guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===U.tab));
   const fn={overview:vOverview,responses:vResponses,selection:vSelection,programs:vPrograms,roster:vRoster,staff:vStaff,log:vLog}[U.tab];
   const y=window.scrollY, ae=document.activeElement, refocus=ae&&ae.type==='search'?{pos:ae.selectionStart}:null;
@@ -498,6 +498,43 @@ async function downloadKit(pid){
   toast(warn.length?`Kit downloaded. ${warn.length} item${warn.length>1?'s':''} to check; see READ ME in the kit.`:'Cohort kit downloaded');
 }
 function kitBadge(p){const k=kitPlan(p);if(!k.supported||p.status==='draft')return '';return k.ready?'<span class="pill" style="background:var(--avail-lt);color:var(--avail);text-transform:none">Kit ready</span>':'';}
+
+/* ---------- Instructor profiles ---------- */
+const profOf=r=>(D.profiles||{})[r.id]||null;
+function fullName(p){return [p.first,p.middle,p.last].filter(Boolean).join(' ')+(p.suffix?', '+p.suffix:'');}
+// The roster name (Last, First) is what evaluation reports and expenses match on; flag a profile that differs.
+function nameDiffers(r,p){const [l,f]=String(r.name).split(',').map(s=>s.trim().toLowerCase());return !!p&&!!p.last&&(l!==p.last.toLowerCase()||(f&&f!==String(p.first||'').toLowerCase()));}
+function emailDiffers(r,p){return !!p&&!!p.email&&!(r.emails||[]).map(e=>e.toLowerCase()).includes(p.email.toLowerCase());}
+function profileLink(r){const p=profOf(r);if(!p||!p.updatedAt&&!p.headshotAt)return '<span class="facts">No profile</span>';
+  const flag=nameDiffers(r,p)||emailDiffers(r,p);
+  return `<button class="btn link" onclick="profileDlg('${r.id}')">Profile</button>${flag?'<span class="pill gold" title="The profile name or email differs from the roster">Check</span>':''}`;}
+function profileDlg(id){
+  const r=inst(id),p=profOf(r)||{},a=p.address||{};
+  const addr=[a.line1,a.line2,[a.city,a.region].filter(Boolean).join(', ')+(a.postal?' '+a.postal:''),a.country].filter(x=>x&&x.trim()).map(esc).join('<br>');
+  const row=(l,v)=>`<tr><th style="width:150px;text-align:left;vertical-align:top;padding:5px 10px 5px 0">${l}</th><td style="padding:5px 0">${v||'<span class="facts">Not provided</span>'}</td></tr>`;
+  let warn='';
+  if(nameDiffers(r,p)) warn+=`<div class="notice"><strong>The profile name differs from the roster.</strong> The roster lists <em>${esc(r.name)}</em>; the profile says <em>${esc(fullName(p))}</em>. Evaluation reports and expense reports match on the roster name, so update it on this tab if the instructor's name has changed.</div>`;
+  if(emailDiffers(r,p)) warn+=`<div class="notice"><strong>The contact email isn't one of their sign-in addresses.</strong> They sign in with ${esc((r.emails||[]).join(', '))}. If they'd like to sign in with ${esc(p.email)}, add it to their emails here and to the Zero Trust instructor group.</div>`;
+  openDlg(`Profile: ${r.name}`,`${warn}<div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+    <div style="flex:none;text-align:center">${p.headshotAt?`<img src="/api/headshot/${r.id}?t=${encodeURIComponent(p.headshotAt)}" alt="Headshot of ${esc(r.name)}" style="width:150px;height:150px;object-fit:cover;border-radius:50%;border:1px solid var(--line)"><div><a class="btn link" href="/api/headshot/${r.id}" download="${esc((p.last||'headshot')+'_'+(p.first||''))}.jpg">Download photo</a></div>`:'<div class="facts" style="width:150px;height:150px;border-radius:50%;background:#FAF7F8;display:flex;align-items:center;justify-content:center">No photo</div>'}</div>
+    <table style="flex:1;min-width:260px;border-collapse:collapse;font-size:14px"><tbody>
+      ${row('Name',esc(fullName(p)))}${row('Preferred name',esc(p.preferred||''))}${row('Job title',esc(p.title||''))}${row('Employer',esc(p.employer||''))}
+      ${row('Phone',esc(p.phone||''))}${row('Email',p.email?`<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>`:'')}${row('Mailing address',addr)}</tbody></table></div>
+    <h3 style="margin-top:16px">Professional bio</h3><div class="card" style="padding:12px 14px">${p.bio||'<span class="facts">Not provided</span>'}</div>
+    <p class="facts" style="margin-top:8px">Last updated ${p.updatedAt?esc(stamp(p.updatedAt)):'never'}${p.updatedBy&&p.updatedBy!==(r.emails||[])[0]?' by '+esc(p.updatedBy):''}.</p>`,
+    `<button class="btn ghost" onclick="copyBio('${r.id}')">Copy bio</button><a class="btn ghost" href="/?as=${r.id}#/profile" target="_blank" style="text-decoration:none">Open in their portal</a><button class="btn" onclick="closeDlg()">Done</button>`);
+}
+async function copyBio(id){const p=profOf(inst(id))||{};const tmp=document.createElement('div');tmp.innerHTML=p.bio||'';
+  try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([p.bio||''],{type:'text/html'}),'text/plain':new Blob([tmp.innerText],{type:'text/plain'})})]);toast('Bio copied with its formatting');}
+  catch(e){try{await navigator.clipboard.writeText(tmp.innerText);toast('Bio copied');}catch(e2){toast('Copying isn\u2019t allowed in this browser.');}}}
+function exportProfiles(){
+  if(typeof XLSX==='undefined'){toast('The spreadsheet tool didn\u2019t load. Reload the page and try again.');return;}
+  const rows=D.roster.map(r=>{const p=profOf(r)||{},a=p.address||{},tmp=document.createElement('div');tmp.innerHTML=p.bio||'';
+    return {'Roster name':r.name,'Active':r.active===false?'No':'Yes','First':p.first||'','Middle':p.middle||'','Last':p.last||'','Suffix':p.suffix||'','Preferred name':p.preferred||'','Job title':p.title||'','Employer':p.employer||'','Phone':p.phone||'','Contact email':p.email||'','Sign-in emails':(r.emails||[]).join('; '),
+      'Street':a.line1||'','Street 2':a.line2||'','City':a.city||'','State/Province':a.region||'','ZIP/Postal code':a.postal||'','Country':a.country||'','Headshot':p.headshotAt?'Yes':'No','Bio':tmp.innerText.trim(),'Profile updated':p.updatedAt?new Date(p.updatedAt).toLocaleDateString():''};});
+  const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Instructor profiles');
+  XLSX.writeFile(wb,`Instructor profiles ${new Date().toISOString().slice(0,10)}.xlsx`);
+}
 
 /* ---------- Zoom links ---------- */
 function zoomPanel(){
@@ -1053,7 +1090,7 @@ function vRoster(){
     <div class="bar"><input type="search" placeholder="Filter by name or email" value="${esc(U.filter)}" oninput="U.filter=this.value;clearTimeout(window._f);window._f=setTimeout(render,250)"><span class="grow"></span>
     <button class="btn ghost" onclick="copyText('${withEmail.flatMap(r=>r.emails).join(', ')}','Copied ${withEmail.flatMap(r=>r.emails).length} emails')">Copy all active emails</button>
     ${D.accessSync?`<button class="btn ghost" onclick="syncNow()">Sync Access group now</button>`:''}
-    <button class="btn ghost" onclick="pasteRoster()">Paste names and emails</button><button class="btn ghost" onclick="U.rosterDraft.push({name:'',emails:[],active:true,notes:''});U.rosterDirty=true;render()">Add instructor</button>
+    <button class="btn ghost" onclick="exportProfiles()">Export profiles</button><button class="btn ghost" onclick="pasteRoster()">Paste names and emails</button><button class="btn ghost" onclick="U.rosterDraft.push({name:'',emails:[],active:true,notes:''});U.rosterDirty=true;render()">Add instructor</button>
     <button class="btn" ${U.rosterDirty?'':'disabled'} onclick="saveRoster()">Save instructors</button></div>`;
   const f=U.filter.toLowerCase();
   h+=`<div class="tbl-wrap"><table><thead><tr><th style="width:60px">Active</th><th style="width:240px">Name (Last, First)</th><th>Emails</th><th style="width:150px" title="Set by the instructor in the portal; staff can change it here">Teaches</th><th>Notes</th><th style="width:90px">Assigned</th><th style="width:150px"></th></tr></thead><tbody>`+
@@ -1064,7 +1101,7 @@ function vRoster(){
       <td><select title="${esc(r.deliveryBy?'Set by '+r.deliveryBy+(r.deliveryAt?', '+stamp(r.deliveryAt):''):'Not stated yet: sees online and in-person programs')}" onchange="U.rosterDraft[${i}].delivery=this.value;U.rosterDraft[${i}].deliveryEdited=true;markRoster()"><option value="" ${!r.delivery?'selected':''}>Not stated</option>${Object.entries(DELIV).map(([v,l])=>`<option value="${v}" ${r.delivery===v?'selected':''}>${l}</option>`).join('')}</select></td>
       <td><input type="text" value="${esc(r.notes||'')}" style="width:100%" onchange="U.rosterDraft[${i}].notes=this.value;markRoster()"></td>
       <td>${r.id?loadCount(r.id):''}</td>
-      <td style="white-space:nowrap">${r.id?`<a href="/?as=${r.id}" target="_blank">Preview page</a>`:''} ${r.id?'':`<button class="btn link" onclick="U.rosterDraft.splice(${i},1);render()">Remove</button>`}</td></tr>`).join('')+`</tbody></table></div>`;
+      <td style="white-space:nowrap">${r.id?`${profileLink(r)} <a href="/?as=${r.id}" target="_blank">Preview page</a>`:''} ${r.id?'':`<button class="btn link" onclick="U.rosterDraft.splice(${i},1);render()">Remove</button>`}</td></tr>`).join('')+`</tbody></table></div>`;
   return h;
 }
 function vQuals(L,seg){
