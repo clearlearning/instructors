@@ -231,7 +231,7 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 <body>
 <header class="top">
   <div class="top-in">
-    <div class="brand"><small>CLEAR Learning</small><h1>Instructor Portal</h1></div>
+    <div class="brand"><small>CLEAR Learning</small><h1 id="portal-name">Instructor Portal</h1></div>
     <div class="who" id="who"></div>
   </div>
   <nav class="tabs" role="tablist" id="tabs">
@@ -417,7 +417,7 @@ function renderWho(){
   document.getElementById('who').innerHTML =
     `<strong>${esc(name)}</strong>${esc(me.email)}<br>` +
     (me.isStaff ? `<a href="/admin-dashboard">Staff dashboard</a> &nbsp; <a href="/api/files/log.csv" title="Download a spreadsheet of every program file download">File downloads</a> &nbsp; ` : '') +
-    `<a href="/instructor-guide" target="_blank">Guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
+    (isFac() ? '' : `<a href="/manuals/instructor-guide" target="_blank">Guide</a> &nbsp; `) + `<a href="/cdn-cgi/access/logout">Sign out</a>`;
 }
 
 function render(){
@@ -431,7 +431,10 @@ function render(){
   const rp=d.reports||[], unread=rp.filter(r=>!r.viewedAt).length;
   setN('n-reports', unread||rp.length, unread>0, unread?`${unread} new report${unread>1?'s':''}`:`${rp.length} reports`);
   updFilesN();
-  // Facilitators: "Available sessions" instead of Programs, and no evaluation reports.
+  // Facilitators: "Facilitator Portal", "Available sessions" instead of Programs, and no evaluation reports.
+  const portalName = isFac() ? 'Facilitator Portal' : 'Instructor Portal';
+  const pn=document.getElementById('portal-name'); if (pn && pn.textContent!==portalName) pn.textContent=portalName;
+  document.title = portalName + ' | CLEAR Learning';
   const fac=isFac(), pt=document.querySelector('.tab[data-tab="programs"]'), rt=document.querySelector('.tab[data-tab="reports"]');
   if (pt && pt.firstChild) pt.firstChild.textContent = fac ? 'Available sessions' : 'Programs';
   if (rt) rt.hidden = fac;
@@ -441,7 +444,7 @@ function render(){
 
   const main=document.getElementById('main');
   let html='';
-  if (d.viewingAs) html += `<div class="notice">You're previewing <strong>${esc(d.instructor ? d.instructor.name : 'an unknown instructor')}</strong>'s page as staff. Buttons are turned off here; enter answers for an instructor from the Responses tab of the dashboard.</div>`;
+  if (d.viewingAs) html += `<div class="notice">You're previewing <strong>${esc(d.instructor ? d.instructor.name : 'an unknown instructor')}</strong>'s page as staff. Buttons are turned off here; assign people from the Selection tab of the dashboard.</div>`;
   if (!d.instructor && !d.viewingAs) {
     main.innerHTML = html + `<div class="empty"><h3>Your email isn't linked to an instructor record</h3><p>You're signed in as staff. Open the <a href="/admin-dashboard">staff dashboard</a>, or add ${esc(d.me.email)} to an instructor on the Instructors tab.</p></div>`;
     return;
