@@ -513,14 +513,15 @@ async function adminData(env, me) {
     assignments[p.id] = a;
   });
   const zoomLast = await getJSON(env, 'zoom:last', null), zoomReview = await getJSON(env, 'zoom:review', { items: [] });
-  const profileList = await Promise.all(me.roster.map(r => getJSON(env, 'profile:' + r.id, null)));
+  const people = [...me.roster, ...me.facilitators];
+  const profileList = await Promise.all(people.map(r => getJSON(env, 'profile:' + r.id, null)));
   const profiles = {};
-  me.roster.forEach((r, i) => { if (profileList[i]) profiles[r.id] = profileList[i]; });
+  people.forEach((r, i) => { if (profileList[i]) profiles[r.id] = profileList[i]; });
   return {
     me: publicMe(me), today,
     zoom: { last: zoomLast, review: (zoomReview.items || []).filter(i => { const p = programs.find(x => x.id === i.pid); const s = p && (p.sessions || []).find(x => x.id === i.sid); return s && !s.zoomLink; }), missing: missingLinks(programs, today) },
     profiles,
-    facilitators: me.facilitators, fresponses, facilitation: await getJSON(env, 'config:facilitation', { defaultName: 'Zephir' }),
+    facilitators: me.facilitators, fresponses, facilitation: facDefault(await getJSON(env, 'config:facilitation', null), me.staff),
     programs, roster: me.roster, responses, assignments,
     staff: me.staff, admins: me.admins,
     accessSync: !!(env.CF_API_TOKEN && env.CF_ACCOUNT_ID && env.CF_ACCESS_GROUP_ID),
@@ -1706,12 +1707,23 @@ async function saveFacilitators(env, body, me) {
     for (const [k, v] of Object.entries(r.mods || {})) if (LOGO_NAMES.includes(k) && Array.isArray(v) && v.length) mods[k] = [...new Set(v.map(normTitle).filter(Boolean))].slice(0, 60);
     out.push({ id: /^f_[a-z0-9]+$/i.test(r.id || '') ? r.id : 'f_' + rid('').replace(/^_/, ''), name, emails, active: r.active !== false, notes: String(r.notes || '').slice(0, 500), quals, mods });
   }
+  // Facilitators removed from the list: delete their answers and profile too.
+  const kept = new Set(out.map(f => f.id)), removed = (me.facilitators || []).filter(f => !kept.has(f.id));
   await putJSON(env, 'facilitators', out);
-  await log(env, me.email, 'Updated the facilitator list', `${out.length} facilitators`);
+  for (const f of removed) { await env.IA_KV.delete('fresp:' + f.id); await env.IA_KV.delete('profile:' + f.id); }
+  await log(env, me.email, 'Updated the facilitator list', `${out.length} facilitators${removed.length ? '; removed ' + removed.map(f => f.name).join(', ') : ''}`);
   return { ok: true, facilitators: out };
 }
+// The default facilitator is a staff member. A short name such as "Zephir" resolves to the full name on the Staff tab.
+function staffNameFor(name, staff) {
+  const n = String(name || '').trim().toLowerCase(), names = (staff || []).map(s => s.name).filter(Boolean);
+  return names.find(x => x.toLowerCase() === n) || names.find(x => x.toLowerCase().split(/\s+/)[0] === n) || name;
+}
+function facDefault(cfg, staff) {
+  return { ...(cfg || {}), defaultName: staffNameFor((cfg && cfg.defaultName) || 'Zephir', staff) };
+}
 async function saveFacilitation(env, body, me) {
-  const defaultName = String(body.defaultName || '').trim().slice(0, 120) || 'Zephir';
+  const defaultName = staffNameFor(String(body.defaultName || '').trim().slice(0, 120) || 'Zephir', me.staff);
   const cfg = { defaultName, updatedAt: new Date().toISOString(), updatedBy: me.email };
   await putJSON(env, 'config:facilitation', cfg);
   await log(env, me.email, 'Changed the default facilitator', defaultName);
@@ -1726,7 +1738,7 @@ function cleanFacStaffing(prog, body, me) {
     if (!valid.has(sid)) continue;
     const seen = new Set();
     const list = (arr || []).map(e => e.staff
-      ? { staff: String(e.staff).trim().slice(0, 120), role: FAC_ROLES.includes(e.role) ? e.role : 'Facilitator', status: 'Confirmed' }
+      ? { staff: staffNameFor(String(e.staff).trim().slice(0, 120), me.staff), role: FAC_ROLES.includes(e.role) ? e.role : 'Facilitator', status: 'Confirmed' }
       : (fids.has(e.fid) ? { fid: e.fid, role: FAC_ROLES.includes(e.role) ? e.role : 'Facilitator', status: e.status === 'Confirmed' ? 'Confirmed' : 'Tentative' } : null))
       .filter(e => e && (e.staff || e.fid) && !seen.has(e.staff || e.fid) && seen.add(e.staff || e.fid));
     if (list.length) fslots[sid] = list;
@@ -1742,7 +1754,7 @@ function facSelectionEmail(fac, prog, sessions, note, origin, test) {
     subject: (test ? '[TEST] ' : '') + `You're confirmed to facilitate: ${prog.title}${prog.cohort ? ' (' + prog.cohort + ')' : ''}`,
     html: emailShell("You've been selected to facilitate", `<p>Hello ${H(firstName(fac.name))},</p>
 <p>Thank you for sharing your availability. You're confirmed to facilitate in <strong>${H(prog.title)}</strong>${prog.cohort ? `, ${H(prog.cohort)}` : ''}${n ? ` (${n} session${n > 1 ? 's' : ''})` : ''}.</p>${noteBlock(note)}
-<p>Your sessions, dates and times are on the My assignments page of the Instructor Portal, with the instructors for each session and their contact numbers. Zoom links appear there before the first session, and you can download calendar files from that page.</p>`, origin, { label: 'View your assignments', href: origin + '/#/mine' })
+<p>Your sessions, dates and times are on the My assignments page of the Facilitator Portal, with the instructors for each session and their contact numbers. Zoom links appear there before the first session, and you can download calendar files from that page.</p>`, origin, { label: 'View your assignments', href: origin + '/#/mine' })
   };
 }
 function facAnnounceEmail(list, note, origin, test) {
@@ -1752,7 +1764,7 @@ function facAnnounceEmail(list, note, origin, test) {
 <p>CLEAR Learning has posted sessions that are available for you to facilitate. Please mark the sessions you would like to facilitate, and those you are not available for, by each program's response date. You can update your answers in the portal at any time before that date.</p>
 ${noteBlock(note)}
 <table style="width:100%;border-collapse:collapse">${list.map(programLine).join('')}</table>
-<p style="font-size:13px;color:#6E6B70">All session times are listed in Eastern Time. In the portal, you have the option to change the time zone to one of your choosing.</p>`, origin)
+<p style="font-size:13px;color:#6E6B70">All session times are listed in Eastern Time. In the portal, you have the option to change the time zone to one of your choosing.</p>`, origin, { label: 'Open the Facilitator Portal', href: origin })
   };
 }
 function facReminderEmail(x, note, origin, test, daysLeft) {
@@ -1763,7 +1775,7 @@ function facReminderEmail(x, note, origin, test, daysLeft) {
     subject: (test ? '[TEST] ' : '') + 'Reminder: sessions are available to facilitate',
     html: emailShell('Your availability is still needed', `<p>Hello${x.r.name ? ' ' + H(firstName(x.r.name)) : ''},</p>
 <p>${lead} Marking sessions "Not available" is just as helpful to our planning as marking them available.</p>${noteBlock(note)}
-<table style="width:100%;border-collapse:collapse">${x.list.map(programLine).join('')}</table>`, origin)
+<table style="width:100%;border-collapse:collapse">${x.list.map(programLine).join('')}</table>`, origin, { label: 'Open the Facilitator Portal', href: origin })
   };
 }
 // The programs (each narrowed to the sessions this facilitator can see) a facilitator should hear about.
