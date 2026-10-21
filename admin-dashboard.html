@@ -322,7 +322,7 @@ async function load(keep=true){
 
 function render(){
   const me=D.me;
-  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/program-scheduler">Program Scheduler</a> &nbsp; <a href="/coordinator-guide" target="_blank">Coordinator guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
+  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/program-scheduler">Program Scheduler</a> &nbsp; <a href="/manuals/coordinator-guide" target="_blank">Coordinator guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===U.tab));
   if(U.tab==='responses') U.tab='selection';
   const fn={overview:vOverview,selection:vSelection,programs:vPrograms,roster:vRoster,facilitators:vFacilitators,staff:vStaff,log:vLog}[U.tab];
@@ -515,7 +515,11 @@ function kitBadge(p){const k=kitPlan(p);if(!k.supported||p.status==='draft')retu
 // default staff facilitator until a contract facilitator is confirmed; locked sessions are staffed by CLEAR only.
 const fac=id=>(D.facilitators||[]).find(f=>f.id===id);
 const factive=()=>(D.facilitators||[]).filter(f=>f.active!==false);
-const defFac=()=>((D.facilitation||{}).defaultName)||'Zephir';
+// Staff who can facilitate, from the Staff tab, each listed once. The default is matched to its full staff name.
+const staffNames=()=>[...new Set((D.staff||[]).map(s=>String(s.name||'').trim()).filter(Boolean))];
+function staffFull(n){ const v=String(n||'').trim().toLowerCase(), L=staffNames(); return L.find(x=>x.toLowerCase()===v)||L.find(x=>x.toLowerCase().split(/\s+/)[0]===v)||n; }
+const defFac=()=>staffFull(((D.facilitation||{}).defaultName)||'Zephir');
+const facStaffChoices=()=>{ const L=staffNames(), d=defFac(); return L.includes(d)?L:[d,...L]; };
 const normT=t=>String(t||'').toLowerCase().replace(/\s*[-–—:]\s*(instructor[- ]?led|live)(\s+session)?\s*$/,'').replace(/^\s*live\s+session\s*[-–—:]\s*/,'').replace(/\s+(session\s+)?with\s+(the\s+)?instructor\s*$/,'').replace(/[^a-z0-9&]+/g,' ').replace(/\s+/g,' ').trim();
 const keyOfP=p=>{const m=String(p.logo||'').match(/([A-Za-z0-9]+)\.svg$/);return m?m[1]:'';};
 const lockedDefault=s=>/welcome|program review/i.test(s.title||'');
@@ -550,7 +554,7 @@ function editFPick(pid,sid,i,field,val){ const d=fdraftOf(pid); if(field==='remo
 function toggleLock(pid,sid){ const p=prog(pid), s=p.sessions.find(x=>x.id===sid), d=fdraftOf(pid); d.flocks[sid]=!isLockedS(pid,s);
   if(d.flocks[sid]&&d.fslots[sid]) d.fslots[sid]=d.fslots[sid].filter(e=>e.staff); U.assignDirty.add(pid); render(); }
 function pickFStaff(pid,sid){
-  const names=[...new Set([defFac(),...(D.staff||[]).map(s=>s.name).filter(Boolean)])];
+  const names=facStaffChoices();
   openDlg('Assign a staff facilitator',`<p class="sub">Assign a CLEAR staff member to facilitate this session. Contract facilitators don't see who it is.</p><select id="fs-n" style="width:100%">${names.map(n=>`<option>${esc(n)}</option>`).join('')}</select>`,
     `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="const d=fdraftOf('${pid}');d.fslots['${sid}']=[...(d.fslots['${sid}']||[]).filter(e=>!e.staff),{staff:document.getElementById('fs-n').value,role:'Facilitator',status:'Confirmed'}];U.assignDirty.add('${pid}');closeDlg();render()">Assign</button>`);
 }
@@ -563,28 +567,66 @@ function pickFAnyone(pid,sid){
 const facConfirmed=pid=>[...new Set(Object.values(fState(pid).fslots||{}).flat().filter(e=>e.fid&&e.status==='Confirmed').map(e=>e.fid))];
 
 /* ---------- Facilitators tab ---------- */
+// Laid out like the Instructors tab: Contact details and Facilitation approvals. Facilitators facilitate online only,
+// so there's no Teaches column.
 function vFacilitators(){
   if(!U.facDraft) U.facDraft=clone(D.facilitators||[]);
-  const L=U.facDraft, f=(U.ffilter||'').toLowerCase();
-  const rows=L.map((r,i)=>({r,i})).filter(({r})=>!f||r.name.toLowerCase().includes(f));
-  const names=[...new Set([defFac(),...(D.staff||[]).map(s=>s.name).filter(Boolean)])];
-  let h=`<h2>Facilitators</h2><p class="sub">Contract facilitators sign in to the Instructor Portal, mark the sessions they'd like to facilitate, and see their assignments with each session's instructors. Tick the programs each one is approved to facilitate; use <em>Modules</em> to limit a program to particular sessions or modules. A facilitator with nothing ticked sees every session that's open to contract facilitators.</p>
-    <div class="card"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><strong>Default facilitator</strong><select id="def-fac">${names.map(n=>`<option ${n===defFac()?'selected':''}>${esc(n)}</option>`).join('')}</select><button class="btn small ghost" onclick="saveDefFac()">Save</button>
-      <span class="facts">Facilitates every session until a contract facilitator or another staff member is confirmed. Contract facilitators never see this name.</span></div></div>
-    <div class="notice">Each facilitator's sign-in email must also be added to the <strong>CLEAR Facilitators</strong> Access group in Cloudflare Zero Trust before they can sign in.</div>
+  const L=U.facDraft;
+  const seg=`<div class="bar"><div class="seg" role="group" aria-label="View"><button aria-pressed="${U.facView!=='quals'}" onclick="U.facView='list';render()">Contact details</button><button aria-pressed="${U.facView==='quals'}" onclick="U.facView='quals';render()">Facilitation approvals</button></div></div>`;
+  if(U.facView==='quals') return vFacQuals(L,seg);
+  const withEmail=L.filter(r=>r.active!==false&&(r.emails||[]).length), names=facStaffChoices();
+  let h=`<h2>Facilitators</h2>${seg}<p class="sub">Contract facilitators sign in to the Facilitator Portal with any email listed here, mark the sessions they'd like to facilitate, and see their assignments with each session's instructors. Separate multiple emails with commas. Inactive facilitators can't sign in.</p>
+    <div class="err"><strong>Note:</strong> When adding or removing facilitators, make and save your changes, then send an email to <a href="mailto:avance@clearhq.org?subject=Facilitator%20Addition%20or%20Removal%20Notification&body=Hello%2C%0D%0A%0D%0AI%20have%20made%20a%20change%20to%20the%20facilitators%20listed%20in%20the%20Instructor%20Portal%20that%20requires%20a%20change%20to%20the%20Cloudflare%20Zero%20Trust%20policy%20for%20this%20site.%20The%20facilitator%20information%20and%20status%20are%20included%20below.%0D%0A%0D%0AFacilitator%20Name%3A%20%0D%0AEmail%3A%20%0D%0AAdded%20or%20Removed%20from%20Portal%3A%20%0D%0A" style="color:#0144db;font-weight:bold;">avance@clearhq.org</a> notifying of the change. This allows the admin to make the appropriate changes to the site\u2019s access permissions.</div>
+    <div class="card" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><strong>Default facilitator</strong><select id="def-fac">${names.map(n=>`<option ${n===defFac()?'selected':''}>${esc(n)}</option>`).join('')}</select><button class="btn small ghost" onclick="saveDefFac()">Save</button>
+      <span class="facts">Facilitates every session until a contract facilitator or another staff member is confirmed. Contract facilitators never see this name.</span></div>
+    <div class="bar"><input type="search" placeholder="Filter by name or email" value="${esc(U.ffilter||'')}" oninput="U.ffilter=this.value;clearTimeout(window._ff);window._ff=setTimeout(render,250)"><span class="grow"></span>
+    <button class="btn ghost" onclick="copyText('${withEmail.flatMap(r=>r.emails).join(', ')}','Copied ${withEmail.flatMap(r=>r.emails).length} emails')">Copy all active emails</button>
+    <button class="btn ghost" onclick="exportProfiles('facilitators')">Export profiles</button><button class="btn ghost" onclick="U.facDraft.push({name:'',emails:[],active:true,notes:'',quals:[],mods:{}});U.facDirty=true;render()">Add facilitator</button>
+    ${U.facDirty?'<button class="btn ghost" onclick="U.facDraft=null;U.facDirty=false;render()">Discard changes</button>':''}<button class="btn" ${U.facDirty?'':'disabled'} onclick="saveFacs()">Save facilitators</button></div>`;
+  const f=(U.ffilter||'').toLowerCase();
+  h+=`<div class="tbl-wrap"><table><thead><tr><th style="width:60px">Active</th><th style="width:240px">Name (Last, First)</th><th>Emails</th><th>Notes</th><th style="width:90px">Assigned</th><th style="width:220px"></th></tr></thead><tbody>`+
+    (L.map((r,i)=>({r,i})).filter(({r})=>!f||r.name.toLowerCase().includes(f)||(r.emails||[]).join(' ').includes(f)).map(({r,i})=>`<tr>
+      <td><input type="checkbox" ${r.active!==false?'checked':''} onchange="U.facDraft[${i}].active=this.checked;markFac()" aria-label="Active"></td>
+      <td><input type="text" value="${esc(r.name)}" placeholder="Last, First" style="width:100%" onchange="U.facDraft[${i}].name=this.value;markFac()"></td>
+      <td><input type="text" value="${esc((r.emails||[]).join(', '))}" style="width:100%;${(r.emails||[]).length?'':'border-color:#E0B54A;background:#FFFBF0'}" placeholder="Needs an email to sign in" onchange="U.facDraft[${i}].emails=this.value.split(/[,;\\s]+/).filter(Boolean);markFac()"></td>
+      <td><input type="text" value="${esc(r.notes||'')}" style="width:100%" onchange="U.facDraft[${i}].notes=this.value;markFac()"></td>
+      <td>${r.id?fLoad(r.id):''}</td>
+      <td style="white-space:nowrap">${r.id?`${profileLink(r)} <a href="/?as=${r.id}" target="_blank">Preview page</a> `:''}<button class="btn link" style="color:var(--red)" onclick="removeFac(${i})">Remove</button></td></tr>`).join('')||'<tr><td colspan="6" class="facts">No facilitators yet. Use Add facilitator to get started.</td></tr>')+`</tbody></table></div>`;
+  return h;
+}
+// Same grid as Teaching approvals. A ticked program can be limited to particular modules with the link under its box.
+function vFacQuals(L,seg){
+  const f=(U.ffilter||'').toLowerCase();
+  const rows=L.map((r,i)=>({r,i})).filter(({r})=>r.active!==false&&(!f||r.name.toLowerCase().includes(f)));
+  const unset=L.filter(r=>r.active!==false&&!(r.quals||[]).length).length;
+  let h=`<h2>Facilitators</h2>${seg}<p class="sub">Tick the programs each facilitator is approved to facilitate. Facilitators see only the open sessions in those programs, and announcements and reminders cover only those programs. Under a ticked box, choose <em>Modules</em> to limit that program to particular sessions or modules. A facilitator with nothing ticked sees every session open to contract facilitators.</p>
+    ${unset?`<div class="notice"><strong>${unset} active facilitator${unset>1?'s have':' has'} no approvals set</strong>, so ${unset>1?'they see':'they see'} every open session and get every announcement and reminder.</div>`:''}
     <div class="bar"><input type="search" placeholder="Filter by name" value="${esc(U.ffilter||'')}" oninput="U.ffilter=this.value;clearTimeout(window._ff);window._ff=setTimeout(render,250)"><span class="grow"></span>
-      <button class="btn ghost" onclick="U.facDraft.push({name:'',emails:[],active:true,notes:'',quals:[],mods:{}});U.facDirty=true;render()">Add facilitator</button>
-      ${U.facDirty?'<button class="btn ghost" onclick="U.facDraft=null;U.facDirty=false;render()">Discard changes</button>':''}<button class="btn" ${U.facDirty?'':'disabled'} onclick="saveFacs()">Save facilitators</button></div>
-    <div class="tbl-wrap"><table><thead><tr><th style="min-width:180px">Name</th><th style="min-width:200px">Sign-in emails</th><th>Active</th><th>Approved to facilitate</th><th>Notes</th><th></th></tr></thead><tbody>`;
-  h+=rows.map(({r,i})=>{const q=r.quals||[];
-    return `<tr><td><input value="${esc(r.name)}" placeholder="First Last" oninput="U.facDraft[${i}].name=this.value;markFac()" style="width:100%"></td>
-      <td><input value="${esc((r.emails||[]).join(', '))}" placeholder="name@example.com" oninput="U.facDraft[${i}].emails=this.value.split(/[,;\\s]+/).filter(Boolean);markFac()" style="width:100%"></td>
-      <td style="text-align:center"><input type="checkbox" ${r.active!==false?'checked':''} onchange="U.facDraft[${i}].active=this.checked;markFac()" aria-label="Active"></td>
-      <td><div class="fquals">${COURSES.map(([k,l])=>`<label class="fq ${q.includes(k)?'on':''}" title="${esc(l)}"><input type="checkbox" ${q.includes(k)?'checked':''} onchange="facQual(${i},'${k}',this.checked)"><img class="plogo sm" src="/images/${k}.svg" alt="" onerror="this.remove()">${esc(l)}${q.includes(k)?` <button class="btn link" onclick="event.preventDefault();modDlg(${i},'${k}')">${((r.mods||{})[k]||[]).length?((r.mods||{})[k].length+' modules'):'Modules'}</button>`:''}</label>`).join('')}</div>
-        ${q.length?'':'<div class="facts warn">Not set: sees every open session</div>'}</td>
-      <td><input value="${esc(r.notes||'')}" oninput="U.facDraft[${i}].notes=this.value;markFac()" style="width:100%"></td>
-      <td style="white-space:nowrap">${r.id?`<a href="/?as=${r.id}" target="_blank">Preview page</a>`:`<button class="btn link" onclick="U.facDraft.splice(${i},1);markFac();render()">Remove</button>`}</td></tr>`;}).join('')||'<tr><td colspan="6" class="facts">No facilitators yet. Add one to get started.</td></tr>';
+    <button class="btn" ${U.facDirty?'':'disabled'} onclick="saveFacs()">Save approvals</button></div>
+    <div class="tbl-wrap"><table class="quals"><thead><tr><th rowspan="2" style="min-width:200px">Facilitator</th>`;
+  const groups=[...new Set(COURSES.map(c=>c[2]))];
+  h+=groups.map(g=>`<th colspan="${COURSES.filter(c=>c[2]===g).length}" style="text-align:center">${esc(g)}</th>`).join('')+`<th rowspan="2"></th></tr><tr>`;
+  h+=COURSES.map(([k,l])=>`<th class="qh" title="${esc(l)}"><img class="plogo sm" src="/images/${k}.svg" alt="" onerror="this.remove()"><div>${esc(l)}</div><button class="btn link" style="font-size:11px" onclick="facQualCol('${k}')">All</button></th>`).join('')+`</tr></thead><tbody>`;
+  h+=rows.map(({r,i})=>{const q=r.quals||[];return `<tr><td><strong>${esc(r.name)}</strong>${q.length?`<div class="facts">${q.length} program${q.length>1?'s':''}</div>`:'<div class="facts warn">Not set: sees every open session</div>'}</td>`+
+    COURSES.map(([k,l])=>{const on=q.includes(k), m=((r.mods||{})[k]||[]).length;
+      return `<td style="text-align:center;vertical-align:top"><input type="checkbox" ${on?'checked':''} aria-label="${esc(r.name)}: ${esc(l)}" onchange="facQual(${i},'${k}',this.checked)">${on?`<div><button class="btn link" style="font-size:11px;padding:0" onclick="modDlg(${i},'${k}')" title="Limit to particular sessions or modules">${m?m+' module'+(m>1?'s':''):'All modules'}</button></div>`:''}</td>`;}).join('')+
+    `<td style="white-space:nowrap"><button class="btn link" onclick="facQualRow(${i},true)">All</button> <button class="btn link" onclick="facQualRow(${i},false)">Clear</button></td></tr>`;}).join('');
   return h+`</tbody></table></div>`;
+}
+function facQualRow(i,all){ const r=U.facDraft[i]; r.quals=all?COURSES.map(c=>c[0]):[]; if(!all) r.mods={}; U.facDirty=true; render(); }
+function facQualCol(k){ const rows=U.facDraft.filter(r=>r.active!==false); const allOn=rows.every(r=>(r.quals||[]).includes(k));
+  rows.forEach(r=>{ const q=new Set(r.quals||[]); if(allOn){ q.delete(k); if(r.mods) delete r.mods[k]; } else q.add(k); r.quals=COURSES.map(c=>c[0]).filter(x=>q.has(x)); }); U.facDirty=true; render(); }
+// Removing a facilitator deletes them when you save. Anyone with answers or picks is better set inactive, which keeps their history.
+function removeFac(i){
+  const r=U.facDraft[i];
+  if(r.id){
+    const answers=Object.keys((D.fresponses||{})[r.id]||{}).length;
+    const picks=D.programs.reduce((n,p)=>n+Object.values((D.assignments[p.id]||{}).fslots||{}).filter(l=>l.some(e=>e.fid===r.id)).length,0);
+    const warn=answers||picks?`\n\n${r.name} has ${answers?answers+' program'+(answers>1?'s':'')+' of answers':''}${answers&&picks?' and ':''}${picks?picks+' session pick'+(picks>1?'s':''):''}. To keep that history, cancel and untick Active instead.`:'';
+    if(!confirm(`Remove ${r.name||'this facilitator'}? When you save, they're deleted from the portal, along with their answers and profile.${warn}`)) return;
+  }
+  U.facDraft.splice(i,1); U.facDirty=true; render();
+  if(r.id) toast(`${r.name} will be removed when you choose Save facilitators. Also remove their email from the CLEAR Facilitators Access group.`);
 }
 function markFac(){ if(!U.facDirty){U.facDirty=true;render();} }
 function facQual(i,k,on){ const r=U.facDraft[i], q=new Set(r.quals||[]); on?q.add(k):q.delete(k); r.quals=COURSES.map(c=>c[0]).filter(x=>q.has(x)); if(!on&&r.mods) delete r.mods[k]; U.facDirty=true; render(); }
@@ -624,26 +666,34 @@ function profileLink(r){const p=profOf(r);if(!p||!p.updatedAt&&!p.headshotAt)ret
   const flag=nameDiffers(r,p)||emailDiffers(r,p);
   return `<button class="btn link" onclick="profileDlg('${r.id}')">Profile</button>${flag?'<span class="pill gold" title="The profile name or email differs from the roster">Check</span>':''}`;}
 function profileDlg(id){
-  const r=inst(id),p=profOf(r)||{},a=p.address||{};
+  // Facilitator profiles hold name, contact details and address only.
+  const isF=!inst(id)&&!!fac(id), r=inst(id)||fac(id),p=profOf(r)||{},a=p.address||{};
   const addr=[a.line1,a.line2,[a.city,a.region].filter(Boolean).join(', ')+(a.postal?' '+a.postal:''),a.country].filter(x=>x&&x.trim()).map(esc).join('<br>');
   const row=(l,v)=>`<tr><th style="width:150px;text-align:left;vertical-align:top;padding:5px 10px 5px 0">${l}</th><td style="padding:5px 0">${v||'<span class="facts">Not provided</span>'}</td></tr>`;
   let warn='';
-  if(nameDiffers(r,p)) warn+=`<div class="notice"><strong>The profile name differs from the roster.</strong> The roster lists <em>${esc(r.name)}</em>; the profile says <em>${esc(fullName(p))}</em>. Evaluation reports and expense reports match on the roster name, so update it on this tab if the instructor's name has changed.</div>`;
-  if(emailDiffers(r,p)) warn+=`<div class="notice"><strong>The contact email isn't one of their sign-in addresses.</strong> They sign in with ${esc((r.emails||[]).join(', '))}. If they'd like to sign in with ${esc(p.email)}, add it to their emails here and to the Zero Trust instructor group.</div>`;
+  if(nameDiffers(r,p)) warn+=`<div class="notice"><strong>The profile name differs from the ${isF?'Facilitators tab':'roster'}.</strong> The roster lists <em>${esc(r.name)}</em>; the profile says <em>${esc(fullName(p))}</em>. Evaluation reports and expense reports match on the roster name, so update it on this tab if the instructor's name has changed.</div>`;
+  if(emailDiffers(r,p)) warn+=`<div class="notice"><strong>The contact email isn't one of their sign-in addresses.</strong> They sign in with ${esc((r.emails||[]).join(', '))}. If they'd like to sign in with ${esc(p.email)}, add it to their emails here and to the Zero Trust ${isF?'facilitator':'instructor'} group.</div>`;
   openDlg(`Profile: ${r.name}`,`${warn}<div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
-    <div style="flex:none;text-align:center">${p.headshotAt?`<img src="/api/headshot/${r.id}?t=${encodeURIComponent(p.headshotAt)}" alt="Headshot of ${esc(r.name)}" style="width:150px;height:150px;object-fit:cover;border-radius:50%;border:1px solid var(--line)"><div><a class="btn link" href="/api/headshot/${r.id}" download="${esc((p.last||'headshot')+'_'+(p.first||''))}.jpg">Download photo</a></div>`:'<div class="facts" style="width:150px;height:150px;border-radius:50%;background:#FAF7F8;display:flex;align-items:center;justify-content:center">No photo</div>'}</div>
+    ${isF?'':`<div style="flex:none;text-align:center">${p.headshotAt?`<img src="/api/headshot/${r.id}?t=${encodeURIComponent(p.headshotAt)}" alt="Headshot of ${esc(r.name)}" style="width:150px;height:150px;object-fit:cover;border-radius:50%;border:1px solid var(--line)"><div><a class="btn link" href="/api/headshot/${r.id}" download="${esc((p.last||'headshot')+'_'+(p.first||''))}.jpg">Download photo</a></div>`:'<div class="facts" style="width:150px;height:150px;border-radius:50%;background:#FAF7F8;display:flex;align-items:center;justify-content:center">No photo</div>'}</div>`}
     <table style="flex:1;min-width:260px;border-collapse:collapse;font-size:14px"><tbody>
-      ${row('Name',esc(fullName(p)))}${row('Preferred name',esc(p.preferred||''))}${row('Job title',esc(p.title||''))}${row('Employer',esc(p.employer||''))}
+      ${row('Name',esc(fullName(p)))}${row('Preferred name',esc(p.preferred||''))}${isF?'':row('Job title',esc(p.title||''))+row('Employer',esc(p.employer||''))}
       ${row('Phone',esc(p.phone||''))}${row('Email',p.email?`<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>`:'')}${row('Mailing address',addr)}</tbody></table></div>
-    <h3 style="margin-top:16px">Professional bio</h3><div class="card" style="padding:12px 14px">${p.bio||'<span class="facts">Not provided</span>'}</div>
+    ${isF?'':`<h3 style="margin-top:16px">Professional bio</h3><div class="card" style="padding:12px 14px">${p.bio||'<span class="facts">Not provided</span>'}</div>`}
     <p class="facts" style="margin-top:8px">Last updated ${p.updatedAt?esc(stamp(p.updatedAt)):'never'}${p.updatedBy&&p.updatedBy!==(r.emails||[])[0]?' by '+esc(p.updatedBy):''}.</p>`,
-    `<button class="btn ghost" onclick="copyBio('${r.id}')">Copy bio</button><a class="btn ghost" href="/?as=${r.id}#/profile" target="_blank" style="text-decoration:none">Open in their portal</a><button class="btn" onclick="closeDlg()">Done</button>`);
+    `${isF?'':`<button class="btn ghost" onclick="copyBio('${r.id}')">Copy bio</button>`}<a class="btn ghost" href="/?as=${r.id}#/profile" target="_blank" style="text-decoration:none">Open in their portal</a><button class="btn" onclick="closeDlg()">Done</button>`);
 }
 async function copyBio(id){const p=profOf(inst(id))||{};const tmp=document.createElement('div');tmp.innerHTML=p.bio||'';
   try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([p.bio||''],{type:'text/html'}),'text/plain':new Blob([tmp.innerText],{type:'text/plain'})})]);toast('Bio copied with its formatting');}
   catch(e){try{await navigator.clipboard.writeText(tmp.innerText);toast('Bio copied');}catch(e2){toast('Copying isn\u2019t allowed in this browser.');}}}
-function exportProfiles(){
+function exportProfiles(kind){
   if(typeof XLSX==='undefined'){toast('The spreadsheet tool didn\u2019t load. Reload the page and try again.');return;}
+  if(kind==='facilitators'){
+    const rows=(D.facilitators||[]).map(r=>{const p=profOf(r)||{},a=p.address||{};
+      return {'Name':r.name,'Active':r.active===false?'No':'Yes','First':p.first||'','Middle':p.middle||'','Last':p.last||'','Suffix':p.suffix||'','Preferred name':p.preferred||'','Phone':p.phone||'','Contact email':p.email||'','Sign-in emails':(r.emails||[]).join('; '),
+        'Street':a.line1||'','Street 2':a.line2||'','City':a.city||'','State/Province':a.region||'','ZIP/Postal code':a.postal||'','Country':a.country||'','Profile updated':p.updatedAt?new Date(p.updatedAt).toLocaleDateString():''};});
+    const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Facilitator profiles');
+    XLSX.writeFile(wb,`Facilitator profiles ${new Date().toISOString().slice(0,10)}.xlsx`); return;
+  }
   const rows=D.roster.map(r=>{const p=profOf(r)||{},a=p.address||{},tmp=document.createElement('div');tmp.innerHTML=p.bio||'';
     return {'Roster name':r.name,'Active':r.active===false?'No':'Yes','First':p.first||'','Middle':p.middle||'','Last':p.last||'','Suffix':p.suffix||'','Preferred name':p.preferred||'','Job title':p.title||'','Employer':p.employer||'','Phone':p.phone||'','Contact email':p.email||'','Sign-in emails':(r.emails||[]).join('; '),
       'Street':a.line1||'','Street 2':a.line2||'','City':a.city||'','State/Province':a.region||'','ZIP/Postal code':a.postal||'','Country':a.country||'','Headshot':p.headshotAt?'Yes':'No','Bio':tmp.innerText.trim(),'Profile updated':p.updatedAt?new Date(p.updatedAt).toLocaleDateString():''};});
