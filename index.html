@@ -140,6 +140,7 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
 .f-dl{font-size:12px;color:var(--muted);white-space:nowrap}
 .f-row.is-upd{background:#FFFBF1}
 @media (max-width:720px){.f-act{justify-content:flex-start}.f-group{padding-left:16px}}
+.s-inst{font-size:13px;margin-top:4px;color:var(--charcoal)}.s-inst a{color:var(--blue)}
 .pf-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
 .pf-card h3{margin:0 0 10px;font-size:16px;color:var(--burgundy)}
 .pf-grid{display:grid;gap:12px;margin-bottom:10px}.pf-grid.g1{grid-template-columns:1fr}.pf-grid.g2{grid-template-columns:1fr 1fr}.pf-grid.g3{grid-template-columns:1.4fr 1fr .8fr}.pf-grid.g4{grid-template-columns:1fr 1fr 1fr 110px}
@@ -416,7 +417,7 @@ function renderWho(){
   document.getElementById('who').innerHTML =
     `<strong>${esc(name)}</strong>${esc(me.email)}<br>` +
     (me.isStaff ? `<a href="/admin-dashboard">Staff dashboard</a> &nbsp; <a href="/api/files/log.csv" title="Download a spreadsheet of every program file download">File downloads</a> &nbsp; ` : '') +
-    `<a href="/manuals/instructor-guide" target="_blank">Guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
+    `<a href="/instructor-guide" target="_blank">Guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
 }
 
 function render(){
@@ -430,6 +431,11 @@ function render(){
   const rp=d.reports||[], unread=rp.filter(r=>!r.viewedAt).length;
   setN('n-reports', unread||rp.length, unread>0, unread?`${unread} new report${unread>1?'s':''}`:`${rp.length} reports`);
   updFilesN();
+  // Facilitators: "Available sessions" instead of Programs, and no evaluation reports.
+  const fac=isFac(), pt=document.querySelector('.tab[data-tab="programs"]'), rt=document.querySelector('.tab[data-tab="reports"]');
+  if (pt && pt.firstChild) pt.firstChild.textContent = fac ? 'Available sessions' : 'Programs';
+  if (rt) rt.hidden = fac;
+  if (fac && S.tab==='reports') S.tab='programs';
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.tab===S.tab));
   document.getElementById('savebar').hidden = !(S.view && S.dirty.has(S.view));
 
@@ -442,13 +448,17 @@ function render(){
   }
   if (S.view || !['files','profile'].includes(S.tab)) html += tzBar();
   if (S.view) html += renderDetail(d.programs.find(p=>p.id===S.view));
-  else if (S.tab==='programs') html += prefCard() + renderList(progs);
+  else if (S.tab==='programs') html += (fac ? '' : prefCard()) + renderList(progs);
   else if (S.tab==='reports') html += renderReports();
   else if (S.tab==='profile') html += renderProfile();
   else if (S.tab==='files') html += renderFiles();
   else { html += renderMine(); loadExpenseStatus(); }
   main.innerHTML = html;
 }
+
+/* ---------- Role: instructor or contract facilitator ---------- */
+const isFac=()=>!!(S.data&&S.data.role==='facilitator');
+const VERB=()=>isFac()?'facilitate':'teach';
 
 /* ---------- Delivery preference ---------- */
 const DELIV=[['online','Online only'],['in-person','In person only'],['both','Both']];
@@ -471,7 +481,7 @@ async function setDelivery(v){
 
 /* ---------- Card list ---------- */
 function renderList(list){
-  if (!list.length) return `<div class="empty"><h3>No programs are open for availability yet</h3><p>CLEAR Learning staff will email you when the next schedule is ready.</p></div>`;
+  if (!list.length) return isFac() ? `<div class="empty"><h3>No sessions are available to facilitate yet</h3><p>CLEAR Learning staff will email you when sessions are open.</p></div>` : `<div class="empty"><h3>No programs are open for availability yet</h3><p>CLEAR Learning staff will email you when the next schedule is ready.</p></div>`;
 
   const quarters=[...new Set(list.map(p=>p.quarter).filter(Boolean))];
   let shown=list.filter(p => S.quarter==='all' || p.quarter===S.quarter);
@@ -483,7 +493,7 @@ function renderList(list){
   const total=openList.reduce((n,p)=>n+units(p).length,0), done=openList.reduce((n,p)=>n+savedState(p).done,0);
   const need=list.filter(needsResponse).length;
   let h='';
-  h += `<div class="intro"><p>Open a program to mark the sessions or modules you are able to teach, and those you are not. You may return and change your answers at any time before the response date.</p>
+  h += `<div class="intro"><p>Open a program to mark the sessions or modules you are able to ${VERB()}, and those you are not. You may return and change your answers at any time before the response date.</p>
     <div class="meter"><div class="meter-label">${done} of ${total} open sessions answered${need?`; ${need} program${need>1?'s':''} still need${need>1?'':'s'} a response`:''}</div><div class="meter-bar"><span style="width:${total?Math.round(done/total*100):0}%"></span></div></div></div>`;
   h += `<div class="filters">`;
   if (quarters.length>1) h += `<label for="fq">Quarter</label><select id="fq" onchange="S.quarter=this.value;rerender()"><option value="all">All</option>${quarters.map(q=>`<option ${S.quarter===q?'selected':''}>${esc(q)}</option>`).join('')}</select>`;
@@ -563,7 +573,7 @@ function renderDetail(p){
 /* ---------- Assignments ---------- */
 function renderMine(){
   const a=S.data.assignments;
-  if(!a.length) return `<div class="empty"><h3>No confirmed assignments yet</h3><p>Once staff confirm you to teach a session or program, it shows up here with a calendar file.</p></div>`;
+  if(!a.length) return `<div class="empty"><h3>No confirmed assignments yet</h3><p>Once staff confirm you to ${VERB()} a session or program, it shows up here with a calendar file.</p></div>`;
   const groups=[]; for(const x of a){ let g=groups.find(g=>g.pid===x.programId); if(!g){ g={pid:x.programId,items:[]}; groups.push(g); } g.items.push(x); }
   return groups.map(g=>{
     const f=g.items[0], p=S.data.programs.find(x=>x.id===g.pid)||{format:f.format,timezone:f.timezone,location:f.location};
@@ -574,7 +584,8 @@ function renderMine(){
         const t=whole?esc(fmtRange(x.date,x.endDate)):`${esc(fmtDay(x.date))}${x.start?', '+timeHtml(p,x.date,x.start,x.end,x.endDate):''}`;
         return `<div class="assign">
           <div><div class="s-title">${esc(x.sessionTitle)}</div><div class="s-time">${t}${x.location&&x.location!=='Virtual'?', '+esc(x.location):''}</div>
-          ${x.zoomLink?`<div class="zoom">Zoom: <a href="${esc(x.zoomLink)}" target="_blank" rel="noopener">${esc(x.zoomLink)}</a></div>`:(x.sessionId!=='__program'&&!/person/i.test(p.format||'')?'<div class="zoom et">The Zoom link appears here before the first session.</div>':'')}</div>
+          ${x.zoomLink?`<div class="zoom">Zoom: <a href="${esc(x.zoomLink)}" target="_blank" rel="noopener">${esc(x.zoomLink)}</a></div>`:(x.sessionId!=='__program'&&!/person/i.test(p.format||'')?'<div class="zoom et">The Zoom link appears here before the first session.</div>':'')}
+          ${x.instructors?`<div class="s-inst"><strong>${x.instructors.length>1?'Instructors':'Instructor'}:</strong> ${x.instructors.length?x.instructors.map(i=>`${esc(i.name)}${i.phone?` · <a href="tel:${esc(i.phone.replace(/[^0-9+]/g,''))}">${esc(i.phone)}</a>`:''}`).join('; '):'<span class="et">Not yet confirmed</span>'}</div>`:''}</div>
           <div class="ans-wrap"><span class="role">${esc(x.role)}</span></div></div>`;
       }).join('') + `</div>`;
   }).join('');
@@ -627,8 +638,8 @@ function renderFiles(){
   if(!S.files) return `<div class="loading">Loading program files…</div>`;
   const progs=S.files.programs||[];
   let h=staffFilesNotice();
-  if(!progs.length) return h+`<div class="empty"><h3>No program files yet</h3><p>Materials appear here for each program you're approved to teach. If you expected to see a program, email <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</p></div>`;
-  h+=`<div class="intro"><p>Current materials for the programs you're approved to teach. Every download comes straight from CLEAR Learning's library, so it's always the latest version. Files marked <strong>Updated</strong> have changed since you last downloaded them.</p></div>`;
+  if(!progs.length) return h+`<div class="empty"><h3>No program files yet</h3><p>Materials appear here for each program you're approved to ${VERB()}. If you expected to see a program, email <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</p></div>`;
+  h+=`<div class="intro"><p>Current materials for the programs you're approved to ${VERB()}. Every download comes straight from CLEAR Learning's library, so it's always the latest version. Files marked <strong>Updated</strong> have changed since you last downloaded them.</p></div>`;
   const collapse=progs.length>2;
   return h+progs.map(p=>{
     const upd=p.files.filter(fileUpdated).length;
@@ -687,13 +698,13 @@ function renderProfile(){
   const p=S.prof.profile, a=p.address||{}, known=['United States','Canada'].includes(a.country||'United States'), ctry=known?(a.country||'United States'):'Other';
   const iid=(S.data.instructor||{}).id, shot=p.headshotAt?`/api/headshot/${encodeURIComponent(iid)}?t=${encodeURIComponent(p.headshotAt)}`:'';
   const inp=(id,label,val,extra='')=>`<div class="pf-f"><label for="${id}">${label}</label><input id="${id}" type="text" value="${esc(val||'')}" oninput="profDirty()" ${extra}></div>`;
-  return `<div class="intro"><p>Keep your details current. CLEAR Learning uses them to contact you, for program materials and announcements, and on expense reports. ${S.prof.saved&&p.updatedAt?`Last saved ${esc(fmtStamp(p.updatedAt).split(',')[0])}.`:'Your name and email are filled in from CLEAR\u2019s records until you save.'}</p></div>
+  return `<div class="intro"><p>Keep your details current. CLEAR Learning uses them to contact you${isFac()?' and on your pay records':', for program materials and announcements, and on expense reports'}. ${S.prof.saved&&p.updatedAt?`Last saved ${esc(fmtStamp(p.updatedAt).split(',')[0])}.`:'Your name and email are filled in from CLEAR\u2019s records until you save.'}</p></div>
   ${asId?'<div class="notice" style="margin-bottom:14px">Staff preview: this is the instructor\u2019s profile. Changes can\u2019t be saved from a preview.</div>':''}
   <div class="pf-card"><h3>Name</h3><div class="pf-grid g4">
     ${inp('pf-first','First name <span class="req">*</span>',p.first,'autocomplete="given-name"')}${inp('pf-middle','Middle name',p.middle,'autocomplete="additional-name"')}${inp('pf-last','Last name <span class="req">*</span>',p.last,'autocomplete="family-name"')}
     <div class="pf-f"><label for="pf-suffix">Suffix</label><select id="pf-suffix" onchange="profDirty()">${SUFFIXES.map(s=>`<option value="${s}" ${p.suffix===s?'selected':''}>${s||'None'}</option>`).join('')}</select></div></div>
     <div class="pf-grid g2">${inp('pf-preferred','Preferred name <span class="et">(if different)</span>',p.preferred,'placeholder="e.g. Andy"')}</div></div>
-  <div class="pf-card"><h3>Professional</h3><div class="pf-grid g2">${inp('pf-title','Job title',p.title,'autocomplete="organization-title"')}${inp('pf-employer','Employer',p.employer,'autocomplete="organization"')}</div></div>
+  ${isFac()?'':`  <div class="pf-card"><h3>Professional</h3><div class="pf-grid g2">${inp('pf-title','Job title',p.title,'autocomplete="organization-title"')}${inp('pf-employer','Employer',p.employer,'autocomplete="organization"')}</div></div>`}
   <div class="pf-card"><h3>Contact</h3><div class="pf-grid g2">${inp('pf-phone','Phone number',p.phone,'type="tel" autocomplete="tel" placeholder="e.g. 859-555-0123"')}${inp('pf-email','Email address',p.email,'type="email" autocomplete="email"')}</div>
     <p class="et" style="margin:6px 0 0">This is the email CLEAR Learning uses to contact you. You sign in with ${esc((S.prof.signInEmails||[]).join(' or ')||'the address on file')}; to change your sign-in email, contact <a href="mailto:clearlearning@clearhq.org">clearlearning@clearhq.org</a>.</p></div>
   <div class="pf-card"><h3>Mailing address</h3><div class="pf-grid g2">
@@ -702,7 +713,7 @@ function renderProfile(){
     <div class="pf-grid g1">${inp('pf-line1','Street address',a.line1,'autocomplete="address-line1"')}${inp('pf-line2','Apartment, suite or unit <span class="et">(optional)</span>',a.line2,'autocomplete="address-line2"')}</div>
     <div class="pf-grid g3">${inp('pf-city','City',a.city,'autocomplete="address-level2"')}<div class="pf-f" id="pf-region-wrap">${regionField(ctry==='Other'?a.country:ctry,a.region||'')}</div>
       <div class="pf-f"><label for="pf-postal" id="pf-postal-l">${ctry==='United States'?'ZIP code':'Postal code'}</label><input id="pf-postal" type="text" value="${esc(a.postal||'')}" oninput="profDirty()" autocomplete="postal-code" placeholder="${ctry==='United States'?'e.g. 40356':ctry==='Canada'?'e.g. K1A 0B1':''}"></div></div></div>
-  <div class="pf-card"><h3>Headshot</h3><div class="pf-shot">
+  ${isFac()?'':`  <div class="pf-card"><h3>Headshot</h3><div class="pf-shot">
     <div class="pf-photo">${shot?`<img src="${shot}" alt="Your headshot">`:'<span>No photo yet</span>'}</div>
     <div><p class="et" style="margin:0 0 8px">A clear, professional photo of your head and shoulders. JPEG or PNG; large photos are resized automatically.</p>
       <label class="btn ghost small" style="cursor:pointer;${asId?'pointer-events:none;opacity:.5':''}">${shot?'Replace photo':'Upload a photo'}<input type="file" accept="image/jpeg,image/png,image/webp" hidden onchange="uploadHeadshot(this)"></label>
@@ -716,7 +727,7 @@ function renderProfile(){
       <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('insertOrderedList')" aria-label="Numbered list">1. List</button><span class="sep"></span>
       <button type="button" onmousedown="event.preventDefault()" onclick="rteLink()" aria-label="Add link">Link</button>
       <button type="button" onmousedown="event.preventDefault()" onclick="rteCmd('removeFormat')" aria-label="Clear formatting">Clear</button></div>
-    <div id="pf-bio" class="rte" contenteditable="${asId?'false':'true'}" role="textbox" aria-multiline="true" aria-label="Professional bio" data-ph="Your professional background, experience and credentials." oninput="profDirty()">${p.bio||''}</div></div>
+    <div id="pf-bio" class="rte" contenteditable="${asId?'false':'true'}" role="textbox" aria-multiline="true" aria-label="Professional bio" data-ph="Your professional background, experience and credentials." oninput="profDirty()">${p.bio||''}</div></div>`}
   <div class="pf-actions"><span id="pf-state" class="et">${S.profDirty?'Unsaved changes':''}</span><button class="btn" id="pf-save" onclick="saveProfile()" ${asId?'disabled':''}>Save profile</button></div>`;
 }
 function rteCmd(c){ document.getElementById('pf-bio').focus(); try{ document.execCommand('defaultParagraphSeparator',false,'p'); }catch(e){} document.execCommand(c,false,null); profDirty(); }
@@ -739,7 +750,7 @@ function rteHtml(el){
 async function saveProfile(){
   const c=pf('pf-country');
   const profile={first:pf('pf-first'),middle:pf('pf-middle'),last:pf('pf-last'),suffix:pf('pf-suffix'),preferred:pf('pf-preferred'),title:pf('pf-title'),employer:pf('pf-employer'),phone:pf('pf-phone'),email:pf('pf-email'),
-    address:{country:c==='Other'?pf('pf-country-other'):c,line1:pf('pf-line1'),line2:pf('pf-line2'),city:pf('pf-city'),region:pf('pf-region'),postal:pf('pf-postal')},bio:rteHtml(document.getElementById('pf-bio'))};
+    address:{country:c==='Other'?pf('pf-country-other'):c,line1:pf('pf-line1'),line2:pf('pf-line2'),city:pf('pf-city'),region:pf('pf-region'),postal:pf('pf-postal')},bio:document.getElementById('pf-bio')?rteHtml(document.getElementById('pf-bio')):''};
   const btn=document.getElementById('pf-save'); btn.disabled=true; document.getElementById('pf-state').textContent='Saving…';
   try{ const r=await api('my-profile',{method:'PUT',body:JSON.stringify({profile})}); S.prof.profile={...S.prof.profile,...r.profile}; S.prof.saved=true; S.profDirty=false; rerender(); toast('Profile saved'); }
   catch(e){ btn.disabled=false; document.getElementById('pf-state').textContent=''; toast(e.message); }
