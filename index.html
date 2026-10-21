@@ -242,6 +242,16 @@ main{max-width:1080px;margin:0 auto;padding:24px 24px 100px}
     <button class="tab" role="tab" data-tab="profile" aria-selected="false">My profile</button>
   </nav>
 </header>
+<script>
+// The Facilitator Portal (/facilitator) uses this same page. Set its name and tabs before anything is drawn.
+window.FAC_MODE = /^\/facilitator\/?$/.test(location.pathname);
+if (window.FAC_MODE) {
+  document.title = 'Facilitator Portal | CLEAR Learning';
+  document.getElementById('portal-name').textContent = 'Facilitator Portal';
+  document.querySelector('.tab[data-tab="programs"]').firstChild.textContent = 'Available sessions';
+  document.querySelector('.tab[data-tab="reports"]').hidden = true;
+}
+</script>
 
 <main id="main"><div class="loading">Loading your programs…</div></main>
 <div class="savebar" id="savebar" hidden><div class="savebar-in"><span id="savebar-txt">You have unsaved answers</span><button class="btn ghost small" onclick="discard()">Discard</button><button class="btn small" style="background:var(--gold);color:var(--burgundy-dk)" onclick="save(S.view)">Save answers</button></div></div>
@@ -267,8 +277,9 @@ function fmtStamp(iso){ if(!iso) return ''; return new Date(iso).toLocaleString(
 function daysBetween(a,b){ return Math.round((parseD(b)-parseD(a))/86400000); }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),3000); }
 
+const API_BASE = window.FAC_MODE ? '/api/f/' : '/api/';
 async function api(path, opts={}){
-  const r = await fetch('/api/'+path, { ...opts, headers:{'Content-Type':'application/json'}, credentials:'same-origin' });
+  const r = await fetch(API_BASE+path, { ...opts, headers:{'Content-Type':'application/json'}, credentials:'same-origin' });
   let j={}; try{ j=await r.json(); }catch{ j={error:`The server returned ${r.status}. Reload the page and try again.`}; }
   if(!r.ok) throw new Error(j.error || `Request failed (${r.status}).`);
   return j;
@@ -445,6 +456,10 @@ function render(){
   const main=document.getElementById('main');
   let html='';
   if (d.viewingAs) html += `<div class="notice">You're previewing <strong>${esc(d.instructor ? d.instructor.name : 'an unknown instructor')}</strong>'s page as staff. Buttons are turned off here; assign people from the Selection tab of the dashboard.</div>`;
+  if (!d.instructor && !d.viewingAs && isFac()) {
+    main.innerHTML = html + `<div class="empty"><h3>You're signed in as staff</h3><p>To see a facilitator's page, open the <a href="/admin-dashboard">staff dashboard</a>, go to the Facilitators tab and choose Preview page.</p></div>`;
+    return;
+  }
   if (!d.instructor && !d.viewingAs) {
     main.innerHTML = html + `<div class="empty"><h3>Your email isn't linked to an instructor record</h3><p>You're signed in as staff. Open the <a href="/admin-dashboard">staff dashboard</a>, or add ${esc(d.me.email)} to an instructor on the Instructors tab.</p></div>`;
     return;
@@ -460,7 +475,7 @@ function render(){
 }
 
 /* ---------- Role: instructor or contract facilitator ---------- */
-const isFac=()=>!!(S.data&&S.data.role==='facilitator');
+const isFac=()=>!!window.FAC_MODE||!!(S.data&&S.data.role==='facilitator');
 const VERB=()=>isFac()?'facilitate':'teach';
 
 /* ---------- Delivery preference ---------- */
@@ -659,7 +674,7 @@ function fileRow(f){
   const s=(S.files.seen||{})[f.id], upd=fileUpdated(f);
   const meta=[fmtSize(f.size), f.modified?'last changed '+fmtISO(f.modified):''].filter(Boolean).join(', ');
   const status=upd?`<span class="badge part">Updated</span>`:s?`<span class="f-dl">Downloaded ${esc(fmtISO(s.at))}</span>`:'';
-  const href='/api/files/download/'+encodeURIComponent(f.id)+(asId?'?as='+encodeURIComponent(asId):'');
+  const href=API_BASE+'files/download/'+encodeURIComponent(f.id)+(asId?'?as='+encodeURIComponent(asId):'');
   return `<div class="assign f-row${upd?' is-upd':''}"><div class="f-name"><span class="f-ext ${esc(ext)}" aria-hidden="true">${esc(ext.toUpperCase()||'FILE')}</span>
     <div><div class="s-title">${esc(title)}</div><div class="s-time">${esc(meta)}</div></div></div>
     <div class="ans-wrap f-act">${status}<a class="btn small${s&&!upd?' ghost':''}" href="${esc(href)}" style="text-decoration:none" onclick="fileClicked('${esc(f.id)}')">Download</a></div></div>`;
@@ -786,7 +801,7 @@ function renderReports(){
 }
 async function getIcs(pid){
   try{
-    const r=await fetch('/api/my-ics/'+encodeURIComponent(pid)+(asId?'?as='+encodeURIComponent(asId):''),{credentials:'same-origin'});
+    const r=await fetch(API_BASE+'my-ics/'+encodeURIComponent(pid)+(asId?'?as='+encodeURIComponent(asId):''),{credentials:'same-origin'});
     if(!r.ok){ let j={}; try{ j=await r.json(); }catch{} throw new Error(j.error||`Couldn't get the calendar file (${r.status}).`); }
     const blob=await r.blob(); const cd=r.headers.get('Content-Disposition')||''; const m=cd.match(/filename="([^"]+)"/);
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=m?m[1]:'CLEAR-assignment.ics'; a.click();
