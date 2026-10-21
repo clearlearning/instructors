@@ -186,6 +186,16 @@ tr.grp .ttl{gap:10px}tr.grp strong{font-size:14px}
 .pgroup .pg-h h3{margin:0;font-size:16px;color:var(--burgundy)}
 .pgroup.k-blue .pg-h h3{color:var(--blue)}.pgroup.k-gold .pg-h h3{color:var(--burgundy-dk)}
 .pgroup .tbl-wrap{border-radius:var(--radius-sm)}
+.fline{margin-top:10px;padding:8px 10px;border-radius:8px;background:#EAF4F2;border:1px solid #B7DCD5}
+.fline .fhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.ftag{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#0E6B5E}
+.fpick{border-left:4px solid #0E6B5E}
+.fchip{border-color:#7FC3B7!important;background:#fff}
+.fchip:hover{background:#EAF4F2}
+.fquals{display:flex;flex-wrap:wrap;gap:4px}
+.fq{display:inline-flex;gap:4px;align-items:center;font-size:11.5px;border:1px solid var(--line);border-radius:12px;padding:2px 8px;background:#fff;cursor:pointer}
+.fq.on{background:#EAF4F2;border-color:#7FC3B7}
+.fq input{margin:0}
 .rte-bar{display:flex;gap:4px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-bottom:0;border-radius:var(--radius-sm) var(--radius-sm) 0 0;background:#FAF7F8;padding:5px 6px}
 .rte-bar button{border:1px solid transparent;background:none;border-radius:4px;padding:3px 9px;font-size:13px;cursor:pointer;color:var(--ink)}
 .rte-bar button:hover{background:#fff;border-color:var(--line)}
@@ -207,10 +217,10 @@ tr.grp .ttl{gap:10px}tr.grp strong{font-size:14px}
   </div>
   <nav class="tabs" id="tabs" role="tablist">
     <button class="tab" data-tab="overview" aria-selected="true">Overview</button>
-    <button class="tab" data-tab="responses">Responses</button>
     <button class="tab" data-tab="selection">Selection</button>
     <button class="tab" data-tab="programs">Programs</button>
     <button class="tab" data-tab="roster">Instructors</button>
+    <button class="tab" data-tab="facilitators">Facilitators</button>
     <button class="tab" data-tab="staff">Staff</button>
     <button class="tab" data-tab="log">Activity</button>
   </nav>
@@ -312,9 +322,10 @@ async function load(keep=true){
 
 function render(){
   const me=D.me;
-  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/program-scheduler">Program Scheduler</a> &nbsp; <a href="/manuals/coordinator-guide" target="_blank">Coordinator guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
+  document.getElementById('who').innerHTML=`<strong>${esc(me.staffName||me.email)}${me.isAdmin?' (admin)':''}</strong>${esc(me.email)}<br><a href="/">Instructor view</a> &nbsp; <a href="/program-scheduler">Program Scheduler</a> &nbsp; <a href="/coordinator-guide" target="_blank">Coordinator guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.tab===U.tab));
-  const fn={overview:vOverview,responses:vResponses,selection:vSelection,programs:vPrograms,roster:vRoster,staff:vStaff,log:vLog}[U.tab];
+  if(U.tab==='responses') U.tab='selection';
+  const fn={overview:vOverview,selection:vSelection,programs:vPrograms,roster:vRoster,facilitators:vFacilitators,staff:vStaff,log:vLog}[U.tab];
   const y=window.scrollY, ae=document.activeElement, refocus=ae&&ae.type==='search'?{pos:ae.selectionStart}:null;
   document.getElementById('main').innerHTML=fn(); window.scrollTo(0,y);
   if(refocus){ const sb=document.querySelector('main input[type=search]'); if(sb){ sb.focus(); sb.setSelectionRange(refocus.pos,refocus.pos); } }
@@ -367,7 +378,7 @@ function vOverview(){
       ${p.status==='open'?`<p class="facts" style="margin:-4px 0 10px">${p.announcedAt?`Announced ${esc(stamp(p.announcedAt))}`:'<span class="warn">Not announced yet</span>'}${(p.reminders||[]).length?`<br>Reminder sent ${esc(fmtD(p.reminders[p.reminders.length-1].at.slice(0,10)))} to ${p.reminders[p.reminders.length-1].count} (${p.reminders[p.reminders.length-1].daysBefore} days before)`:''}</p>`:''}
       ${(n=>n?`<p class="facts" style="margin:-4px 0 10px"><span class="warn">${n} confirmed instructor${n>1?'s need':' needs'} a schedule update</span> <button class="btn link" onclick="U.pid='${p.id}';U.tab='selection';render();setTimeout(()=>changeDlg('${p.id}'),0)">Send change notice</button></p>`:'')(Object.keys((D.assignments[p.id]||{}).changes||{}).length)}
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn ghost small" onclick="U.pid='${p.id}';U.rview='program';U.tab='responses';render()">Responses</button>
+        
         <button class="btn ghost small" onclick="U.pid='${p.id}';U.tab='selection';render()">Selection</button>
         ${next?`<button class="btn small" onclick="setStatus('${p.id}','${next[0]}')">${next[1]}</button>`:''}
       </div></div>`;
@@ -498,6 +509,110 @@ async function downloadKit(pid){
   toast(warn.length?`Kit downloaded. ${warn.length} item${warn.length>1?'s':''} to check; see READ ME in the kit.`:'Cohort kit downloaded');
 }
 function kitBadge(p){const k=kitPlan(p);if(!k.supported||p.status==='draft')return '';return k.ready?'<span class="pill" style="background:var(--avail-lt);color:var(--avail);text-transform:none">Kit ready</span>':'';}
+
+/* ================= Contract facilitators ================= */
+// Facilitator staffing sits on the Selection tab under each session's instructors. Every session's facilitator is the
+// default staff facilitator until a contract facilitator is confirmed; locked sessions are staffed by CLEAR only.
+const fac=id=>(D.facilitators||[]).find(f=>f.id===id);
+const factive=()=>(D.facilitators||[]).filter(f=>f.active!==false);
+const defFac=()=>((D.facilitation||{}).defaultName)||'Zephir';
+const normT=t=>String(t||'').toLowerCase().replace(/\s*[-–—:]\s*(instructor[- ]?led|live)(\s+session)?\s*$/,'').replace(/^\s*live\s+session\s*[-–—:]\s*/,'').replace(/\s+(session\s+)?with\s+(the\s+)?instructor\s*$/,'').replace(/[^a-z0-9&]+/g,' ').replace(/\s+/g,' ').trim();
+const keyOfP=p=>{const m=String(p.logo||'').match(/([A-Za-z0-9]+)\.svg$/);return m?m[1]:'';};
+const lockedDefault=s=>/welcome|program review/i.test(s.title||'');
+function fdraftOf(pid){ if(!U.fdraft) U.fdraft={}; if(!U.fdraft[pid]){ const a=D.assignments[pid]||{}; U.fdraft[pid]={fslots:clone(a.fslots||{}),flocks:clone(a.flocks||{})}; } return U.fdraft[pid]; }
+const fState=pid=>(U.fdraft&&U.fdraft[pid])||{fslots:(D.assignments[pid]||{}).fslots||{},flocks:(D.assignments[pid]||{}).flocks||{}};
+function isLockedS(pid,s){ const L=fState(pid).flocks; return Object.prototype.hasOwnProperty.call(L,s.id)?!!L[s.id]:lockedDefault(s); }
+function facApprovedC(f,p,s){ const q=f.quals||[],k=keyOfP(p); if(q.length&&k&&!q.includes(k)&&!(k==='NCITWS'&&q.some(x=>/^NCITW/.test(x)))) return false; const m=(f.mods||{})[k]; return !(m&&m.length&&!m.includes(normT(s.title))); }
+function fEff(fid,p,sid){ const r=((D.fresponses||{})[fid]||{})[p.id]; if(!r) return ''; return (r.sessions||{})[sid]||r.program||''; }
+function facLine(p,s){
+  const pid=p.id, st=fState(pid), locked=isLockedS(pid,s), picked=st.fslots[s.id]||[], dirty=U.assignDirty.has(pid);
+  const avail=locked?[]:factive().filter(f=>facApprovedC(f,p,s)&&fEff(f.id,p,s.id)==='A'&&!picked.some(e=>e.fid===f.id));
+  const fn=(D.assignments[pid]||{}).fnotified||{};
+  const picks=picked.map((e,i)=>{
+    if(e.staff) return `<div class="pick Confirmed fpick"><span class="nm">${esc(e.staff)}</span><span class="facts">CLEAR staff</span><button class="btn link" onclick="editFPick('${pid}','${s.id}',${i},'remove')">Remove</button></div>`;
+    const f=fac(e.fid)||{name:'(removed facilitator)'}, v=fEff(e.fid,p,s.id), sent=e.status==='Confirmed'&&!dirty&&fn[e.fid];
+    return `<div class="pick ${e.status} fpick"><span class="nm">${esc(f.name)}</span>
+      <select onchange="editFPick('${pid}','${s.id}',${i},'role',this.value)">${['Facilitator','Co-facilitator','Backup'].map(x=>`<option ${e.role===x?'selected':''}>${x}</option>`).join('')}</select>
+      <select onchange="editFPick('${pid}','${s.id}',${i},'status',this.value)">${['Tentative','Confirmed'].map(x=>`<option ${e.status===x?'selected':''}>${x}</option>`).join('')}</select>
+      ${v!=='A'?`<span class="warn">Marked ${v?LBL[v].toLowerCase():'not answered'}</span>`:''}${sent?`<span class="mailst ok">✉ Emailed ${esc(fmtD(sent.at.slice(0,10)))}</span>`:''}
+      <button class="btn link" onclick="editFPick('${pid}','${s.id}',${i},'remove')">Remove</button></div>`; }).join('');
+  const conf=picked.some(e=>e.staff||e.status==='Confirmed');
+  return `<div class="fline"><div class="fhead"><span class="ftag">Facilitator</span>${locked?'<span class="pill locked" title="Not offered to contract facilitators">Staff only</span>':''}
+      ${conf?'':`<span class="facts">${esc(defFac())} by default</span>`}<span class="grow"></span>
+      <button class="btn link" onclick="toggleLock('${pid}','${s.id}')">${locked?'Offer to contract facilitators':'Lock to CLEAR staff'}</button></div>
+    <div class="picked">${picks}</div>
+    <div class="chips">${avail.map(f=>`<button class="chip fchip" onclick="addFPick('${pid}','${s.id}','${f.id}')">+ ${esc(f.name)}<span class="load">${fLoad(f.id)}</span></button>`).join('')||(locked?'':'<span class="facts">No contract facilitators have marked this session available yet.</span>')}
+      <button class="chip na-maybe" onclick="pickFStaff('${pid}','${s.id}')">+ Staff member</button>${locked?'':`<button class="chip na-maybe" onclick="pickFAnyone('${pid}','${s.id}')">+ Contract facilitator</button>`}</div></div>`;
+}
+function fLoad(fid){ let n=0; for(const p of D.programs.filter(inQuarter)){ const fs=fState(p.id).fslots||{}; for(const l of Object.values(fs)) if(l.some(e=>e.fid===fid)) n++; } return n; }
+function addFPick(pid,sid,fid){ const d=fdraftOf(pid); (d.fslots[sid]=d.fslots[sid]||[]).push({fid,role:d.fslots[sid].length?'Co-facilitator':'Facilitator',status:'Tentative'}); U.assignDirty.add(pid); render(); }
+function editFPick(pid,sid,i,field,val){ const d=fdraftOf(pid); if(field==='remove') d.fslots[sid].splice(i,1); else d.fslots[sid][i][field]=val; if(!d.fslots[sid].length) delete d.fslots[sid]; U.assignDirty.add(pid); render(); }
+function toggleLock(pid,sid){ const p=prog(pid), s=p.sessions.find(x=>x.id===sid), d=fdraftOf(pid); d.flocks[sid]=!isLockedS(pid,s);
+  if(d.flocks[sid]&&d.fslots[sid]) d.fslots[sid]=d.fslots[sid].filter(e=>e.staff); U.assignDirty.add(pid); render(); }
+function pickFStaff(pid,sid){
+  const names=[...new Set([defFac(),...(D.staff||[]).map(s=>s.name).filter(Boolean)])];
+  openDlg('Assign a staff facilitator',`<p class="sub">Assign a CLEAR staff member to facilitate this session. Contract facilitators don't see who it is.</p><select id="fs-n" style="width:100%">${names.map(n=>`<option>${esc(n)}</option>`).join('')}</select>`,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="const d=fdraftOf('${pid}');d.fslots['${sid}']=[...(d.fslots['${sid}']||[]).filter(e=>!e.staff),{staff:document.getElementById('fs-n').value,role:'Facilitator',status:'Confirmed'}];U.assignDirty.add('${pid}');closeDlg();render()">Assign</button>`);
+}
+function pickFAnyone(pid,sid){
+  const taken=(fState(pid).fslots[sid]||[]).map(e=>e.fid), list=factive().filter(f=>!taken.includes(f.id));
+  if(!list.length){ toast('No other contract facilitators are on the list.'); return; }
+  openDlg('Add a contract facilitator',`<p class="sub">Use this for a facilitator who didn't mark this session available, for example after a phone call.</p><select id="fa-i" style="width:100%">${list.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('')}</select>`,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="addFPick('${pid}','${sid}',document.getElementById('fa-i').value);closeDlg()">Add</button>`);
+}
+const facConfirmed=pid=>[...new Set(Object.values(fState(pid).fslots||{}).flat().filter(e=>e.fid&&e.status==='Confirmed').map(e=>e.fid))];
+
+/* ---------- Facilitators tab ---------- */
+function vFacilitators(){
+  if(!U.facDraft) U.facDraft=clone(D.facilitators||[]);
+  const L=U.facDraft, f=(U.ffilter||'').toLowerCase();
+  const rows=L.map((r,i)=>({r,i})).filter(({r})=>!f||r.name.toLowerCase().includes(f));
+  const names=[...new Set([defFac(),...(D.staff||[]).map(s=>s.name).filter(Boolean)])];
+  let h=`<h2>Facilitators</h2><p class="sub">Contract facilitators sign in to the Instructor Portal, mark the sessions they'd like to facilitate, and see their assignments with each session's instructors. Tick the programs each one is approved to facilitate; use <em>Modules</em> to limit a program to particular sessions or modules. A facilitator with nothing ticked sees every session that's open to contract facilitators.</p>
+    <div class="card"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><strong>Default facilitator</strong><select id="def-fac">${names.map(n=>`<option ${n===defFac()?'selected':''}>${esc(n)}</option>`).join('')}</select><button class="btn small ghost" onclick="saveDefFac()">Save</button>
+      <span class="facts">Facilitates every session until a contract facilitator or another staff member is confirmed. Contract facilitators never see this name.</span></div></div>
+    <div class="notice">Each facilitator's sign-in email must also be added to the <strong>CLEAR Facilitators</strong> Access group in Cloudflare Zero Trust before they can sign in.</div>
+    <div class="bar"><input type="search" placeholder="Filter by name" value="${esc(U.ffilter||'')}" oninput="U.ffilter=this.value;clearTimeout(window._ff);window._ff=setTimeout(render,250)"><span class="grow"></span>
+      <button class="btn ghost" onclick="U.facDraft.push({name:'',emails:[],active:true,notes:'',quals:[],mods:{}});U.facDirty=true;render()">Add facilitator</button>
+      ${U.facDirty?'<button class="btn ghost" onclick="U.facDraft=null;U.facDirty=false;render()">Discard changes</button>':''}<button class="btn" ${U.facDirty?'':'disabled'} onclick="saveFacs()">Save facilitators</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th style="min-width:180px">Name</th><th style="min-width:200px">Sign-in emails</th><th>Active</th><th>Approved to facilitate</th><th>Notes</th><th></th></tr></thead><tbody>`;
+  h+=rows.map(({r,i})=>{const q=r.quals||[];
+    return `<tr><td><input value="${esc(r.name)}" placeholder="First Last" oninput="U.facDraft[${i}].name=this.value;markFac()" style="width:100%"></td>
+      <td><input value="${esc((r.emails||[]).join(', '))}" placeholder="name@example.com" oninput="U.facDraft[${i}].emails=this.value.split(/[,;\\s]+/).filter(Boolean);markFac()" style="width:100%"></td>
+      <td style="text-align:center"><input type="checkbox" ${r.active!==false?'checked':''} onchange="U.facDraft[${i}].active=this.checked;markFac()" aria-label="Active"></td>
+      <td><div class="fquals">${COURSES.map(([k,l])=>`<label class="fq ${q.includes(k)?'on':''}" title="${esc(l)}"><input type="checkbox" ${q.includes(k)?'checked':''} onchange="facQual(${i},'${k}',this.checked)"><img class="plogo sm" src="/images/${k}.svg" alt="" onerror="this.remove()">${esc(l)}${q.includes(k)?` <button class="btn link" onclick="event.preventDefault();modDlg(${i},'${k}')">${((r.mods||{})[k]||[]).length?((r.mods||{})[k].length+' modules'):'Modules'}</button>`:''}</label>`).join('')}</div>
+        ${q.length?'':'<div class="facts warn">Not set: sees every open session</div>'}</td>
+      <td><input value="${esc(r.notes||'')}" oninput="U.facDraft[${i}].notes=this.value;markFac()" style="width:100%"></td>
+      <td style="white-space:nowrap">${r.id?`<a href="/?as=${r.id}" target="_blank">Preview page</a>`:`<button class="btn link" onclick="U.facDraft.splice(${i},1);markFac();render()">Remove</button>`}</td></tr>`;}).join('')||'<tr><td colspan="6" class="facts">No facilitators yet. Add one to get started.</td></tr>';
+  return h+`</tbody></table></div>`;
+}
+function markFac(){ if(!U.facDirty){U.facDirty=true;render();} }
+function facQual(i,k,on){ const r=U.facDraft[i], q=new Set(r.quals||[]); on?q.add(k):q.delete(k); r.quals=COURSES.map(c=>c[0]).filter(x=>q.has(x)); if(!on&&r.mods) delete r.mods[k]; U.facDirty=true; render(); }
+function modDlg(i,k){
+  const r=U.facDraft[i], sel=new Set((r.mods||{})[k]||[]);
+  const titles=new Map();
+  for(const p of D.programs) if(keyOfP(p)===k) for(const s of p.sessions||[]){ const n=normT(s.title); if(n&&!titles.has(n)) titles.set(n,s.title); }
+  const list=[...titles.entries()].sort((a,b)=>a[1].localeCompare(b[1]));
+  const lbl=(COURSES.find(c=>c[0]===k)||[k,k])[1];
+  openDlg(`Modules: ${lbl}`,`<p class="sub">Tick the sessions or modules ${esc(r.name||'this facilitator')} may facilitate in ${esc(lbl)}. Leave everything unticked to allow every session. Matching ignores labels like "Instructor-Led Session", so a module is covered in every cohort.</p>
+    ${list.length?`<div class="checks">${list.map(([n,t])=>`<label><input type="checkbox" class="mod-c" value="${esc(n)}" ${sel.has(n)?'checked':''}><span>${esc(t)}</span></label>`).join('')}</div>`:'<p class="facts">No programs of this type are in the portal yet, so there are no sessions to choose from.</p>'}`,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="const v=[...document.querySelectorAll('.mod-c:checked')].map(x=>x.value);const r=U.facDraft[${i}];r.mods=r.mods||{};if(v.length)r.mods['${k}']=v;else delete r.mods['${k}'];U.facDirty=true;closeDlg();render()">Save modules</button>`);
+}
+async function saveFacs(){
+  try{ const r=await api('admin/facilitators',{method:'PUT',body:JSON.stringify({facilitators:U.facDraft})}); D.facilitators=r.facilitators; U.facDraft=null; U.facDirty=false; render(); toast('Facilitators saved'); }
+  catch(e){ toast(e.message); }
+}
+async function saveDefFac(){
+  try{ const r=await api('admin/facilitation',{method:'PUT',body:JSON.stringify({defaultName:document.getElementById('def-fac').value})}); D.facilitation=r.facilitation; render(); toast('Default facilitator saved'); }
+  catch(e){ toast(e.message); }
+}
+
+function facMailOpts(id,label){
+  if(!factive().length) return;
+  const prev=document.getElementById('mail-prev'); if(!prev) return;
+  prev.insertAdjacentHTML('beforebegin',`<div class="f" style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="${id}" checked> ${label}</label>
+    <label style="font-size:12px;font-weight:600">Preview <select id="pv-kind"><option value="i">Instructor email</option><option value="f">Facilitator email</option></select></label></div>`);
+}
 
 /* ---------- Instructor profiles ---------- */
 const profOf=r=>(D.profiles||{})[r.id]||null;
@@ -684,22 +799,23 @@ function exportMatrix(which){
 
 /* ================= Selection ================= */
 function vSelection(){
-  let h=`<h2>Selection</h2><p class="sub">Pick instructors from the people who said they're available. New picks start as Tentative, which only staff can see. Mark a pick Confirmed once you've decided, save, then email the instructor their selection notice with the calendar file. The number after each name is how many slots they already hold this cycle; ↗ opens their teaching history and evaluations.</p>`;
+  let h=`<h2>Selection</h2><p class="sub">Pick instructors from the people who said they're available. Each session also has a teal facilitator line that works the same way for contract facilitators; until one is confirmed, the default facilitator covers the session. New picks start as Tentative, which only staff can see. Mark a pick Confirmed once you've decided, save, then email the instructor their selection notice with the calendar file. The number after each name is how many slots they already hold this cycle; ↗ opens their teaching history and evaluations.</p>`;
   if(!D.programs.length) return h+`<div class="empty">No programs yet.</div>`;
-  h+=`<div class="bar">${quarterSelect()}${programSelect()}<span class="grow"></span><button class="btn ghost" onclick="exportSelections()">Export selections</button></div>`;
+  h+=`<div class="bar">${quarterSelect()}${programSelect()}<span class="grow"></span><button class="btn ghost" onclick="exportMatrix('one')" title="Every instructor's answers for this program, in the original availability spreadsheet layout">Export answers</button><button class="btn ghost" onclick="exportMatrix('all')">Export all open programs</button><button class="btn ghost" onclick="exportSelections()">Export selections</button></div>`;
   const p=prog(U.pid); if(!p) return h;
   const s=slots(p.id), dirty=U.assignDirty.has(p.id), a=D.assignments[p.id]||{};
   const confirmed=[...new Set(Object.values((a.slots||{})).flat().filter(e=>e.status==='Confirmed').map(e=>e.iid))];
-  const toEmail=confirmed.filter(iid=>['new','chg'].includes(mailState(p.id,iid).code)).length;
+  const fconf=facConfirmed(p.id), fn=a.fnotified||{};
+  const toEmail=confirmed.filter(iid=>['new','chg'].includes(mailState(p.id,iid).code)).length+fconf.filter(f=>!fn[f]).length;
   h+=`<div class="card"><div class="ph ${trk(p)}"><div class="ttl">${logoImg(p)}<div><h3>${esc(p.title)}</h3>${p.cohort?`<strong style="font-size:13px">${esc(p.cohort)}</strong>`:''}<div class="facts">${esc(fmtRange(p.startDate,p.endDate))} · ${esc(p.format||'')}${p.location&&p.location!=='Virtual'?', '+esc(p.location):''} · ${answerable(p).length?answerable(p).length+(isIP(p)?' modules':' sessions'):'whole program'} · ${esc(dueText(p))}</div></div></div></div>
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
     <div class="facts">${a.updatedAt?`Selections last saved ${stamp(a.updatedAt)} by ${esc(a.updatedBy)}`:'No selections saved yet'}</div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       ${answerable(p).length?`<select id="bulk-i"><option value="">Add one instructor to every session they're available for…</option>${active().filter(r=>units(p).some(u=>eff(r.id,p,u.key)==='A')).map(r=>`<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select><button class="btn ghost small" onclick="bulkAdd('${p.id}')">Add</button>`:''}
       <button class="btn ghost small" onclick="confirmAll('${p.id}')">Mark all confirmed</button>
-      ${dirty?`<button class="btn ghost small" onclick="delete U.assignDraft['${p.id}'];U.assignDirty.delete('${p.id}');render()">Discard changes</button>`:''}
+      ${dirty?`<button class="btn ghost small" onclick="delete U.assignDraft['${p.id}'];if(U.fdraft)delete U.fdraft['${p.id}'];U.assignDirty.delete('${p.id}');render()">Discard changes</button>`:''}
       <button class="btn" ${dirty?'':'disabled'} onclick="saveAssign('${p.id}')">Save selections</button>
-      <button class="btn ghost" ${confirmed.length&&!dirty?'':'disabled'} title="${dirty?'Save selections first':confirmed.length?'':'Confirm and save at least one pick first'}" onclick="selectionDlg('${p.id}')">Email selection notices${toEmail?` (${toEmail})`:''}</button>
+      <button class="btn ghost" ${(confirmed.length||fconf.length)&&!dirty?'':'disabled'} title="${dirty?'Save selections first':(confirmed.length||fconf.length)?'':'Confirm and save at least one pick first'}" onclick="selectionDlg('${p.id}')">Email selection notices${toEmail?` (${toEmail})`:''}</button>
       ${(n=>n&&!dirty?`<button class="btn" style="background:var(--warn)" onclick="changeDlg('${p.id}')">Send schedule change notices (${n})</button>`:'')(Object.keys(a.changes||{}).length)}
       <button class="btn ghost" onclick="composeDlg({audience:'program-confirmed',pid:'${p.id}'})">Email this program's instructors</button>
       ${(D.config||{}).zoom&&!isIP(p)&&['open','closed'].includes(p.status)?`<button class="btn ghost" onclick="zoomSync('${p.id}')">Find Zoom links</button>`:''}
@@ -721,8 +837,10 @@ function vSelection(){
           ${evalLink(e.iid,'History ↗')}
           <button class="btn link" onclick="editPick('${p.id}','${u.key}',${i},'remove')">Remove</button></div>`;}).join('')}</div>
         <div class="chips">${avail.length?avail.map(r=>`<span class="chipwrap"><button class="chip" onclick="addPick('${p.id}','${u.key}','${r.id}')">+ ${esc(r.name)}<span class="load">${loadCount(r.id)}</span></button>${evalUrl(r.id)?`<a class="chip-x" href="${esc(evalUrl(r.id))}" target="_blank" rel="noopener" title="Teaching history and evaluations for ${esc(r.name)}">↗</a>`:''}</span>`).join(''):`<span class="facts">${picked.length?'No other instructors marked available.':'Nobody has marked this available yet.'}</span>`}
-        <button class="chip na-maybe" onclick="pickAnyone('${p.id}','${u.key}')">+ Someone else</button></div></div></div>`;
+        <button class="chip na-maybe" onclick="pickAnyone('${p.id}','${u.key}')">+ Someone else</button></div>${u.s?facLine(p,u.s):''}</div></div>`;
   }
+  // Sessions instructors don't answer for (Welcome sessions, all-instructor sessions) still need a facilitator.
+  for(const s0 of p.sessions.filter(x=>!units(p).some(u=>u.s&&u.s.id===x.id))) h+=`<div class="slot"><div><div class="meta">${esc(s0.title)}</div><div class="facts">${esc(sTime(p,s0))}</div></div><div>${facLine(p,s0)}</div></div>`;
   const allAtt=p.sessions.filter(s=>s.allInstructors);
   if(allAtt.length) h+=`<div class="slot allrow"><div><div class="meta">${allAtt.map(s=>esc(s.title)).join(', ')}</div><div class="facts">${allAtt.map(s=>esc(sTime(p,s))).join('<br>')}</div></div><div class="facts" style="align-self:center">Every instructor confirmed for this cohort attends automatically. It is included in their selection email and calendar file.</div></div>`;
   h+=`</div><div class="card"><h3>Staffing notes</h3><p class="sub" style="margin-bottom:8px">Notes are for staff only and are kept with the date, time and who wrote them.</p>
@@ -752,15 +870,16 @@ function editPick(pid,key,i,field,val){ const d=draftOf(pid); if(field==='remove
 function bulkAdd(pid){ const iid=document.getElementById('bulk-i').value; if(!iid) return; const p=prog(pid), d=draftOf(pid); let n=0;
   for(const u of units(p)) if(eff(iid,p,u.key)==='A'){ d[u.key]=d[u.key]||[]; if(!d[u.key].some(e=>e.iid===iid)){ d[u.key].push({iid,role:d[u.key].length?'Co-instructor':'Lead',status:'Tentative'}); n++; } }
   U.assignDirty.add(pid); render(); toast(`Added to ${n} session${n===1?'':'s'}`); }
-function confirmAll(pid){ const d=draftOf(pid); Object.values(d).forEach(l=>l.forEach(e=>e.status='Confirmed')); U.assignDirty.add(pid); render(); }
+function confirmAll(pid){ const d=draftOf(pid); Object.values(d).forEach(l=>l.forEach(e=>e.status='Confirmed')); const f=fdraftOf(pid); Object.values(f.fslots).forEach(l=>l.forEach(e=>e.status='Confirmed')); U.assignDirty.add(pid); render(); }
 function pickAnyone(pid,key){
   const p=prog(pid), taken=(slots(pid)[key]||[]).map(e=>e.iid);
   openDlg('Add an instructor',`<p class="sub">Use this for someone who didn't mark this slot available, for example after a phone call. They'll be flagged so the gap is visible.</p><select id="any-i" style="width:100%">${active().filter(r=>!taken.includes(r.id)).map(r=>`<option value="${r.id}">${esc(r.name)}: ${eff(r.id,p,key)?LBL[eff(r.id,p,key)]:'not answered'}</option>`).join('')}</select>`,
     `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="addPick('${pid}','${key}',document.getElementById('any-i').value);closeDlg()">Add</button>`);
 }
 async function saveAssign(pid){
-  try{ const r=await api('admin/assignment/'+pid,{method:'PUT',body:JSON.stringify({slots:U.assignDraft[pid],baseUpdatedAt:(D.assignments[pid]||{}).updatedAt||null})});
-    D.assignments[pid]=r.assignment; delete U.assignDraft[pid]; U.assignDirty.delete(pid); render(); toast('Selections saved');}catch(e){toast(e.message);}
+  try{ const fs=fState(pid);
+    const r=await api('admin/assignment/'+pid,{method:'PUT',body:JSON.stringify({slots:U.assignDraft[pid]||(D.assignments[pid]||{}).slots||{},fslots:fs.fslots,flocks:fs.flocks,baseUpdatedAt:(D.assignments[pid]||{}).updatedAt||null})});
+    D.assignments[pid]=r.assignment; delete U.assignDraft[pid]; if(U.fdraft) delete U.fdraft[pid]; U.assignDirty.delete(pid); render(); toast('Selections saved');}catch(e){toast(e.message);}
 }
 async function addNote(pid){ const t=document.getElementById('note-txt').value.trim(); if(!t) return;
   try{ const r=await api('admin/note/'+pid,{method:'POST',body:JSON.stringify({text:t})}); D.assignments[pid]=D.assignments[pid]||{slots:{},history:[]}; D.assignments[pid].notes=r.notes; render(); toast('Note added');}catch(e){toast(e.message);} }
@@ -782,6 +901,7 @@ function announceDlg(){
     <div class="checks">${list.map(p=>`<label><input type="checkbox" class="ann-p" value="${p.id}" ${p.announcedAt?'':'checked'}><span><strong>${esc(p.title)}</strong>${p.cohort?' · '+esc(p.cohort):''} <span class="facts">${esc(fmtRange(p.startDate,p.endDate))}${p.announcedAt?' · announced '+esc(stamp(p.announcedAt)):''}</span></span></label>`).join('')}</div>
     <div class="f"><label for="mail-note" style="font-weight:600;font-size:12px">Personal note at the top (optional)</label><textarea id="mail-note" rows="3" placeholder="For example: We're especially looking for a lead for the Canadian cohort."></textarea></div><div class="mail-prev" id="mail-prev"></div>`,
     mailFoot('announce','Send announcement'));
+  facMailOpts('ann-f','Also email contract facilitators about the sessions open to them');
 }
 function remindDlg(){
   const list=D.programs.filter(p=>p.status==='open'&&!p.pastDeadline&&inQuarter(p));
@@ -790,6 +910,7 @@ function remindDlg(){
     <div class="checks">${list.map(p=>{const miss=active().filter(r=>(r.emails||[]).length&&elig(r,p)&&!answeredAny(r.id,p)).length;return `<label><input type="checkbox" class="rem-p" value="${p.id}" ${miss?'checked':''}><span><strong>${esc(p.title)}</strong>${p.cohort?' · '+esc(p.cohort):''} <span class="facts">${esc(dueText(p))} · ${miss} not yet responded</span></span></label>`;}).join('')}</div>
     <div class="f"><label for="mail-note" style="font-weight:600;font-size:12px">Personal note (optional)</label><textarea id="mail-note" rows="3"></textarea></div><div class="mail-prev" id="mail-prev"></div>`,
     mailFoot('remind','Send reminders'));
+  facMailOpts('rem-f','Also remind contract facilitators who haven\u2019t answered');
 }
 function selectionDlg(pid){
   const p=prog(pid), a=D.assignments[pid]||{};
@@ -799,7 +920,11 @@ function selectionDlg(pid){
       return `<label><input type="checkbox" class="sel-i" value="${iid}" ${['new','chg'].includes(ms.code)&&(r.emails||[]).length?'checked':''} ${(r.emails||[]).length?'':'disabled'}><span><strong>${esc(r.name)}</strong> <span class="facts">${n} slot${n>1?'s':''} · ${(r.emails||[])[0]?esc(r.emails[0]):'no email on file'} · </span><span class="mailst ${ms.code}">${esc(ms.text||'')}</span></span></label>`;}).join('')}</div>
     <div class="f"><label for="mail-note" style="font-weight:600;font-size:12px">Personal note (optional, same for everyone ticked)</label><textarea id="mail-note" rows="3" placeholder="For example: Instructor materials will follow two weeks before the first session."></textarea></div>
     <p class="facts">Preview shows the first ticked instructor's email. <a href="#" onclick="const x=document.querySelector('.sel-i:checked');if(x)downloadIcs('${pid}',x.value);return false">Download their calendar file</a> to check it.</p><div class="mail-prev" id="mail-prev"></div>`,
-    mailFoot('selection','Send to ticked instructors'));
+    mailFoot('selection','Send to everyone ticked'));
+  const fl=facConfirmed(pid), fn=a.fnotified||{};
+  if(fl.length){ document.getElementById('dlg-body').querySelector('.checks').insertAdjacentHTML('afterend',`<h3 style="margin:12px 0 6px;font-size:14px">Contract facilitators</h3><div class="checks">${fl.map(fid=>{const f=fac(fid)||{name:'(removed)',emails:[]};const n=Object.values(fState(pid).fslots).filter(l=>l.some(e=>e.fid===fid&&e.status==='Confirmed')).length;
+      return `<label class="fsel"><input type="checkbox" class="sel-f" value="${fid}" ${!fn[fid]&&(f.emails||[]).length?'checked':''} ${(f.emails||[]).length?'':'disabled'}><span><strong>${esc(f.name)}</strong> <span class="facts">${n} session${n>1?'s':''}${fn[fid]?' · emailed '+esc(fmtD(fn[fid].at.slice(0,10))):''}</span></span></label>`;}).join('')}</div>
+      <div class="f"><label style="font-weight:600;font-size:12px">Preview</label><select id="pv-kind"><option value="i">Instructor email</option><option value="f">Facilitator email</option></select></div>`); }
 }
 function changeDlg(pid){
   const p=prog(pid), a=D.assignments[pid]||{}, ch=a.changes||{};
@@ -882,14 +1007,16 @@ function cmRefresh(){
 function mailBody(kind){
   const vals=sel=>[...document.querySelectorAll(sel+':checked')].map(x=>x.value);
   const note=(document.getElementById('mail-note')||{}).value||'';
-  if(kind==='announce') return {pids:vals('.ann-p'),note};
-  if(kind==='remind') return {pids:vals('.rem-p'),note};
+  const fprev=(document.getElementById('pv-kind')||{}).value==='f';
+  const fchk=id=>!!(document.getElementById(id)||{}).checked;
+  if(kind==='announce') return {pids:vals('.ann-p'),note,facilitators:fchk('ann-f'),facPreview:fprev};
+  if(kind==='remind') return {pids:vals('.rem-p'),note,facilitators:fchk('rem-f'),facPreview:fprev};
   if(kind==='change') return {iids:vals('.chg-i'),note};
   if(kind==='custom'){const el=document.getElementById('cm-body');return {audience:U.cm.audience,pid:U.cm.pid,iids:U.cm.iids||[],subject:document.getElementById('cm-subj').value,body:el.innerText.trim(),bodyHtml:rteHtml(el),greet:document.getElementById('cm-greet').checked};}
-  return {iids:vals('.sel-i'),note};
+  return {iids:vals('.sel-i'),fids:vals('.sel-f'),note,facPreview:fprev};
 }
 async function mailGo(kind,mode){
-  const body=mailBody(kind), list=kind==='custom'?cmPeople().filter(r=>(r.emails||[]).length):(body.pids||body.iids);
+  const body=mailBody(kind), list=kind==='custom'?cmPeople().filter(r=>(r.emails||[]).length):(body.pids||[...(body.iids||[]),...(body.fids||[])]);
   if(kind==='custom'&&!String(body.subject).trim()){ toast('Add a subject.'); return; }
   if(kind==='custom'&&!String(body.body).trim()){ toast('Write a message.'); return; }
   if(!list.length){ toast(kind==='custom'?'Nobody matches these recipients.':['selection','change'].includes(kind)?'Tick at least one instructor.':'Tick at least one program.'); return; }
@@ -903,10 +1030,10 @@ async function mailGo(kind,mode){
       document.getElementById('mail-prev').scrollIntoView({behavior:'smooth',block:'nearest'}); return; }
     if(mode==='test'){ toast('Test sent to '+D.me.email); return; }
     if(kind==='announce') body.pids.forEach(id=>{const p=prog(id); if(p){p.announcedAt=r.announcedAt; p.announcedBy=D.me.email;}});
-    if(kind==='selection'||kind==='change'){ D.assignments[U.pid]=D.assignments[U.pid]||{slots:{}}; D.assignments[U.pid].notified=r.notified; if(r.changes) D.assignments[U.pid].changes=r.changes; }
+    if(kind==='selection'||kind==='change'){ D.assignments[U.pid]=D.assignments[U.pid]||{slots:{}}; D.assignments[U.pid].notified=r.notified; if(r.fnotified) D.assignments[U.pid].fnotified=r.fnotified; if(r.changes) D.assignments[U.pid].changes=r.changes; }
     closeDlg(); render();
     const bad=(r.results||[]).filter(x=>!x.ok);
-    toast(['selection','change'].includes(kind)?`Sent ${(r.results||[]).filter(x=>x.ok).length}${bad.length?`, ${bad.length} not sent: ${bad.map(b=>b.error).join('; ')}`:''}`:`Sent to ${r.sent} instructor${r.sent===1?'':'s'}`);
+    toast(['selection','change'].includes(kind)?`Sent ${(r.results||[]).filter(x=>x.ok).length}${bad.length?`, ${bad.length} not sent: ${bad.map(b=>b.error).join('; ')}`:''}`:`Sent to ${r.sent} instructor${r.sent===1?'':'s'}${r.sentFacilitators?` and ${r.sentFacilitators} facilitator${r.sentFacilitators===1?'':'s'}`:''}`);
   }catch(e){ toast(e.message); }
 }
 
