@@ -129,8 +129,8 @@ export async function onRequest({ request, env }) {
     const email = ident;
 
     const me = await whoAmI(email, env);
-    if (!me.isStaff && !me.instructor) {
-      return json({ error: `${email} isn't on the CLEAR Learning instructor list. Contact CLEAR Learning staff if you think this is a mistake.` }, 403);
+    if (!me.isStaff && !me.instructor && !me.facilitator) {
+      return json({ error: `${email} isn't on the CLEAR Learning instructor or facilitator list. Contact CLEAR Learning staff if you think this is a mistake.` }, 403);
     }
     me.origin = String(env.PORTAL_URL || url.origin).replace(/\/+$/, '');
 
@@ -144,6 +144,7 @@ export async function onRequest({ request, env }) {
       return json(await portal(env, me, url.searchParams.get('as')));
     }
 
+    if (a === 'response' && b && method === 'PUT' && me.facilitator) return json(await saveFacResponse(env, me.facilitator, b, body, me.email, false));
     if (a === 'response' && b && method === 'PUT') {
       if (!me.instructor) throw httpErr(403, 'Your email isn\'t linked to an instructor record, so there\'s nothing to save. Staff can enter answers from the dashboard.');
       return json(await saveResponse(env, me.instructor, b, body, me.email, false));
@@ -159,25 +160,28 @@ export async function onRequest({ request, env }) {
     // Program files (SharePoint, read live through Microsoft Graph). Staff previewing an instructor see exactly that
     // instructor's folders; staff on their own see every folder.
     if (a === 'files') {
-      let inst = me.instructor, viewingAs = false;
+      let inst = me.instructor || me.facilitator, viewingAs = false;
       const asId = url.searchParams.get('as');
       if (asId && me.isStaff) {
-        inst = me.roster.find(r => r.id === asId) || null; viewingAs = true;
-        if (!inst) throw httpErr(404, 'That instructor isn\'t on the roster.');
+        inst = me.roster.find(r => r.id === asId) || me.facilitators.find(r => r.id === asId) || null; viewingAs = true;
+        if (!inst) throw httpErr(404, 'That person isn\'t on the instructor or facilitator list.');
       }
       if (!inst && !me.isStaff) throw httpErr(403, 'Your email isn\'t linked to an instructor record.');
-      const who = { isStaff: !!me.isStaff, email: me.email, viewingAs,
+      const isFac = !!inst && me.facilitators.some(f => f.id === inst.id);
+      // Staff on their own can look at either library with ?library=facilitator.
+      const library = isFac || (!inst && url.searchParams.get('library') === 'facilitator') ? 'facilitator' : 'instructor';
+      const who = { isStaff: !!me.isStaff, email: me.email, viewingAs, library,
         name: inst ? inst.name : (me.staffName || me.email),
         key: inst ? inst.id : 'staff:' + String(me.email).toLowerCase(),
-        quals: inst ? (inst.quals || []) : '*' };
+        quals: inst ? (inst.quals || []) : '*', mods: inst && isFac ? (inst.mods || {}) : {} };
       return await ProgramFiles.handle(request, env, who);
     }
 
     if (a === 'headshot' && b && method === 'GET') return await getHeadshot(env, b, me);
     if (a === 'my-profile') {
-      let inst = me.instructor;
+      let inst = me.instructor || me.facilitator;
       const asId = url.searchParams.get('as');
-      if (asId && me.isStaff) inst = me.roster.find(r => r.id === asId) || null;
+      if (asId && me.isStaff) inst = me.roster.find(r => r.id === asId) || me.facilitators.find(r => r.id === asId) || null;
       if (!inst) throw httpErr(403, 'Your email isn\'t linked to an instructor record.');
       const preview = !!asId;
       if (!b && method === 'GET') return json(await getProfile(env, inst));
@@ -188,6 +192,7 @@ export async function onRequest({ request, env }) {
     }
 
     if (a === 'expense') {
+      if (me.facilitator) throw httpErr(403, 'Hours submission for facilitators isn\'t available yet.');
       if (!env.EXPENSE_WORKER_URL) throw httpErr(501, 'Expense submission isn\'t set up yet.');
       let inst = me.instructor;
       const asId = url.searchParams.get('as');
@@ -239,6 +244,8 @@ export async function onRequest({ request, env }) {
       }
 
       if (b === 'roster' && method === 'PUT') return json(await saveRoster(env, body, me));
+      if (b === 'facilitators' && method === 'PUT') return json(await saveFacilitators(env, body, me));
+      if (b === 'facilitation' && method === 'PUT') return json(await saveFacilitation(env, body, me));
       if (b === 'sync-access' && method === 'POST') return json(await syncAccess(env, await getJSON(env, 'roster', [])));
 
       if (b === 'staff' && method === 'PUT') {
@@ -341,17 +348,20 @@ async function whoAmI(email, env) {
   const staffRec = staff.find(s => String(s.email).toLowerCase() === email);
   const isAdmin = admins.includes(email);
   const instructor = roster.find(r => r.active !== false && (r.emails || []).some(e => String(e).toLowerCase() === email)) || null;
+  const facilitators = await getJSON(env, 'facilitators', []);
+  const facilitator = instructor ? null : (facilitators.find(r => r.active !== false && (r.emails || []).some(e => String(e).toLowerCase() === email)) || null);
   return {
     email, isAdmin, isStaff: isAdmin || !!staffRec,
     staffName: staffRec ? staffRec.name || '' : '',
-    instructor, roster, staff, admins
+    instructor, roster, staff, admins, facilitator, facilitators
   };
 }
 
 function publicMe(me) {
   return {
     email: me.email, isStaff: me.isStaff, isAdmin: me.isAdmin, staffName: me.staffName,
-    instructor: me.instructor ? { id: me.instructor.id, name: me.instructor.name } : null
+    instructor: me.instructor ? { id: me.instructor.id, name: me.instructor.name } : null,
+    facilitator: me.facilitator ? { id: me.facilitator.id, name: me.facilitator.name } : null
   };
 }
 
@@ -385,9 +395,12 @@ async function portal(env, me, asId) {
   let inst = me.instructor;
   let viewingAs = false;
   if (asId && me.isStaff) {
+    const f = me.facilitators.find(r => r.id === asId);
+    if (f) return facPortal(env, me, f, true);
     inst = me.roster.find(r => r.id === asId) || null;
     viewingAs = true;
   }
+  if (!inst && me.facilitator && !asId) return facPortal(env, me, me.facilitator, false);
   const today = todayET();
   const all = await listPrograms(env);
   const programs = all.filter(p => (p.status === 'open' || p.status === 'closed') && (!inst || eligible(inst, p))).map(p => withState(p, today));
@@ -422,7 +435,7 @@ async function portal(env, me, asId) {
 
   const reports = (await getJSON(env, 'reports:' + inst.id, [])).map(r => ({ ...r, url: me.origin + '/api/report/' + r.slug }));
   const expenses = env.EXPENSE_WORKER_URL ? { enabled: true, submitted: await getJSON(env, 'expsub:' + inst.id, []) } : { enabled: false, submitted: [] };
-  return { me: publicMe(me), instructor: instOut, viewingAs, today, programs, responses, assignments, reports, expenses };
+  return { me: publicMe(me), role: 'instructor', instructor: instOut, viewingAs, today, programs, responses, assignments, reports, expenses };
 }
 
 function assignRow(p, slot, s, role) {
@@ -485,6 +498,13 @@ async function adminData(env, me) {
     }
     responses[r.id] = out;
   });
+  const frecs = await Promise.all(me.facilitators.map(r => getJSON(env, 'fresp:' + r.id, { programs: {} })));
+  const fresponses = {};
+  me.facilitators.forEach((r, i) => {
+    const out = {};
+    for (const [pid, x] of Object.entries(frecs[i].programs || {})) out[pid] = { program: x.program || '', sessions: x.sessions || {}, comment: x.comment || '', updatedAt: x.updatedAt, updatedBy: x.updatedBy };
+    fresponses[r.id] = out;
+  });
   const assigns = await Promise.all(programs.map(p => getJSON(env, 'assign:' + p.id, null)));
   const assignments = {};
   programs.forEach((p, i) => {
@@ -500,6 +520,7 @@ async function adminData(env, me) {
     me: publicMe(me), today,
     zoom: { last: zoomLast, review: (zoomReview.items || []).filter(i => { const p = programs.find(x => x.id === i.pid); const s = p && (p.sessions || []).find(x => x.id === i.sid); return s && !s.zoomLink; }), missing: missingLinks(programs, today) },
     profiles,
+    facilitators: me.facilitators, fresponses, facilitation: await getJSON(env, 'config:facilitation', { defaultName: 'Zephir' }),
     programs, roster: me.roster, responses, assignments,
     staff: me.staff, admins: me.admins,
     accessSync: !!(env.CF_API_TOKEN && env.CF_ACCOUNT_ID && env.CF_ACCESS_GROUP_ID),
@@ -997,19 +1018,31 @@ ${noteBlock(body.note)}
     groups.get(k).emails.push(x.email);
   }
   const total = [...groups.values()].reduce((n, g) => n + g.emails.length, 0);
+  const fa = body.facilitators ? await facAnnounce(env, progs, body.note, me.origin, body.test, me) : { groups: new Map(), total: 0 };
+  if (body.preview && body.facPreview) {
+    const first = [...fa.groups.values()][0];
+    return { ok: true, preview: { ...(fa.build || (l => facAnnounceEmail(l, body.note, me.origin, body.test)))(first ? first.list : progs), count: fa.total, to: fa.total ? `${fa.total} approved facilitator${fa.total > 1 ? 's' : ''}` : 'No approved facilitators have sessions open in these programs' } };
+  }
   if (body.preview) {
     const first = [...groups.values()][0];
     return { ok: true, preview: { ...build(first ? first.list : progs), count: body.test ? 1 : total, to: body.test ? me.email : (total ? `${total} approved instructor${total > 1 ? 's' : ''} in ${groups.size} email${groups.size > 1 ? 's' : ''}, BCC from ${env.NOTIFY_MAILBOX || '(mailbox)'}${groups.size > 1 ? '. Each email lists only the programs its recipients are approved for; this preview shows the first.' : ''}` : 'Nobody is approved for these programs') } };
   }
-  if (body.test) { await sendMail(env, { to: [me.email], ...build(progs) }); return { ok: true, sent: 1, announcedAt: null }; }
-  if (!total) throw httpErr(400, 'No active instructors with an email address are approved for these programs.');
+  if (body.test) {
+    await sendMail(env, { to: [me.email], ...build(progs) });
+    if (body.facilitators) { const first = [...fa.groups.values()][0]; await sendMail(env, { to: [me.email], ...fa.build(first ? first.list : progs) }); }
+    return { ok: true, sent: body.facilitators ? 2 : 1, announcedAt: null };
+  }
+  if (!total && !fa.total) throw httpErr(400, 'No active instructors or facilitators with an email address are approved for these programs.');
   for (const g of groups.values()) {
     for (let i = 0; i < g.emails.length; i += 400) await sendMail(env, { to: [env.NOTIFY_MAILBOX], bcc: g.emails.slice(i, i + 400), ...build(g.list) });
   }
+  for (const g of fa.groups.values()) {
+    for (let i = 0; i < g.emails.length; i += 400) await sendMail(env, { to: [env.NOTIFY_MAILBOX], bcc: g.emails.slice(i, i + 400), ...fa.build(g.list) });
+  }
   const at = new Date().toISOString();
-  for (const p of progs) { p.announcedAt = at; p.announcedBy = me.email; await putJSON(env, 'program:' + p.id, p); }
-  await log(env, me.email, 'Announced programs by email', `${progs.map(p => p.title).join('; ')} to ${total} approved instructors`);
-  return { ok: true, sent: total, announcedAt: at };
+  for (const p of progs) { p.announcedAt = at; p.announcedBy = me.email; if (fa.total) p.facAnnouncedAt = at; await putJSON(env, 'program:' + p.id, p); }
+  await log(env, me.email, 'Announced programs by email', `${progs.map(p => p.title).join('; ')} to ${total} approved instructors${body.facilitators ? ` and ${fa.total} facilitators` : ''}`);
+  return { ok: true, sent: total, sentFacilitators: fa.total, announcedAt: at };
 }
 
 async function notifyRemind(env, body, me) {
@@ -1022,12 +1055,18 @@ async function notifyRemind(env, body, me) {
   // Only instructors who have not responded to a program at all are reminded about it.
   const missing = recips.map((x, i) => ({ ...x, list: progs.filter(p => eligible(x.r, p) && !(recs[i].programs || {})[p.id]) })).filter(x => x.list.length);
   const build = x => reminderEmail(x, body.note, me.origin, body.test, null);
+  const fmiss = body.facilitators ? await facMissing(env, me.facilitators, progs) : [];
+  if (body.preview && body.facPreview) {
+    const sample = fmiss[0] || { r: { name: 'Facilitator, Sample' }, list: progs };
+    return { ok: true, preview: { ...facReminderEmail(sample, body.note, me.origin, body.test, null), count: fmiss.length, to: fmiss.length ? `${fmiss.length} facilitators, one email each` : 'Nobody: every facilitator has answered' } };
+  }
   if (body.preview) {
     const sample = missing[0] || { r: { name: 'Instructor, Sample' }, list: progs };
     return { ok: true, preview: { ...build(sample), count: missing.length, to: missing.length ? `${missing.length} instructors, one email each` : 'Nobody: everyone has answered' } };
   }
   if (body.test) { const m = build(missing[0] || { r: { name: me.staffName || 'Staff' }, list: progs }); await sendMail(env, { to: [me.email], ...m }); return { ok: true, sent: 1 }; }
-  if (!missing.length) return { ok: true, sent: 0 };
+  for (const x of fmiss.slice(0, 40)) await sendMail(env, { to: [x.email], ...facReminderEmail(x, body.note, me.origin, false, null) });
+  if (!missing.length) return { ok: true, sent: 0, sentFacilitators: Math.min(fmiss.length, 40) };
   if (missing.length > 40) {
     // Stay under the Functions subrequest limit: one BCC message listing every program.
     const m = build({ r: { name: '' }, list: progs });
@@ -1036,8 +1075,8 @@ async function notifyRemind(env, body, me) {
   } else {
     for (const x of missing) await sendMail(env, { to: [x.email], ...build(x) });
   }
-  await log(env, me.email, 'Sent availability reminders', `${missing.length} instructors: ${progs.map(p => p.title).join('; ')}`);
-  return { ok: true, sent: missing.length };
+  await log(env, me.email, 'Sent availability reminders', `${missing.length} instructors${fmiss.length ? ', ' + Math.min(fmiss.length, 40) + ' facilitators' : ''}: ${progs.map(p => p.title).join('; ')}`);
+  return { ok: true, sent: missing.length, sentFacilitators: Math.min(fmiss.length, 40) };
 }
 
 async function notifySelection(env, pid, body, me) {
@@ -1046,10 +1085,26 @@ async function notifySelection(env, pid, body, me) {
   const key = 'assign:' + pid;
   const assign = await getJSON(env, key, { slots: {}, notes: [], history: [], notified: {} });
   const ids = Array.isArray(body.iids) ? body.iids : [];
-  if (!ids.length) throw httpErr(400, 'Choose at least one confirmed instructor to email.');
+  const fids = Array.isArray(body.fids) ? body.fids : [];
+  if (!ids.length && !fids.length) throw httpErr(400, 'Choose at least one confirmed instructor or facilitator to email.');
   const results = [];
   let previewOut = null;
-  for (const iid of ids) {
+  // Facilitators get their own template; they're handled after the instructors, in the same action.
+  const facOut = async () => {
+    for (const fid of fids) {
+      const f = me.facilitators.find(r => r.id === fid);
+      if (!f) { results.push({ fid, ok: false, error: 'Not on the facilitator list' }); continue; }
+      if (!(f.emails || []).length) { results.push({ fid, ok: false, error: `${f.name} has no email address` }); continue; }
+      const mine = facConfirmedFor(assign, fid);
+      if (!mine.length) { results.push({ fid, ok: false, error: `${f.name} has no confirmed sessions` }); continue; }
+      const m = facSelectionEmail(f, prog, sessionsFor(prog, mine), body.note, me.origin, body.test);
+      if (body.preview) { previewOut = { ...m, to: f.emails[0], count: ids.length + fids.length }; return; }
+      await sendMail(env, { to: body.test ? [me.email] : [f.emails[0]], ...m });
+      results.push({ fid, ok: true });
+      if (!body.test) { assign.fnotified = assign.fnotified || {}; assign.fnotified[fid] = { at: new Date().toISOString(), by: me.email, snap: snapFor(prog, mine), kind: 'selection' }; }
+    }
+  };
+  for (const iid of (body.preview && body.facPreview ? [] : ids)) {
     const inst = me.roster.find(r => r.id === iid);
     if (!inst) { results.push({ iid, ok: false, error: 'Not on the roster' }); continue; }
     if (!(inst.emails || []).length) { results.push({ iid, ok: false, error: `${inst.name} has no email address` }); continue; }
@@ -1069,15 +1124,17 @@ async function notifySelection(env, pid, body, me) {
       assign.notified[iid] = { at: new Date().toISOString(), by: me.email, sig: slotSig(mine), snap: snapFor(prog, mine), kind: 'selection' };
     }
   }
+  if (!(body.preview && previewOut)) await facOut();
   if (body.preview) return { ok: true, preview: previewOut || { subject: '', html: '<p>Nothing to preview.</p>', to: '', count: 0, error: (results[0] || {}).error } };
   if (!body.test && results.some(r => r.ok)) {
     const cur = await getJSON(env, key, { slots: {}, notes: [], history: [] });
-    cur.notified = { ...(cur.notified || {}), ...assign.notified };
+    cur.notified = { ...(cur.notified || {}), ...(assign.notified || {}) };
+    cur.fnotified = { ...(cur.fnotified || {}), ...(assign.fnotified || {}) };
     await putJSON(env, key, cur); // updatedAt untouched, like notes
-    await log(env, me.email, 'Emailed selection notices', `${prog.title}: ${results.filter(r => r.ok).length} sent`);
-    return { ok: true, results, notified: cur.notified, changes: scheduleChanges(prog, cur) };
+    await log(env, me.email, 'Emailed selection notices', `${prog.title}: ${results.filter(r => r.ok && r.iid).length} instructors, ${results.filter(r => r.ok && r.fid).length} facilitators`);
+    return { ok: true, results, notified: cur.notified, fnotified: cur.fnotified, changes: scheduleChanges(prog, cur) };
   }
-  return { ok: true, results, notified: assign.notified || {} };
+  return { ok: true, results, notified: assign.notified || {}, fnotified: assign.fnotified || {} };
 }
 
 function reminderEmail(x, note, origin, test, daysLeft) {
@@ -1118,8 +1175,11 @@ async function runReminders(env, url) {
     const mine = todo.filter(t => eligible(x.r, t.p) && !(recs[i].programs || {})[t.p.id]);
     return { ...x, list: mine.map(t => t.p), daysLeft: Math.min(...mine.map(t => t.n)) };
   }).filter(x => x.list.length);
-  const summary = todo.map(t => ({ program: label(t.p), daysBefore: t.n, nonResponders: missing.filter(m => m.list.includes(t.p)).length }));
-  if (dry) return { ok: true, today, days, dryRun: true, programs: summary, wouldSend: missing.length };
+  const facs = await getJSON(env, 'facilitators', []);
+  const fmiss = (await facMissing(env, facs, todo.map(t => t.p))).map(x => ({ ...x, daysLeft: Math.min(...x.list.map(p => (todo.find(t => t.p.id === p.id) || {}).n || 99)) }));
+  const summary = todo.map(t => ({ program: label(t.p), daysBefore: t.n, nonResponders: missing.filter(m => m.list.includes(t.p)).length, facilitators: fmiss.filter(m => m.list.some(p => p.id === t.p.id)).length }));
+  if (dry) return { ok: true, today, days, dryRun: true, programs: summary, wouldSend: missing.length, wouldSendFacilitators: fmiss.length };
+  for (const x of fmiss.slice(0, 30)) await sendMail(env, { to: [x.email], ...facReminderEmail(x, '', origin, false, x.daysLeft) });
   if (missing.length > 40) {
     const m = reminderEmail({ r: { name: '' }, list: todo.map(t => t.p) }, '', origin, false, Math.min(...todo.map(t => t.n)));
     await sendMail(env, { to: [env.NOTIFY_MAILBOX], bcc: missing.map(x => x.email), ...m });
@@ -1518,9 +1578,10 @@ async function saveAssignment(env, pid, body, me) {
     }));
     if (list.length) slots[k] = list;
   }
+  const fac = body.fslots !== undefined || body.flocks !== undefined ? cleanFacStaffing(prog, body, me) : { fslots: cur.fslots || {}, flocks: cur.flocks || {} };
   const history = (cur.history || []).slice(-29);
-  if (cur.updatedAt) history.push({ at: cur.updatedAt, by: cur.updatedBy, slots: cur.slots });
-  const next = { slots, notes: cur.notes || [], history, notified: cur.notified || {}, updatedAt: new Date().toISOString(), updatedBy: me.email };
+  if (cur.updatedAt) history.push({ at: cur.updatedAt, by: cur.updatedBy, slots: cur.slots, fslots: cur.fslots || {} });
+  const next = { slots, fslots: fac.fslots, flocks: fac.flocks, notes: cur.notes || [], history, notified: cur.notified || {}, fnotified: cur.fnotified || {}, updatedAt: new Date().toISOString(), updatedBy: me.email };
   await putJSON(env, key, next);
   await log(env, me.email, 'Updated selections', prog.title);
   return { ok: true, assignment: { ...next, changes: scheduleChanges(prog, next) } };
@@ -1536,6 +1597,197 @@ async function addNote(env, pid, body, by) {
   cur.notes = [...(cur.notes || []), { at: new Date().toISOString(), by, text }];
   await putJSON(env, key, cur); // notes don't change updatedAt, so they never block a selection save
   return { ok: true, notes: cur.notes };
+}
+
+/* ======================= Contract facilitators ======================= */
+// Contract facilitators work like instructors: they mark the sessions they'd like to facilitate, and staff confirm them
+// on the Selection tab. Every session's facilitator is the default staff facilitator (Zephir unless changed) until a
+// contract facilitator is confirmed. Locked sessions are staffed by CLEAR and never offered to contract facilitators;
+// Welcome and Program Review sessions are locked unless staff unlock them. Facilitators never see who the default is.
+const FAC_ROLES = ['Facilitator', 'Co-facilitator', 'Backup'];
+// Module approvals match on a session's core title, so "Interviewing Techniques - Instructor-Led Session",
+// "Live Session - Interviewing Techniques" and "Interviewing Techniques" all count as the same module.
+const normTitle = t => String(t || '').toLowerCase()
+  .replace(/\s*[-–—:]\s*(instructor[- ]?led|live)(\s+session)?\s*$/, '')
+  .replace(/^\s*live\s+session\s*[-–—:]\s*/, '')
+  .replace(/\s+(session\s+)?with\s+(the\s+)?instructor\s*$/, '')
+  .replace(/[^a-z0-9&]+/g, ' ').replace(/\s+/g, ' ').trim();
+const facLockedByDefault = s => /welcome|program review/i.test(s.title || '');
+function facLocked(assign, s) { const L = (assign && assign.flocks) || {}; return Object.prototype.hasOwnProperty.call(L, s.id) ? !!L[s.id] : facLockedByDefault(s); }
+// Program approvals work like Teaching approvals (none recorded = every program). Module approvals, when set for a
+// program, limit it to those sessions or modules (matched by title, so they carry across cohorts).
+function facApproved(fac, prog, s) {
+  const q = fac.quals || [], key = courseKeyOf(prog);
+  if (q.length && key && !q.includes(key) && !(key === 'NCITWS' && q.some(k => /^NCITW/.test(k)))) return false;
+  const mods = (fac.mods || {})[key];
+  return !(mods && mods.length && s && !mods.includes(normTitle(s.title)));
+}
+function facAvailable(fac, prog, assign) { return (prog.sessions || []).filter(s => !facLocked(assign, s) && facApproved(fac, prog, s)); }
+const facActive = list => list.filter(r => r.active !== false && (r.emails || []).length).map(r => ({ r, email: r.emails[0] }));
+async function facAssigns(env, progs) { const a = await Promise.all(progs.map(p => getJSON(env, 'assign:' + p.id, null))); const m = {}; progs.forEach((p, i) => m[p.id] = a[i]); return m; }
+
+async function facPortal(env, me, fac, viewingAs) {
+  const today = todayET();
+  const all = (await listPrograms(env)).filter(p => p.status !== 'draft');
+  const amap = await facAssigns(env, all);
+  const programs = [];
+  for (const p of all.filter(p => p.status === 'open' || p.status === 'closed')) {
+    const av = facAvailable(fac, p, amap[p.id]);
+    if (av.length) programs.push(withState({ ...p, sessions: av.map(s => ({ ...s, allInstructors: false })) }, today));
+  }
+  const rec = await getJSON(env, 'fresp:' + fac.id, { programs: {} });
+  const responses = {};
+  for (const [pid, r] of Object.entries(rec.programs || {})) responses[pid] = { program: r.program || '', sessions: r.sessions || {}, comment: r.comment || '', updatedAt: r.updatedAt, updatedBy: r.updatedBy };
+  // Assignments, with the instructors confirmed for each session and their phone numbers (from their profiles).
+  const assignments = [], needProfiles = new Set();
+  for (const p of all) {
+    const as = amap[p.id];
+    if (!as || !as.fslots) continue;
+    for (const [sid, list] of Object.entries(as.fslots)) {
+      const mine = (list || []).find(e => e.fid === fac.id && e.status === 'Confirmed');
+      const s = (p.sessions || []).find(x => x.id === sid);
+      if (!mine || !s) continue;
+      const iids = [...new Set([...(as.slots || {})[sid] || [], ...(as.slots || {})[PROGRAM_SLOT] || []].filter(e => e.status === 'Confirmed').map(e => e.iid))];
+      iids.forEach(i => needProfiles.add(i));
+      assignments.push({ ...assignRow(p, sid, s, mine.role || 'Facilitator'), instructorIds: iids });
+    }
+  }
+  const ids = [...needProfiles], profs = await Promise.all(ids.map(i => getJSON(env, 'profile:' + i, null)));
+  const pmap = {}; ids.forEach((i, k) => pmap[i] = profs[k]);
+  for (const x of assignments) {
+    x.instructors = x.instructorIds.map(i => { const r = me.roster.find(y => y.id === i); const pr = pmap[i];
+      if (!r) return null;
+      const nm = pr && pr.first ? `${pr.preferred || pr.first} ${pr.last}` : (r.name.includes(',') ? r.name.split(',').map(s => s.trim()).reverse().join(' ') : r.name);
+      return { name: nm, phone: (pr && pr.phone) || '' }; }).filter(Boolean);
+    delete x.instructorIds;
+  }
+  assignments.sort((x, y) => String(x.date).localeCompare(String(y.date)) || toMin(x.start) - toMin(y.start));
+  return { me: publicMe(me), role: 'facilitator', instructor: { id: fac.id, name: fac.name }, viewingAs, today, programs, responses, assignments, reports: [], expenses: { enabled: false, submitted: [] } };
+}
+
+async function saveFacResponse(env, fac, pid, body, by, staffEntry) {
+  const prog = await getJSON(env, 'program:' + pid, null);
+  if (!prog || prog.status === 'draft') throw httpErr(404, 'That program isn\'t available.');
+  if (!staffEntry && prog.status !== 'open') throw httpErr(409, 'Responses for this program are closed. Contact CLEAR Learning staff to make a change.');
+  if (!staffEntry && pastDeadline(prog)) throw httpErr(409, `The response deadline for this program (${longDate(prog.deadline)}) has passed. Contact CLEAR Learning staff to make a change.`);
+  const av = facAvailable(fac, prog, await getJSON(env, 'assign:' + pid, null));
+  if (!av.length) throw httpErr(403, 'This program has no sessions open to you. Contact CLEAR Learning staff if you would like to facilitate it.');
+  body = body || {};
+  const program = cleanVal(body.program), sessions = {};
+  for (const s of av) { const v = cleanVal(body.sessions && body.sessions[s.id]); if (v) sessions[s.id] = v; }
+  const comment = String(body.comment || '').slice(0, 2000);
+  const key = 'fresp:' + fac.id, rec = await getJSON(env, key, { programs: {} });
+  rec.programs = rec.programs || {};
+  const prev = rec.programs[pid], history = prev ? (prev.history || []).slice(-24) : [];
+  if (prev) history.push({ at: prev.updatedAt, by: prev.updatedBy, program: prev.program, sessions: prev.sessions, comment: prev.comment });
+  const now = new Date().toISOString();
+  rec.programs[pid] = { program, sessions, comment, updatedAt: now, updatedBy: by, firstAt: prev ? (prev.firstAt || prev.updatedAt) : now, history };
+  await putJSON(env, key, rec);
+  await log(env, by, prev ? 'Changed facilitation availability' : 'Saved facilitation availability', `${fac.name}: ${prog.title}`);
+  return { ok: true, response: { program, sessions, comment, updatedAt: now, updatedBy: by } };
+}
+
+// Staff: the facilitator list and approvals.
+async function saveFacilitators(env, body, me) {
+  const list = Array.isArray(body.facilitators) ? body.facilitators : [];
+  const seen = new Set();
+  const out = [];
+  for (const r of list) {
+    const name = String(r.name || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+    if (!name) continue;
+    const emails = [...new Set((Array.isArray(r.emails) ? r.emails : String(r.emails || '').split(/[,;\s]+/)).map(e => String(e).trim().toLowerCase()).filter(e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))];
+    for (const e of emails) {
+      if (me.roster.some(x => (x.emails || []).map(y => String(y).toLowerCase()).includes(e))) throw httpErr(400, `${e} is already an instructor's email. A person can be an instructor or a facilitator, not both.`);
+      if (seen.has(e)) throw httpErr(400, `${e} is listed for two facilitators.`);
+      seen.add(e);
+    }
+    const quals = [...new Set((Array.isArray(r.quals) ? r.quals : []).filter(k => LOGO_NAMES.includes(k)))];
+    const mods = {};
+    for (const [k, v] of Object.entries(r.mods || {})) if (LOGO_NAMES.includes(k) && Array.isArray(v) && v.length) mods[k] = [...new Set(v.map(normTitle).filter(Boolean))].slice(0, 60);
+    out.push({ id: /^f_[a-z0-9]+$/i.test(r.id || '') ? r.id : 'f_' + rid('').replace(/^_/, ''), name, emails, active: r.active !== false, notes: String(r.notes || '').slice(0, 500), quals, mods });
+  }
+  await putJSON(env, 'facilitators', out);
+  await log(env, me.email, 'Updated the facilitator list', `${out.length} facilitators`);
+  return { ok: true, facilitators: out };
+}
+async function saveFacilitation(env, body, me) {
+  const defaultName = String(body.defaultName || '').trim().slice(0, 120) || 'Zephir';
+  const cfg = { defaultName, updatedAt: new Date().toISOString(), updatedBy: me.email };
+  await putJSON(env, 'config:facilitation', cfg);
+  await log(env, me.email, 'Changed the default facilitator', defaultName);
+  return { ok: true, facilitation: cfg };
+}
+// Facilitator picks and locks, saved with the instructor selections.
+function cleanFacStaffing(prog, body, me) {
+  const valid = new Set((prog.sessions || []).map(s => s.id));
+  const fids = new Set(me.facilitators.map(f => f.id));
+  const fslots = {}, flocks = {};
+  for (const [sid, arr] of Object.entries(body.fslots || {})) {
+    if (!valid.has(sid)) continue;
+    const seen = new Set();
+    const list = (arr || []).map(e => e.staff
+      ? { staff: String(e.staff).trim().slice(0, 120), role: FAC_ROLES.includes(e.role) ? e.role : 'Facilitator', status: 'Confirmed' }
+      : (fids.has(e.fid) ? { fid: e.fid, role: FAC_ROLES.includes(e.role) ? e.role : 'Facilitator', status: e.status === 'Confirmed' ? 'Confirmed' : 'Tentative' } : null))
+      .filter(e => e && (e.staff || e.fid) && !seen.has(e.staff || e.fid) && seen.add(e.staff || e.fid));
+    if (list.length) fslots[sid] = list;
+  }
+  for (const [sid, v] of Object.entries(body.flocks || {})) if (valid.has(sid)) flocks[sid] = !!v;
+  return { fslots, flocks };
+}
+const facConfirmedFor = (assign, fid) => Object.entries((assign && assign.fslots) || {}).flatMap(([slot, l]) => (l || []).filter(e => e.fid === fid && e.status === 'Confirmed').map(e => ({ slot, role: e.role })));
+
+function facSelectionEmail(fac, prog, sessions, note, origin, test) {
+  const n = sessions.length;
+  return {
+    subject: (test ? '[TEST] ' : '') + `You're confirmed to facilitate: ${prog.title}${prog.cohort ? ' (' + prog.cohort + ')' : ''}`,
+    html: emailShell("You've been selected to facilitate", `<p>Hello ${H(firstName(fac.name))},</p>
+<p>Thank you for sharing your availability. You're confirmed to facilitate in <strong>${H(prog.title)}</strong>${prog.cohort ? `, ${H(prog.cohort)}` : ''}${n ? ` (${n} session${n > 1 ? 's' : ''})` : ''}.</p>${noteBlock(note)}
+<p>Your sessions, dates and times are on the My assignments page of the Instructor Portal, with the instructors for each session and their contact numbers. Zoom links appear there before the first session, and you can download calendar files from that page.</p>`, origin, { label: 'View your assignments', href: origin + '/#/mine' })
+  };
+}
+function facAnnounceEmail(list, note, origin, test) {
+  return {
+    subject: (test ? '[TEST] ' : '') + (list.length === 1 ? `Sessions available to facilitate: ${list[0].title}` : `${list.length} CLEAR Learning programs have sessions available to facilitate`),
+    html: emailShell('Sessions are available to facilitate', `<p>Hello,</p>
+<p>CLEAR Learning has posted sessions that are available for you to facilitate. Please mark the sessions you would like to facilitate, and those you are not available for, by each program's response date. You can update your answers in the portal at any time before that date.</p>
+${noteBlock(note)}
+<table style="width:100%;border-collapse:collapse">${list.map(programLine).join('')}</table>
+<p style="font-size:13px;color:#6E6B70">All session times are listed in Eastern Time. In the portal, you have the option to change the time zone to one of your choosing.</p>`, origin)
+  };
+}
+function facReminderEmail(x, note, origin, test, daysLeft) {
+  const many = x.list.length > 1;
+  const lead = daysLeft == null ? `We haven't received your availability yet for the program${many ? 's' : ''} below.`
+    : `The response date for the program${many ? 's' : ''} below is ${daysLeft === 1 ? 'tomorrow' : 'in ' + daysLeft + ' days'}, and we haven't received your availability yet.`;
+  return {
+    subject: (test ? '[TEST] ' : '') + 'Reminder: sessions are available to facilitate',
+    html: emailShell('Your availability is still needed', `<p>Hello${x.r.name ? ' ' + H(firstName(x.r.name)) : ''},</p>
+<p>${lead} Marking sessions "Not available" is just as helpful to our planning as marking them available.</p>${noteBlock(note)}
+<table style="width:100%;border-collapse:collapse">${x.list.map(programLine).join('')}</table>`, origin)
+  };
+}
+// The programs (each narrowed to the sessions this facilitator can see) a facilitator should hear about.
+function facListFor(fac, progs, amap) {
+  return progs.map(p => ({ p, av: facAvailable(fac, p, amap[p.id]) })).filter(x => x.av.length).map(x => ({ ...x.p, sessions: x.av.map(s => ({ ...s, allInstructors: false })) }));
+}
+async function facAnnounce(env, progs, note, origin, test, me) {
+  const amap = await facAssigns(env, progs);
+  const groups = new Map();
+  for (const x of facActive(me.facilitators)) {
+    const list = facListFor(x.r, progs, amap);
+    if (!list.length) continue;
+    const k = list.map(p => p.id + ':' + p.sessions.length).join('|');
+    if (!groups.has(k)) groups.set(k, { list, emails: [] });
+    groups.get(k).emails.push(x.email);
+  }
+  const total = [...groups.values()].reduce((n, g) => n + g.emails.length, 0);
+  return { groups, total, build: list => facAnnounceEmail(list, note, origin, test) };
+}
+async function facMissing(env, facilitators, progs) {
+  const amap = await facAssigns(env, progs);
+  const recips = facActive(facilitators);
+  const recs = await Promise.all(recips.map(x => getJSON(env, 'fresp:' + x.r.id, { programs: {} })));
+  return recips.map((x, i) => ({ ...x, list: facListFor(x.r, progs, amap).filter(p => !(recs[i].programs || {})[p.id]) })).filter(x => x.list.length);
 }
 
 /* ======================= Welcome email details ======================= */
@@ -1946,6 +2198,10 @@ function b64urlText(s) { return new TextDecoder().decode(b64urlBytes(s)); }
      /api/files/log.csv         staff only: every download, newest first
      /api/files/check           staff only: setup diagnostics and which folders each course key opens
 
+   Contract facilitators read a separate folder (FAC_FILES_SHARE_URL, or FAC_GRAPH_DRIVE_ID and FAC_GRAPH_FOLDER_ID)
+   with the same course mapping. Where a facilitator has module approvals for a program, only that program folder's
+   own files and the module subfolders whose names match an approved module are shown.
+
    Variables (Pages project > Settings > Variables and Secrets)
      GRAPH_TENANT_ID            Directory (tenant) ID of the Entra app registration
      GRAPH_CLIENT_ID            Application (client) ID
@@ -2003,7 +2259,7 @@ const ProgramFiles = (() => {
     const path = new URL(request.url).pathname.replace(/\/+$/, '');
     if (request.method !== 'GET') return json({ error: 'Method not allowed.' }, 405);
     try {
-      if (!configured(env)) throw fail("Program files aren't set up yet.", 503, true);
+      if (!configured(env, who.library)) throw fail("Program files aren't set up yet.", 503, true);
       if (path === '/api/files') return await listRoute(env, who);
       if (path.startsWith('/api/files/download/')) return await downloadRoute(env, who, decodeURIComponent(path.slice(20)));
       if (path === '/api/files/log.csv') return await logRoute(env, who);
@@ -2021,7 +2277,7 @@ const ProgramFiles = (() => {
 
   async function listRoute(env, who) {
     const [data, seen] = await Promise.all([listAllowed(env, who), seenMap(env, who.key)]);
-    const body = { programs: data.programs.map(p => ({ name: p.name, files: p.files })), seen };
+    const body = { programs: data.programs.map(p => ({ name: p.name, files: p.files })), seen, library: who.library || 'instructor' };
     if (who.isStaff) body.staff = { secretExpires: env.GRAPH_SECRET_EXPIRES || null };
     return json(body);
   }
@@ -2041,7 +2297,7 @@ const ProgramFiles = (() => {
     const now = new Date().toISOString();
     const writes = [env.IA_KV.put(`pflog:${String(9e15 - Date.now()).padStart(16, '0')}:${crypto.randomUUID().slice(0, 8)}`, '', {
       expirationTtl: LOG_TTL,
-      metadata: { at: now, by: who.email, for: cut(who.name || who.email, 120), program: cut(program.name), file: cut(item.name), preview: !!who.viewingAs }
+      metadata: { at: now, by: who.email, for: cut(who.name || who.email, 120), program: cut(program.name), file: cut(item.name), preview: !!who.viewingAs, library: who.library || 'instructor' }
     })];
     if (!who.viewingAs) writes.push(env.IA_KV.put(`pfseen:${who.key}:${id}`, '', { metadata: { at: now, mod: item.lastModifiedDateTime } }));
     await Promise.all(writes);
@@ -2051,13 +2307,13 @@ const ProgramFiles = (() => {
   async function logRoute(env, who) {
     if (!who.isStaff) throw fail('Staff only.', 403, true);
     const et = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', dateStyle: 'short', timeStyle: 'short' });
-    const rows = [['Date and time (ET)', 'Downloaded by', 'Instructor', 'Program', 'File', 'Staff preview']];
+    const rows = [['Date and time (ET)', 'Downloaded by', 'For', 'Library', 'Program', 'File', 'Staff preview']];
     let cursor, pages = 0;
     do {
       const r = await env.IA_KV.list({ prefix: 'pflog:', cursor });
       for (const k of r.keys) {
         const m = k.metadata || {};
-        rows.push([m.at ? et.format(new Date(m.at)) : '', m.by, m.for, m.program, m.file, m.preview ? 'Yes' : '']);
+        rows.push([m.at ? et.format(new Date(m.at)) : '', m.by, m.for, m.library === 'facilitator' ? 'Facilitator' : 'Instructor', m.program, m.file, m.preview ? 'Yes' : '']);
       }
       cursor = r.list_complete ? null : r.cursor;
     } while (cursor && ++pages < 20);
@@ -2075,9 +2331,11 @@ const ProgramFiles = (() => {
     try {
       await token(env);
       out.microsoftSignIn = 'ok';
-      const rt = await root(env);
-      out.folder = { name: rt.name || '(pinned by ID)', GRAPH_DRIVE_ID: rt.driveId, GRAPH_FOLDER_ID: rt.id,
-        foundBy: env.GRAPH_DRIVE_ID && env.GRAPH_FOLDER_ID ? 'GRAPH_DRIVE_ID and GRAPH_FOLDER_ID' : 'FILES_SHARE_URL' };
+      const rt = await root(env, who.library);
+      const px = who.library === 'facilitator' ? 'FAC_' : '';
+      out.library = who.library || 'instructor';
+      out.folder = { name: rt.name || '(pinned by ID)', [px + 'GRAPH_DRIVE_ID']: rt.driveId, [px + 'GRAPH_FOLDER_ID']: rt.id,
+        foundBy: env[px + 'GRAPH_DRIVE_ID'] && env[px + 'GRAPH_FOLDER_ID'] ? px + 'GRAPH_DRIVE_ID and ' + px + 'GRAPH_FOLDER_ID' : px + 'FILES_SHARE_URL' };
       const top = (await children(env, rt.driveId, rt.id)).filter(x => x.folder && !hidden(x.name)).sort(byName);
       out.programFolders = top.map(f => {
         const keys = coursesFor(f.name);
@@ -2095,29 +2353,40 @@ const ProgramFiles = (() => {
   /* ---------- SharePoint ---------- */
 
   async function listAllowed(env, who) {
-    const rt = await root(env);
+    const rt = await root(env, who.library);
     const top = (await children(env, rt.driveId, rt.id)).filter(x => x.folder && !hidden(x.name));
     const mine = top.filter(f => visible(f.name, who.quals)).sort(byName);
-    const programs = await Promise.all(mine.map(async f => ({ name: f.name, id: f.id, files: await walk(env, rt.driveId, f.id, '', 1) })));
+    const programs = await Promise.all(mine.map(async f => ({ name: f.name, id: f.id, files: await walk(env, rt.driveId, f.id, '', 1, moduleFilter(f.name, who)) })));
     return { root: rt, programs };
   }
+  // Facilitators with module approvals for a program see its own files plus only the matching module subfolders.
+  function moduleFilter(folder, who) {
+    const keys = coursesFor(folder) || [], mods = [...new Set(keys.flatMap(k => (who.mods || {})[k] || []))];
+    if (!mods.length) return null;
+    const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const ms = mods.map(norm);
+    return name => { const n = norm(name); return ms.some(m => m && (n.includes(m) || m.includes(n))); };
+  }
 
-  async function walk(env, driveId, id, group, depth) {
-    const items = (await children(env, driveId, id)).filter(x => !hidden(x.name)).sort(byName);
+  async function walk(env, driveId, id, group, depth, subFilter) {
+    let items = (await children(env, driveId, id)).filter(x => !hidden(x.name)).sort(byName);
+    if (subFilter && depth === 1) items = items.filter(x => x.file || subFilter(x.name));
     const files = items.filter(x => x.file).map(x => ({ id: x.id, name: x.name, size: x.size || 0, modified: x.lastModifiedDateTime, group }));
     if (depth >= MAX_DEPTH) return files;
     const nested = await Promise.all(items.filter(x => x.folder).map(s => walk(env, driveId, s.id, group ? `${group} / ${s.name}` : s.name, depth + 1)));
     return files.concat(...nested);
   }
 
-  async function root(env) {
-    if (env.GRAPH_DRIVE_ID && env.GRAPH_FOLDER_ID) return { driveId: env.GRAPH_DRIVE_ID, id: env.GRAPH_FOLDER_ID };
-    const cached = await env.IA_KV.get('pfcfg:root', 'json');
-    if (cached && cached.src === env.FILES_SHARE_URL) return cached;
-    const enc = 'u!' + btoa(String(env.FILES_SHARE_URL).trim()).replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-');
+  async function root(env, library) {
+    const px = library === 'facilitator' ? 'FAC_' : '';
+    if (env[px + 'GRAPH_DRIVE_ID'] && env[px + 'GRAPH_FOLDER_ID']) return { driveId: env[px + 'GRAPH_DRIVE_ID'], id: env[px + 'GRAPH_FOLDER_ID'] };
+    const src = env[px + 'FILES_SHARE_URL'], ck = px ? 'pfcfg:root:facilitator' : 'pfcfg:root';
+    const cached = await env.IA_KV.get(ck, 'json');
+    if (cached && cached.src === src) return cached;
+    const enc = 'u!' + btoa(String(src).trim()).replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-');
     const j = await graph(env, `/shares/${enc}/driveItem?$select=id,name,parentReference`);
-    const rt = { driveId: j.parentReference.driveId, id: j.id, name: j.name, src: env.FILES_SHARE_URL };
-    await env.IA_KV.put('pfcfg:root', JSON.stringify(rt), { expirationTtl: 86400 });
+    const rt = { driveId: j.parentReference.driveId, id: j.id, name: j.name, src };
+    await env.IA_KV.put(ck, JSON.stringify(rt), { expirationTtl: 86400 });
     return rt;
   }
 
@@ -2173,7 +2442,8 @@ const ProgramFiles = (() => {
   const byName = (a, b) => a.name.localeCompare(b.name, 'en', { numeric: true, sensitivity: 'base' });
   const cut = (s, n = 200) => String(s || '').slice(0, n);
   const csvCell = v => { const s = String(v ?? ''); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const configured = env => env.GRAPH_TENANT_ID && env.GRAPH_CLIENT_ID && env.GRAPH_CLIENT_SECRET && (env.FILES_SHARE_URL || (env.GRAPH_DRIVE_ID && env.GRAPH_FOLDER_ID));
+  const configured = (env, library) => { const px = library === 'facilitator' ? 'FAC_' : '';
+    return env.GRAPH_TENANT_ID && env.GRAPH_CLIENT_ID && env.GRAPH_CLIENT_SECRET && (env[px + 'FILES_SHARE_URL'] || (env[px + 'GRAPH_DRIVE_ID'] && env[px + 'GRAPH_FOLDER_ID'])); };
   function fail(message, status = 502, expose = false) { const e = new Error(message); e.status = status; e.expose = expose; return e; }
 
   return { handle };
