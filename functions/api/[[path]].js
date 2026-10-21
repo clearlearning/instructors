@@ -109,6 +109,9 @@ export async function onRequest({ request, env }) {
   const url = new URL(request.url);
   const parts = url.pathname.replace(/^\/api\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
   const method = request.method.toUpperCase();
+  // Facilitators use /api/f/… (the Facilitator Portal at /facilitator), so a separate Access application can protect it.
+  const facMode = parts[0] === 'f';
+  if (facMode) parts.shift();
 
   try {
     if (!env.IA_KV) throw httpErr(500, 'The KV binding IA_KV is missing on this Pages project. Add it under Settings > Bindings, then redeploy.');
@@ -133,6 +136,11 @@ export async function onRequest({ request, env }) {
       return json({ error: `${email} isn't on the CLEAR Learning instructor or facilitator list. Contact CLEAR Learning staff if you think this is a mistake.` }, 403);
     }
     me.origin = String(env.PORTAL_URL || url.origin).replace(/\/+$/, '');
+    me.facMode = facMode;
+    // Each portal refuses the other role; staff can use both (for previews).
+    if (facMode && !me.isStaff && !me.facilitator) return json({ error: 'This portal is for CLEAR Learning facilitators. Instructors sign in at the Instructor Portal.' }, 403);
+    if (!facMode && !me.isStaff && me.facilitator) return json({ error: 'Facilitators use the Facilitator Portal at /facilitator.' }, 403);
+    if (facMode && parts[0] === 'admin') return json({ error: 'Not available here.' }, 403);
 
     const body = (method === 'GET' || method === 'DELETE') ? null : await request.json().catch(() => ({}));
     const [a, b, c, d] = parts;
@@ -167,13 +175,12 @@ export async function onRequest({ request, env }) {
         if (!inst) throw httpErr(404, 'That person isn\'t on the instructor or facilitator list.');
       }
       if (!inst && !me.isStaff) throw httpErr(403, 'Your email isn\'t linked to an instructor record.');
-      const isFac = !!inst && me.facilitators.some(f => f.id === inst.id);
-      // Staff on their own can look at either library with ?library=facilitator.
-      const library = isFac || (!inst && url.searchParams.get('library') === 'facilitator') ? 'facilitator' : 'instructor';
-      const who = { isStaff: !!me.isStaff, email: me.email, viewingAs, library,
+      // Instructors and facilitators read the same library, so materials are kept in one place.
+      // Facilitators see the folders for the programs they're approved to facilitate.
+      const who = { isStaff: !!me.isStaff, email: me.email, viewingAs, library: 'instructor',
         name: inst ? inst.name : (me.staffName || me.email),
         key: inst ? inst.id : 'staff:' + String(me.email).toLowerCase(),
-        quals: inst ? (inst.quals || []) : '*', mods: inst && isFac ? (inst.mods || {}) : {} };
+        quals: inst ? (inst.quals || []) : '*', mods: {} };
       return await ProgramFiles.handle(request, env, who);
     }
 
@@ -207,8 +214,15 @@ export async function onRequest({ request, env }) {
     }
 
     if (a === 'my-ics' && b && method === 'GET') {
-      let inst = me.instructor;
       const asId = url.searchParams.get('as');
+      const facPerson = asId && me.isStaff ? me.facilitators.find(r => r.id === asId) : (facMode ? me.facilitator : null);
+      if (facPerson) {
+        const prog = await getJSON(env, 'program:' + b, null);
+        const mine = facConfirmedFor(await getJSON(env, 'assign:' + b, null), facPerson.id);
+        if (!prog || !mine.length) throw httpErr(404, 'You have no confirmed sessions in this program.');
+        return icsResponse(buildIcs(prog, sessionsFor(prog, mine)), fileSafe(prog.title + (prog.cohort ? ' ' + prog.cohort : '')) + '.ics');
+      }
+      let inst = me.instructor;
       if (asId && me.isStaff) inst = me.roster.find(r => r.id === asId) || null;
       if (!inst) throw httpErr(403, 'Your email isn\'t linked to an instructor record.');
       const out = await instructorIcs(env, b, inst, true);
@@ -394,6 +408,11 @@ function trackOf(p) { return (p.trackSet && TRACKS.includes(p.trackSet) && p.tra
 async function portal(env, me, asId) {
   let inst = me.instructor;
   let viewingAs = false;
+  if (me.facMode) {
+    const f = asId && me.isStaff ? me.facilitators.find(r => r.id === asId) : me.facilitator;
+    if (f) return facPortal(env, me, f, !!(asId && me.isStaff));
+    return { me: publicMe(me), role: 'facilitator', instructor: null, viewingAs: !!asId, today: todayET(), programs: [], responses: {}, assignments: [], reports: [], expenses: { enabled: false, submitted: [] } };
+  }
   if (asId && me.isStaff) {
     const f = me.facilitators.find(r => r.id === asId);
     if (f) return facPortal(env, me, f, true);
@@ -1754,7 +1773,7 @@ function facSelectionEmail(fac, prog, sessions, note, origin, test) {
     subject: (test ? '[TEST] ' : '') + `You're confirmed to facilitate: ${prog.title}${prog.cohort ? ' (' + prog.cohort + ')' : ''}`,
     html: emailShell("You've been selected to facilitate", `<p>Hello ${H(firstName(fac.name))},</p>
 <p>Thank you for sharing your availability. You're confirmed to facilitate in <strong>${H(prog.title)}</strong>${prog.cohort ? `, ${H(prog.cohort)}` : ''}${n ? ` (${n} session${n > 1 ? 's' : ''})` : ''}.</p>${noteBlock(note)}
-<p>Your sessions, dates and times are on the My assignments page of the Facilitator Portal, with the instructors for each session and their contact numbers. Zoom links appear there before the first session, and you can download calendar files from that page.</p>`, origin, { label: 'View your assignments', href: origin + '/#/mine' })
+<p>Your sessions, dates and times are on the My assignments page of the Facilitator Portal, with the instructors for each session and their contact numbers. Zoom links appear there before the first session, and you can download calendar files from that page.</p>`, origin, { label: 'View your assignments', href: origin + '/facilitator#/mine' })
   };
 }
 function facAnnounceEmail(list, note, origin, test) {
@@ -1764,7 +1783,7 @@ function facAnnounceEmail(list, note, origin, test) {
 <p>CLEAR Learning has posted sessions that are available for you to facilitate. Please mark the sessions you would like to facilitate, and those you are not available for, by each program's response date. You can update your answers in the portal at any time before that date.</p>
 ${noteBlock(note)}
 <table style="width:100%;border-collapse:collapse">${list.map(programLine).join('')}</table>
-<p style="font-size:13px;color:#6E6B70">All session times are listed in Eastern Time. In the portal, you have the option to change the time zone to one of your choosing.</p>`, origin, { label: 'Open the Facilitator Portal', href: origin })
+<p style="font-size:13px;color:#6E6B70">All session times are listed in Eastern Time. In the portal, you have the option to change the time zone to one of your choosing.</p>`, origin, { label: 'Open the Facilitator Portal', href: origin + '/facilitator' })
   };
 }
 function facReminderEmail(x, note, origin, test, daysLeft) {
@@ -1775,7 +1794,7 @@ function facReminderEmail(x, note, origin, test, daysLeft) {
     subject: (test ? '[TEST] ' : '') + 'Reminder: sessions are available to facilitate',
     html: emailShell('Your availability is still needed', `<p>Hello${x.r.name ? ' ' + H(firstName(x.r.name)) : ''},</p>
 <p>${lead} Marking sessions "Not available" is just as helpful to our planning as marking them available.</p>${noteBlock(note)}
-<table style="width:100%;border-collapse:collapse">${x.list.map(programLine).join('')}</table>`, origin, { label: 'Open the Facilitator Portal', href: origin })
+<table style="width:100%;border-collapse:collapse">${x.list.map(programLine).join('')}</table>`, origin, { label: 'Open the Facilitator Portal', href: origin + '/facilitator' })
   };
 }
 // The programs (each narrowed to the sessions this facilitator can see) a facilitator should hear about.
@@ -2210,9 +2229,8 @@ function b64urlText(s) { return new TextDecoder().decode(b64urlBytes(s)); }
      /api/files/log.csv         staff only: every download, newest first
      /api/files/check           staff only: setup diagnostics and which folders each course key opens
 
-   Contract facilitators read a separate folder (FAC_FILES_SHARE_URL, or FAC_GRAPH_DRIVE_ID and FAC_GRAPH_FOLDER_ID)
-   with the same course mapping. Where a facilitator has module approvals for a program, only that program folder's
-   own files and the module subfolders whose names match an approved module are shown.
+   Contract facilitators read this same folder, through the Facilitator Portal, for the programs they're approved to
+   facilitate (their Facilitation approvals, by program).
 
    Variables (Pages project > Settings > Variables and Secrets)
      GRAPH_TENANT_ID            Directory (tenant) ID of the Entra app registration
@@ -2268,7 +2286,7 @@ const ProgramFiles = (() => {
   }
 
   async function handle(request, env, who) {
-    const path = new URL(request.url).pathname.replace(/\/+$/, '');
+    const path = new URL(request.url).pathname.replace(/^\/api\/f\//, '/api/').replace(/\/+$/, ''); // the Facilitator Portal uses /api/f/
     if (request.method !== 'GET') return json({ error: 'Method not allowed.' }, 405);
     try {
       if (!configured(env, who.library)) throw fail("Program files aren't set up yet.", 503, true);
