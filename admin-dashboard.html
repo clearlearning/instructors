@@ -591,7 +591,7 @@ function vFacilitators(){
       <td><input type="text" value="${esc((r.emails||[]).join(', '))}" style="width:100%;${(r.emails||[]).length?'':'border-color:#E0B54A;background:#FFFBF0'}" placeholder="Needs an email to sign in" onchange="U.facDraft[${i}].emails=this.value.split(/[,;\\s]+/).filter(Boolean);markFac()"></td>
       <td><input type="text" value="${esc(r.notes||'')}" style="width:100%" onchange="U.facDraft[${i}].notes=this.value;markFac()"></td>
       <td>${r.id?fLoad(r.id):''}</td>
-      <td style="white-space:nowrap">${r.id?`${profileLink(r)} <a href="/?as=${r.id}" target="_blank">Preview page</a> `:''}<button class="btn link" style="color:var(--red)" onclick="removeFac(${i})">Remove</button></td></tr>`).join('')||'<tr><td colspan="6" class="facts">No facilitators yet. Use Add facilitator to get started.</td></tr>')+`</tbody></table></div>`;
+      <td style="white-space:nowrap">${r.id?`${profileLink(r)} <a href="/facilitator?as=${r.id}" target="_blank">Preview page</a> `:''}<button class="btn link" style="color:var(--red)" onclick="removeFac(${i})">Remove</button></td></tr>`).join('')||'<tr><td colspan="6" class="facts">No facilitators yet. Use Add facilitator to get started.</td></tr>')+`</tbody></table></div>`;
   return h;
 }
 // Same grid as Teaching approvals. A ticked program can be limited to particular modules with the link under its box.
@@ -599,7 +599,7 @@ function vFacQuals(L,seg){
   const f=(U.ffilter||'').toLowerCase();
   const rows=L.map((r,i)=>({r,i})).filter(({r})=>r.active!==false&&(!f||r.name.toLowerCase().includes(f)));
   const unset=L.filter(r=>r.active!==false&&!(r.quals||[]).length).length;
-  let h=`<h2>Facilitators</h2>${seg}<p class="sub">Tick the programs each facilitator is approved to facilitate. Facilitators see only the open sessions in those programs, and announcements and reminders cover only those programs. Under a ticked box, choose <em>Modules</em> to limit that program to particular sessions or modules. A facilitator with nothing ticked sees every session open to contract facilitators.</p>
+  let h=`<h2>Facilitators</h2>${seg}<p class="sub">Tick the programs each facilitator is approved to facilitate. Facilitators see only the open sessions in those programs, and announcements and reminders cover only those programs. Under a ticked box, choose <em>Modules</em> to limit which of that program's sessions or modules they can pick up. Program files always show the whole program folder for every ticked program. A facilitator with nothing ticked sees every session open to contract facilitators.</p>
     ${unset?`<div class="notice"><strong>${unset} active facilitator${unset>1?'s have':' has'} no approvals set</strong>, so ${unset>1?'they see':'they see'} every open session and get every announcement and reminder.</div>`:''}
     <div class="bar"><input type="search" placeholder="Filter by name" value="${esc(U.ffilter||'')}" oninput="U.ffilter=this.value;clearTimeout(window._ff);window._ff=setTimeout(render,250)"><span class="grow"></span>
     <button class="btn" ${U.facDirty?'':'disabled'} onclick="saveFacs()">Save approvals</button></div>
@@ -636,7 +636,7 @@ function modDlg(i,k){
   for(const p of D.programs) if(keyOfP(p)===k) for(const s of p.sessions||[]){ const n=normT(s.title); if(n&&!titles.has(n)) titles.set(n,s.title); }
   const list=[...titles.entries()].sort((a,b)=>a[1].localeCompare(b[1]));
   const lbl=(COURSES.find(c=>c[0]===k)||[k,k])[1];
-  openDlg(`Modules: ${lbl}`,`<p class="sub">Tick the sessions or modules ${esc(r.name||'this facilitator')} may facilitate in ${esc(lbl)}. Leave everything unticked to allow every session. Matching ignores labels like "Instructor-Led Session", so a module is covered in every cohort.</p>
+  openDlg(`Modules: ${lbl}`,`<p class="sub">Tick the sessions or modules ${esc(r.name||'this facilitator')} may pick up in ${esc(lbl)}. Leave everything unticked to allow every session. This doesn't affect Program files, which show the whole program folder. Matching ignores labels like "Instructor-Led Session", so a module is covered in every cohort.</p>
     ${list.length?`<div class="checks">${list.map(([n,t])=>`<label><input type="checkbox" class="mod-c" value="${esc(n)}" ${sel.has(n)?'checked':''}><span>${esc(t)}</span></label>`).join('')}</div>`:'<p class="facts">No programs of this type are in the portal yet, so there are no sessions to choose from.</p>'}`,
     `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="const v=[...document.querySelectorAll('.mod-c:checked')].map(x=>x.value);const r=U.facDraft[${i}];r.mods=r.mods||{};if(v.length)r.mods['${k}']=v;else delete r.mods['${k}'];U.facDirty=true;closeDlg();render()">Save modules</button>`);
 }
@@ -680,7 +680,7 @@ function profileDlg(id){
       ${row('Phone',esc(p.phone||''))}${row('Email',p.email?`<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>`:'')}${row('Mailing address',addr)}</tbody></table></div>
     ${isF?'':`<h3 style="margin-top:16px">Professional bio</h3><div class="card" style="padding:12px 14px">${p.bio||'<span class="facts">Not provided</span>'}</div>`}
     <p class="facts" style="margin-top:8px">Last updated ${p.updatedAt?esc(stamp(p.updatedAt)):'never'}${p.updatedBy&&p.updatedBy!==(r.emails||[])[0]?' by '+esc(p.updatedBy):''}.</p>`,
-    `${isF?'':`<button class="btn ghost" onclick="copyBio('${r.id}')">Copy bio</button>`}<a class="btn ghost" href="/?as=${r.id}#/profile" target="_blank" style="text-decoration:none">Open in their portal</a><button class="btn" onclick="closeDlg()">Done</button>`);
+    `${isF?'':`<button class="btn ghost" onclick="copyBio('${r.id}')">Copy bio</button>`}<a class="btn ghost" href="${isF?'/facilitator':'/'}?as=${r.id}#/profile" target="_blank" style="text-decoration:none">Open in their portal</a><button class="btn" onclick="closeDlg()">Done</button>`);
 }
 async function copyBio(id){const p=profOf(inst(id))||{};const tmp=document.createElement('div');tmp.innerHTML=p.bio||'';
   try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([p.bio||''],{type:'text/html'}),'text/plain':new Blob([tmp.innerText],{type:'text/plain'})})]);toast('Bio copied with its formatting');}
