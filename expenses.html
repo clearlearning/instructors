@@ -369,7 +369,7 @@
 <!-- HEADER -->
 <header class="site-header">
   <div class="logo">CLEAR &nbsp;·&nbsp; Instructor Expense Report</div>
-  <a href="/#/mine" style="color:#fff;font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap">← Back to My assignments</a>
+  <a href="#" onclick="location.href=PORTAL_HOME+'#/mine';return false" style="color:#fff;font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap">← Back to My assignments</a>
 </header>
 
 <div id="main-view" style="display:none">
@@ -634,6 +634,16 @@
 // Runs inside the Instructor Portal: everything is loaded from and submitted to the portal's API,
 // which reads the instructor's own record from the CLEAR expense system and forwards the report to it.
 const QS = new URLSearchParams(location.search);
+// On the Facilitator Portal (/facilitator/expenses) this is the facilitator hours report: same form, type "facilitator".
+const FAC_MODE = /^\/facilitator\//.test(location.pathname);
+const API_BASE = FAC_MODE ? '/api/f/' : '/api/';
+const PORTAL_HOME = FAC_MODE ? '/facilitator' : '/';
+if (FAC_MODE) {
+  document.title = 'Hours Report | CLEAR Learning Facilitator Portal';
+  document.addEventListener('DOMContentLoaded', () => {
+    const lg = document.querySelector('.site-header .logo'); if (lg) lg.innerHTML = 'CLEAR &nbsp;·&nbsp; Facilitator Hours Report';
+  });
+}
 const PID = QS.get('pid') || '';
 const AS = QS.get('as') || '';
 let CTX = null;
@@ -666,14 +676,14 @@ function fillTeachingDays() {
 // ═══════════════════════════════════════════════════════
 async function initApp() {
   try {
-    const r = await fetch('/api/expense/context?pid=' + encodeURIComponent(PID) + (AS ? '&as=' + encodeURIComponent(AS) : ''), { credentials: 'same-origin' });
+    const r = await fetch(API_BASE + 'expense/context?pid=' + encodeURIComponent(PID) + (AS ? '&as=' + encodeURIComponent(AS) : ''), { credentials: 'same-origin' });
     const j = await r.json().catch(() => ({}));
     if (r.status === 401) throw new Error('Your sign-in expired. Reload the page to sign in again.');
     if (!r.ok) throw new Error(j.error || ('The portal returned ' + r.status + '.'));
     CTX = j; Object.assign(cfg, j.cfg || {});
   } catch (e) {
     document.getElementById('main-view').style.display = 'block';
-    document.querySelector('#main-view .main-wrap').innerHTML = `<div style="max-width:620px;margin:60px auto;text-align:center"><h2 style="color:var(--burgundy)">This report can't be opened</h2><p>${escT(e.message)}</p><p><a href="/#/mine">Back to My assignments</a></p></div>`;
+    document.querySelector('#main-view .main-wrap').innerHTML = `<div style="max-width:620px;margin:60px auto;text-align:center"><h2 style="color:var(--burgundy)">This report can't be opened</h2><p>${escT(e.message)}</p><p><a href="#" onclick="location.href=PORTAL_HOME+'#/mine';return false">Back to My assignments</a></p></div>`;
     return;
   }
   const P = CTX.program, M = CTX.me;
@@ -1546,7 +1556,7 @@ async function submitReport() {
   document.getElementById('loading-screen').style.display = 'block';
 
   try {
-    const res = await fetch('/api/expense/submit', {
+    const res = await fetch(API_BASE + 'expense/submit', {
       method: 'POST', credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pid: PID, report })
@@ -1577,7 +1587,7 @@ function showSuccessScreen(reportId) {
     <p style="color:var(--charcoal);font-size:15px;margin-bottom:8px">Your expense report has been submitted successfully.</p>
     <p style="color:var(--text-light);font-size:13px;margin-bottom:24px">You can follow its status on the My assignments page of the Instructor Portal.</p>
     <p style="font-size:12px;color:var(--text-light)">Report ID: <strong>${reportId}</strong></p>
-    <p style="margin-top:20px"><a href="/#/mine" style="display:inline-block;background:var(--burgundy);color:#fff;padding:10px 18px;border-radius:6px;font-weight:700;text-decoration:none">Back to My assignments</a></p>`;
+    <p style="margin-top:20px"><a href="#" onclick="location.href=PORTAL_HOME+'#/mine';return false" style="display:inline-block;background:var(--burgundy);color:#fff;padding:10px 18px;border-radius:6px;font-weight:700;text-decoration:none">Back to My assignments</a></p>`;
   document.body.appendChild(div);
 }
 
