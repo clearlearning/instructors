@@ -428,7 +428,7 @@ function renderWho(){
   document.getElementById('who').innerHTML =
     `<strong>${esc(name)}</strong>${esc(me.email)}<br>` +
     (me.isStaff ? `<a href="/admin-dashboard">Staff dashboard</a> &nbsp; <a href="/api/files/log.csv" title="Download a spreadsheet of every program file download">File downloads</a> &nbsp; ` : '') +
-    (isFac() ? '' : `<a href="/manuals/instructor-guide" target="_blank">Guide</a> &nbsp; `) + `<a href="/cdn-cgi/access/logout">Sign out</a>`;
+    `<a href="${isFac()?'/manuals/facilitator-guide':'/manuals/instructor-guide'}" target="_blank">Guide</a> &nbsp; <a href="/cdn-cgi/access/logout">Sign out</a>`;
 }
 
 function render(){
@@ -603,7 +603,8 @@ function renderMine(){
         return `<div class="assign">
           <div><div class="s-title">${esc(x.sessionTitle)}</div><div class="s-time">${t}${x.location&&x.location!=='Virtual'?', '+esc(x.location):''}</div>
           ${x.zoomLink?`<div class="zoom">Zoom: <a href="${esc(x.zoomLink)}" target="_blank" rel="noopener">${esc(x.zoomLink)}</a></div>`:(x.sessionId!=='__program'&&!/person/i.test(p.format||'')?'<div class="zoom et">The Zoom link appears here before the first session.</div>':'')}
-          ${x.instructors?`<div class="s-inst"><strong>${x.instructors.length>1?'Instructors':'Instructor'}:</strong> ${x.instructors.length?x.instructors.map(i=>`${esc(i.name)}${i.phone?` · <a href="tel:${esc(i.phone.replace(/[^0-9+]/g,''))}">${esc(i.phone)}</a>`:''}`).join('; '):'<span class="et">Not yet confirmed</span>'}</div>`:''}</div>
+          ${x.instructors?`<div class="s-inst"><strong>${x.instructors.length>1?'Instructors':'Instructor'}:</strong> ${x.instructors.length?x.instructors.map(i=>esc(i.name)).join('; '):'<span class="et">To be confirmed</span>'}</div>`
+            :(x.facilitator!==undefined?`<div class="s-inst"><strong>Facilitator:</strong> ${x.facilitator?esc(x.facilitator):'<span class="et">To be confirmed</span>'}</div>`:'')}</div>
           <div class="ans-wrap"><span class="role">${esc(x.role)}</span></div></div>`;
       }).join('') + `</div>`;
   }).join('');
@@ -613,14 +614,15 @@ function expenseBtn(g){
   const ex=S.data.expenses||{}; if(!ex.enabled) return '';
   const last=g.items.map(x=>x.endDate||x.date).filter(Boolean).sort().pop()||'';
   const open=last&&S.data.today>=last, done=(ex.submitted||[]).some(s=>s.pid===g.pid);
-  const href=`/expenses?pid=${encodeURIComponent(g.pid)}${asId?'&as='+encodeURIComponent(asId):''}`;
-  if(!open) return `<a class="btn ghost small" href="${href}" style="text-decoration:none" title="Opens on ${esc(fmtD(last))}, after your last session">Expenses and hours <span class="et">(opens ${esc(fmtD(last,false))})</span></a>`;
-  return `<a class="btn ${done?'ghost ':''}small" href="${href}" style="text-decoration:none">${done?'Submit another report':'Submit expenses and hours'}</a>`;
+  const href=`${isFac()?'/facilitator/expenses':'/expenses'}?pid=${encodeURIComponent(g.pid)}${asId?'&as='+encodeURIComponent(asId):''}`;
+  const what=isFac()?'hours':'expenses and hours';
+  if(!open) return `<a class="btn ghost small" href="${href}" style="text-decoration:none" title="Opens on ${esc(fmtD(last))}, after your last session">${isFac()?'Hours':'Expenses and hours'} <span class="et">(opens ${esc(fmtD(last,false))})</span></a>`;
+  return `<a class="btn ${done?'ghost ':''}small" href="${href}" style="text-decoration:none">${done?'Submit another report':'Submit '+what}</a>`;
 }
 function expenseRows(pid){
   const subs=((S.data.expenses||{}).submitted||[]).filter(s=>s.pid===pid); if(!subs.length) return '';
   return subs.map(s=>{const st=(S.expStatus||{})[s.id], label=st?st.status:'Submitted', cls=/approv/i.test(label)?'done':/den|reject/i.test(label)?'none':'part';
-    return `<div class="assign" style="background:#FAF7F8"><div><div class="s-title">Expense and hours report</div><div class="s-time">Submitted ${esc(fmtStamp(s.submittedAt).split(',')[0])} · ${s.totalHours} hour${s.totalHours===1?'':'s'} · $${Number(s.grandTotal||0).toFixed(2)}${st&&st.decidedAt?' · decided '+esc(fmtStamp(st.decidedAt).split(',')[0]):''}</div><div class="et">Report ${esc(s.id)}</div></div>
+    return `<div class="assign" style="background:#FAF7F8"><div><div class="s-title">${isFac()?'Hours report':'Expense and hours report'}</div><div class="s-time">Submitted ${esc(fmtStamp(s.submittedAt).split(',')[0])} · ${s.totalHours} hour${s.totalHours===1?'':'s'} · $${Number(s.grandTotal||0).toFixed(2)}${st&&st.decidedAt?' · decided '+esc(fmtStamp(st.decidedAt).split(',')[0]):''}</div><div class="et">Report ${esc(s.id)}</div></div>
       <div class="ans-wrap"><span class="badge ${cls}">${esc(label)}</span></div></div>`;}).join('');
 }
 async function loadExpenseStatus(){
