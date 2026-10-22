@@ -39,7 +39,9 @@
 */
 
 const VALS = ['A', 'N', 'NA'];
-const ROLES = ['Lead', 'Co-instructor', 'Backup'];
+const ROLES = ['Instructor', 'Backup'];
+// Instructors co-teach, so "Lead" and "Co-instructor" (from earlier versions) both read as Instructor.
+const roleName = r => r === 'Backup' ? 'Backup' : 'Instructor';
 const STATUSES = ['draft', 'open', 'closed', 'archived'];
 const PROGRAM_SLOT = '__program';
 const ET = 'America/New_York';
@@ -177,7 +179,8 @@ export async function onRequest({ request, env }) {
       if (!inst && !me.isStaff) throw httpErr(403, 'Your email isn\'t linked to an instructor record.');
       // Instructors and facilitators read the same library, so materials are kept in one place.
       // Facilitators see the folders for the programs they're approved to facilitate.
-      const who = { isStaff: !!me.isStaff, email: me.email, viewingAs, library: 'instructor',
+      const isFacPerson = !!inst && me.facilitators.some(f => f.id === inst.id);
+      const who = { isStaff: !!me.isStaff, email: me.email, viewingAs, library: 'instructor', noInPerson: isFacPerson,
         name: inst ? inst.name : (me.staffName || me.email),
         key: inst ? inst.id : 'staff:' + String(me.email).toLowerCase(),
         quals: inst ? (inst.quals || []) : '*', mods: {} };
@@ -199,11 +202,12 @@ export async function onRequest({ request, env }) {
     }
 
     if (a === 'expense') {
-      if (me.facilitator) throw httpErr(403, 'Hours submission for facilitators isn\'t available yet.');
       if (!env.EXPENSE_WORKER_URL) throw httpErr(501, 'Expense submission isn\'t set up yet.');
-      let inst = me.instructor;
+      // On the Facilitator Portal this is the facilitator's hours report (the same form, type "facilitator").
+      let inst = facMode ? me.facilitator : me.instructor;
       const asId = url.searchParams.get('as');
-      if (asId && me.isStaff) inst = me.roster.find(r => r.id === asId) || null;
+      if (asId && me.isStaff) inst = (facMode ? me.facilitators : me.roster).find(r => r.id === asId) || null;
+      if (inst && facMode) inst = { ...inst, isFacilitator: true };
       if (!inst) throw httpErr(403, 'Your email isn\'t linked to an instructor record.');
       if (b === 'context' && method === 'GET') return json(await expenseContext(env, inst, url.searchParams.get('pid'), me));
       if (b === 'submit' && method === 'POST') {
@@ -260,6 +264,7 @@ export async function onRequest({ request, env }) {
       if (b === 'roster' && method === 'PUT') return json(await saveRoster(env, body, me));
       if (b === 'facilitators' && method === 'PUT') return json(await saveFacilitators(env, body, me));
       if (b === 'facilitation' && method === 'PUT') return json(await saveFacilitation(env, body, me));
+      if (b === 'scheduled-facilitators' && method === 'PUT') return json(await saveScheduledFacilitators(env, body, me));
       if (b === 'sync-access' && method === 'POST') return json(await syncAccess(env, await getJSON(env, 'roster', [])));
 
       if (b === 'staff' && method === 'PUT') {
@@ -443,13 +448,18 @@ async function portal(env, me, asId) {
         if (e.iid !== inst.id || e.status !== 'Confirmed') continue;
         const s = slot === PROGRAM_SLOT ? null : (p.sessions || []).find(x => x.id === slot);
         if (slot !== PROGRAM_SLOT && !s) continue;
-        assignments.push(assignRow(p, slot, s, e.role));
+        assignments.push(assignRow(p, slot, s, roleName(e.role)));
       }
     }
     if (assignments.some(x => x.programId === p.id)) {
       for (const s of (p.sessions || []).filter(x => x.allInstructors)) assignments.push(assignRow(p, s.id, s, 'All instructors attend'));
     }
   });
+  // Who facilitates each session: a confirmed contract facilitator or staff member, otherwise the staff member scheduled.
+  const scheds = {};
+  await Promise.all([...new Set(assignments.map(x => x.programId))].map(async pid => { scheds[pid] = (await getJSON(env, 'schedfac:' + pid, { sessions: {} })).sessions || {}; }));
+  const amap = {}; visible.forEach((p, i) => amap[p.id] = assigns[i]);
+  for (const x of assignments) x.facilitator = facilitatorFor(amap[x.programId], scheds[x.programId] || {}, x.sessionId, me.facilitators);
   assignments.sort((x, y) => String(x.date).localeCompare(String(y.date)) || toMin(x.start) - toMin(y.start));
 
   const reports = (await getJSON(env, 'reports:' + inst.id, [])).map(r => ({ ...r, url: me.origin + '/api/report/' + r.slug }));
@@ -457,6 +467,14 @@ async function portal(env, me, asId) {
   return { me: publicMe(me), role: 'instructor', instructor: instOut, viewingAs, today, programs, responses, assignments, reports, expenses };
 }
 
+const displayName = n => String(n || '').includes(',') ? String(n).split(',').map(s => s.trim()).reverse().join(' ') : String(n || '');
+function facilitatorFor(assign, sched, sid, facilitators) {
+  const list = ((assign && assign.fslots) || {})[sid] || [];
+  const e = list.find(x => x.staff || x.status === 'Confirmed');
+  if (e && e.staff) return displayName(e.staff);
+  if (e && e.fid) { const f = (facilitators || []).find(y => y.id === e.fid); if (f) return displayName(f.name); }
+  return sched[sid] ? displayName(sched[sid]) : '';
+}
 function assignRow(p, slot, s, role) {
   return {
     programId: p.id, programTitle: p.title, cohort: p.cohort || '', track: trackOf(p), logo: logoOf(p), format: p.format, location: p.location, timezone: p.timezone,
@@ -525,6 +543,8 @@ async function adminData(env, me) {
     fresponses[r.id] = out;
   });
   const assigns = await Promise.all(programs.map(p => getJSON(env, 'assign:' + p.id, null)));
+  const schedfac = {};
+  (await Promise.all(programs.map(p => getJSON(env, 'schedfac:' + p.id, null)))).forEach((x, i) => { if (x) schedfac[programs[i].id] = x.sessions || {}; });
   const assignments = {};
   programs.forEach((p, i) => {
     const a = assigns[i] || { slots: {}, notes: [], history: [], notified: {} };
@@ -540,7 +560,7 @@ async function adminData(env, me) {
     me: publicMe(me), today,
     zoom: { last: zoomLast, review: (zoomReview.items || []).filter(i => { const p = programs.find(x => x.id === i.pid); const s = p && (p.sessions || []).find(x => x.id === i.sid); return s && !s.zoomLink; }), missing: missingLinks(programs, today) },
     profiles,
-    facilitators: me.facilitators, fresponses, facilitation: facDefault(await getJSON(env, 'config:facilitation', null), me.staff),
+    facilitators: me.facilitators, fresponses, schedfac, facilitation: facDefault(await getJSON(env, 'config:facilitation', null), me.staff),
     programs, roster: me.roster, responses, assignments,
     staff: me.staff, admins: me.admins,
     accessSync: !!(env.CF_API_TOKEN && env.CF_ACCOUNT_ID && env.CF_ACCESS_GROUP_ID),
@@ -1489,7 +1509,7 @@ async function notifyCustom(env, body, me) {
   return { ok: true, sent: people.length };
 }
 
-function slotSig(mine) { return mine.map(m => m.slot + ':' + m.role).sort().join('|'); }
+function slotSig(mine) { return mine.map(m => m.slot + ':' + roleName(m.role)).sort().join('|'); }
 function firstName(name) { const s = String(name || ''); return s.includes(',') ? s.split(',')[1].trim().split(/\s+/)[0] : s.split(/\s+/)[0]; }
 
 /* ======================= Staff: roster & staff ======================= */
@@ -1593,7 +1613,7 @@ async function saveAssignment(env, pid, body, me) {
     const seen = new Set();
     const list = (arr || []).filter(e => ids.has(e.iid) && !seen.has(e.iid) && seen.add(e.iid)).map(e => ({
       iid: e.iid,
-      role: ROLES.includes(e.role) ? e.role : 'Lead',
+      role: roleName(e.role),
       status: e.status === 'Confirmed' ? 'Confirmed' : 'Tentative'
     }));
     if (list.length) slots[k] = list;
@@ -1624,7 +1644,7 @@ async function addNote(env, pid, body, by) {
 // on the Selection tab. Every session's facilitator is the default staff facilitator (Zephir unless changed) until a
 // contract facilitator is confirmed. Locked sessions are staffed by CLEAR and never offered to contract facilitators;
 // Welcome and Program Review sessions are locked unless staff unlock them. Facilitators never see who the default is.
-const FAC_ROLES = ['Facilitator', 'Co-facilitator', 'Backup'];
+const FAC_ROLES = ['Facilitator'];
 // Module approvals match on a session's core title, so "Interviewing Techniques - Instructor-Led Session",
 // "Live Session - Interviewing Techniques" and "Interviewing Techniques" all count as the same module.
 const normTitle = t => String(t || '').toLowerCase()
@@ -1632,8 +1652,13 @@ const normTitle = t => String(t || '').toLowerCase()
   .replace(/^\s*live\s+session\s*[-–—:]\s*/, '')
   .replace(/\s+(session\s+)?with\s+(the\s+)?instructor\s*$/, '')
   .replace(/[^a-z0-9&]+/g, ' ').replace(/\s+/g, ' ').trim();
-const facLockedByDefault = s => /welcome|program review/i.test(s.title || '');
-function facLocked(assign, s) { const L = (assign && assign.flocks) || {}; return Object.prototype.hasOwnProperty.call(L, s.id) ? !!L[s.id] : facLockedByDefault(s); }
+// A session with a staff facilitator scheduled in the Program Scheduler is held for staff; with nobody scheduled it's
+// open to contract facilitators. Staff can still change either on the Selection tab (flocks).
+function facLocked(assign, s) {
+  const L = (assign && assign.flocks) || {};
+  if (Object.prototype.hasOwnProperty.call(L, s.id)) return !!L[s.id];
+  return !!(assign && assign.sched && assign.sched[s.id]);
+}
 // Program approvals work like Teaching approvals (none recorded = every program). Module approvals, when set for a
 // program, limit it to those sessions or modules (matched by title, so they carry across cohorts).
 function facApproved(fac, prog, s) {
@@ -1642,9 +1667,11 @@ function facApproved(fac, prog, s) {
   const mods = (fac.mods || {})[key];
   return !(mods && mods.length && s && !mods.includes(normTitle(s.title)));
 }
-function facAvailable(fac, prog, assign) { return (prog.sessions || []).filter(s => !facLocked(assign, s) && facApproved(fac, prog, s)); }
+// Contract facilitators only facilitate online programs.
+function facAvailable(fac, prog, assign) { if (isInPerson(prog)) return []; return (prog.sessions || []).filter(s => !facLocked(assign, s) && facApproved(fac, prog, s)); }
+async function facAssign(env, pid) { const [a, sf] = await Promise.all([getJSON(env, 'assign:' + pid, null), getJSON(env, 'schedfac:' + pid, null)]); return { ...(a || {}), sched: (sf && sf.sessions) || {} }; }
 const facActive = list => list.filter(r => r.active !== false && (r.emails || []).length).map(r => ({ r, email: r.emails[0] }));
-async function facAssigns(env, progs) { const a = await Promise.all(progs.map(p => getJSON(env, 'assign:' + p.id, null))); const m = {}; progs.forEach((p, i) => m[p.id] = a[i]); return m; }
+async function facAssigns(env, progs) { const a = await Promise.all(progs.map(p => facAssign(env, p.id))); const m = {}; progs.forEach((p, i) => m[p.id] = a[i]); return m; }
 
 async function facPortal(env, me, fac, viewingAs) {
   const today = todayET();
@@ -1678,11 +1705,12 @@ async function facPortal(env, me, fac, viewingAs) {
     x.instructors = x.instructorIds.map(i => { const r = me.roster.find(y => y.id === i); const pr = pmap[i];
       if (!r) return null;
       const nm = pr && pr.first ? `${pr.preferred || pr.first} ${pr.last}` : (r.name.includes(',') ? r.name.split(',').map(s => s.trim()).reverse().join(' ') : r.name);
-      return { name: nm, phone: (pr && pr.phone) || '' }; }).filter(Boolean);
+      return { name: nm }; }).filter(Boolean);
     delete x.instructorIds;
   }
   assignments.sort((x, y) => String(x.date).localeCompare(String(y.date)) || toMin(x.start) - toMin(y.start));
-  return { me: publicMe(me), role: 'facilitator', instructor: { id: fac.id, name: fac.name }, viewingAs, today, programs, responses, assignments, reports: [], expenses: { enabled: false, submitted: [] } };
+  const expenses = env.EXPENSE_WORKER_URL ? { enabled: true, submitted: await getJSON(env, 'expsub:' + fac.id, []) } : { enabled: false, submitted: [] };
+  return { me: publicMe(me), role: 'facilitator', instructor: { id: fac.id, name: fac.name }, viewingAs, today, programs, responses, assignments, reports: [], expenses };
 }
 
 async function saveFacResponse(env, fac, pid, body, by, staffEntry) {
@@ -1690,7 +1718,7 @@ async function saveFacResponse(env, fac, pid, body, by, staffEntry) {
   if (!prog || prog.status === 'draft') throw httpErr(404, 'That program isn\'t available.');
   if (!staffEntry && prog.status !== 'open') throw httpErr(409, 'Responses for this program are closed. Contact CLEAR Learning staff to make a change.');
   if (!staffEntry && pastDeadline(prog)) throw httpErr(409, `The response deadline for this program (${longDate(prog.deadline)}) has passed. Contact CLEAR Learning staff to make a change.`);
-  const av = facAvailable(fac, prog, await getJSON(env, 'assign:' + pid, null));
+  const av = facAvailable(fac, prog, await facAssign(env, pid));
   if (!av.length) throw httpErr(403, 'This program has no sessions open to you. Contact CLEAR Learning staff if you would like to facilitate it.');
   body = body || {};
   const program = cleanVal(body.program), sessions = {};
@@ -1741,6 +1769,25 @@ function staffNameFor(name, staff) {
 function facDefault(cfg, staff) {
   return { ...(cfg || {}), defaultName: staffNameFor((cfg && cfg.defaultName) || 'Zephir', staff) };
 }
+// From the Program Scheduler after publishing: each cohort's staff facilitator, and any session-level cover.
+// Sessions are matched by date and start time; in-person modules take the cohort's facilitator.
+async function saveScheduledFacilitators(env, body, me) {
+  const all = await listPrograms(env), out = [];
+  for (const c of Array.isArray(body.cohorts) ? body.cohorts : []) {
+    const prog = all.find(p => p.externalKey && p.externalKey === String(c.key || ''));
+    if (!prog) continue;
+    const sessions = {}, cohortName = String(c.cohort || '').trim().slice(0, 120);
+    for (const s of prog.sessions || []) {
+      const hit = isInPerson(prog) ? null : (c.sessions || []).find(x => x.date === s.date && toMin(String(x.time || '')) === toMin(s.start));
+      const name = String((hit && hit.name) || cohortName || '').trim().slice(0, 120);
+      if (name) sessions[s.id] = name;
+    }
+    await putJSON(env, 'schedfac:' + prog.id, { sessions, at: new Date().toISOString(), by: me.email });
+    out.push({ pid: prog.id, scheduled: Object.keys(sessions).length });
+  }
+  if (out.length) await log(env, me.email, 'Updated scheduled facilitators from the Program Scheduler', `${out.length} programs`);
+  return { ok: true, programs: out };
+}
 async function saveFacilitation(env, body, me) {
   const defaultName = staffNameFor(String(body.defaultName || '').trim().slice(0, 120) || 'Zephir', me.staff);
   const cfg = { defaultName, updatedAt: new Date().toISOString(), updatedBy: me.email };
@@ -1773,7 +1820,7 @@ function facSelectionEmail(fac, prog, sessions, note, origin, test) {
     subject: (test ? '[TEST] ' : '') + `You're confirmed to facilitate: ${prog.title}${prog.cohort ? ' (' + prog.cohort + ')' : ''}`,
     html: emailShell("You've been selected to facilitate", `<p>Hello ${H(firstName(fac.name))},</p>
 <p>Thank you for sharing your availability. You're confirmed to facilitate in <strong>${H(prog.title)}</strong>${prog.cohort ? `, ${H(prog.cohort)}` : ''}${n ? ` (${n} session${n > 1 ? 's' : ''})` : ''}.</p>${noteBlock(note)}
-<p>Your sessions, dates and times are on the My assignments page of the Facilitator Portal, with the instructors for each session and their contact numbers. Zoom links appear there before the first session, and you can download calendar files from that page.</p>`, origin, { label: 'View your assignments', href: origin + '/facilitator#/mine' })
+<p>Your sessions, dates and times are on the My assignments page of the Facilitator Portal, with the instructors for each session. Zoom links appear there before the first session, and you can download calendar files from that page.</p>`, origin, { label: 'View your assignments', href: origin + '/facilitator#/mine' })
   };
 }
 function facAnnounceEmail(list, note, origin, test) {
@@ -1945,8 +1992,9 @@ const rateFor = (cfg, tier) => String(tier || '').includes('1') ? cfg.tier1 : St
 async function expenseContext(env, inst, pid, me) {
   const prog = await getJSON(env, 'program:' + pid, null);
   if (!prog || prog.status === 'draft') throw httpErr(404, 'That program isn\'t available.');
-  const mine = confirmedFor(await getJSON(env, 'assign:' + pid, null), inst.id);
-  if (!mine.length) throw httpErr(403, 'You aren\'t confirmed to teach in this program.');
+  const assignRec = await getJSON(env, 'assign:' + pid, null);
+  const mine = inst.isFacilitator ? facConfirmedFor(assignRec, inst.id) : confirmedFor(assignRec, inst.id);
+  if (!mine.length) throw httpErr(403, `You aren't confirmed to ${inst.isFacilitator ? 'facilitate' : 'teach'} in this program.`);
   const sessions = sessionsFor(prog, mine).slice().sort((a, b) => a.date.localeCompare(b.date) || toMin(a.start) - toMin(b.start));
   const ip = isInPerson(prog);
   // One teaching row per date: the scheduled hours and what was taught.
@@ -1987,8 +2035,8 @@ async function expenseSubmit(env, inst, body, me) {
   const r = body.report || {};
   const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
   const teachingDays = (Array.isArray(r.teachingDays) ? r.teachingDays : []).slice(0, 60).map(d => ({ date: cleanDate(d.date), hours: Math.max(0, Math.min(24, num(d.hours))), program: String(d.program || '').slice(0, 300) })).filter(d => d.date || d.hours);
-  const perDiemDays = (Array.isArray(r.perDiemDays) ? r.perDiemDays : []).slice(0, 60);
-  const expenseLines = ctx.program.delivery === 'in-person' ? (Array.isArray(r.expenseLines) ? r.expenseLines : []).slice(0, 100) : [];
+  const perDiemDays = inst.isFacilitator ? [] : (Array.isArray(r.perDiemDays) ? r.perDiemDays : []).slice(0, 60);
+  const expenseLines = ctx.program.delivery === 'in-person' && !inst.isFacilitator ? (Array.isArray(r.expenseLines) ? r.expenseLines : []).slice(0, 100) : [];
   const totalHours = teachingDays.reduce((s, d) => s + d.hours, 0);
   if (!totalHours) throw httpErr(400, 'Enter the hours for at least one teaching day.');
   const rate = num(ctx.me.rate), teachingPay = Math.round(totalHours * rate * 100) / 100;
@@ -1997,7 +2045,7 @@ async function expenseSubmit(env, inst, body, me) {
   const grandTotal = Math.round((teachingPay + perDiemTotal + expenseTotal) * 100) / 100;
   const id = 'EXP-' + Date.now();
   const report = {
-    ...r, id, status: 'Pending', submittedAt: new Date().toISOString(), type: 'instructor',
+    ...r, id, status: 'Pending', submittedAt: new Date().toISOString(), type: inst.isFacilitator ? 'facilitator' : 'instructor',
     name: ctx.me.name, email: ctx.me.email, instructorName: ctx.me.name, instructorTier: ctx.me.tier, instructorRate: rate,
     phone: String(r.phone || ctx.me.phone || '').slice(0, 60), address: String(r.address || '').slice(0, 400),
     event: ctx.program.option || ctx.program.title, cohort: ctx.program.cohort,
@@ -2277,6 +2325,10 @@ const ProgramFiles = (() => {
     return hit ? hit[1] : [];
   }
   // Same rule as eligible(): no approvals = everything; a folder with no course = everyone.
+  // In-person-only programs (AIT) aren't shown to contract facilitators, who facilitate online programs only.
+  const IN_PERSON_ONLY = ['NCITAIT'];
+  const inPersonOnly = folder => { const k = coursesFor(folder); return !!(k && k.length && k.every(x => IN_PERSON_ONLY.includes(x))); };
+  const inPersonSub = name => /\b(ipt|in[- ]?person)\b/i.test(name);
   function visible(folder, quals) {
     if (quals === '*') return true;
     const keys = coursesFor(folder);
@@ -2385,18 +2437,12 @@ const ProgramFiles = (() => {
   async function listAllowed(env, who) {
     const rt = await root(env, who.library);
     const top = (await children(env, rt.driveId, rt.id)).filter(x => x.folder && !hidden(x.name));
-    const mine = top.filter(f => visible(f.name, who.quals)).sort(byName);
-    const programs = await Promise.all(mine.map(async f => ({ name: f.name, id: f.id, files: await walk(env, rt.driveId, f.id, '', 1, moduleFilter(f.name, who)) })));
+    const mine = top.filter(f => visible(f.name, who.quals) && !(who.noInPerson && inPersonOnly(f.name))).sort(byName);
+    const sub = who.noInPerson ? name => !inPersonSub(name) : null; // facilitators: skip the IPT / in-person subfolders
+    const programs = await Promise.all(mine.map(async f => ({ name: f.name, id: f.id, files: await walk(env, rt.driveId, f.id, '', 1, sub) })));
     return { root: rt, programs };
   }
-  // Facilitators with module approvals for a program see its own files plus only the matching module subfolders.
-  function moduleFilter(folder, who) {
-    const keys = coursesFor(folder) || [], mods = [...new Set(keys.flatMap(k => (who.mods || {})[k] || []))];
-    if (!mods.length) return null;
-    const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-    const ms = mods.map(norm);
-    return name => { const n = norm(name); return ms.some(m => m && (n.includes(m) || m.includes(n))); };
-  }
+
 
   async function walk(env, driveId, id, group, depth, subFilter) {
     let items = (await children(env, driveId, id)).filter(x => !hidden(x.name)).sort(byName);
