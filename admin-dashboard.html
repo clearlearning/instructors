@@ -186,16 +186,13 @@ tr.grp .ttl{gap:10px}tr.grp strong{font-size:14px}
 .pgroup .pg-h h3{margin:0;font-size:16px;color:var(--burgundy)}
 .pgroup.k-blue .pg-h h3{color:var(--blue)}.pgroup.k-gold .pg-h h3{color:var(--burgundy-dk)}
 .pgroup .tbl-wrap{border-radius:var(--radius-sm)}
-.fline{margin-top:10px;padding:8px 10px;border-radius:8px;background:#EAF4F2;border:1px solid #B7DCD5}
-.fline .fhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
-.ftag{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#0E6B5E}
-.fpick{border-left:4px solid #0E6B5E}
-.fchip{border-color:#7FC3B7!important;background:#fff}
-.fchip:hover{background:#EAF4F2}
-.fquals{display:flex;flex-wrap:wrap;gap:4px}
-.fq{display:inline-flex;gap:4px;align-items:center;font-size:11.5px;border:1px solid var(--line);border-radius:12px;padding:2px 8px;background:#fff;cursor:pointer}
-.fq.on{background:#EAF4F2;border-color:#7FC3B7}
-.fq input{margin:0}
+.ibox,.fline{padding:8px 12px 10px;border-radius:8px;background:transparent}
+.ibox{border:2px solid #64092C}
+.fline{margin-top:10px;border:2px solid #DDA838}
+.ihead,.fline .fhead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.itag,.ftag{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.itag{color:#64092C}
+.ftag{color:#8A6514}
 .rte-bar{display:flex;gap:4px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-bottom:0;border-radius:var(--radius-sm) var(--radius-sm) 0 0;background:#FAF7F8;padding:5px 6px}
 .rte-bar button{border:1px solid transparent;background:none;border-radius:4px;padding:3px 9px;font-size:13px;cursor:pointer;color:var(--ink)}
 .rte-bar button:hover{background:#fff;border-color:var(--line)}
@@ -878,7 +875,7 @@ function vSelection(){
     const avail=active().filter(r=>eff(r.id,p,u.key)==='A'&&!picked.some(e=>e.iid===r.id));
     const label=u.s?u.s.title:'Entire program';
     h+=`<div class="slot"><div><div class="meta">${esc(label)}</div><div class="facts">${u.s?esc(sTime(p,u.s)):esc(fmtRange(p.startDate,p.endDate))}</div>${u.s&&!isIP(p)?(u.s.zoomLink?`<div class="facts" style="word-break:break-all" title="${esc(u.s.zoomTopic||'')}">Zoom${u.s.zoomSource==='manual'?' (entered by hand)':''}: ${esc(u.s.zoomLink)}</div>`:'<div class="facts warn">No Zoom link yet</div>'):''}</div>
-      <div><div class="picked">${picked.map((e,i)=>{const r=inst(e.iid)||{name:'(removed instructor)'};const v=eff(e.iid,p,u.key);const ms=e.status==='Confirmed'&&!dirty?mailState(p.id,e.iid):null;
+      <div><div class="ibox"><div class="ihead"><span class="itag">Instructors</span></div><div class="picked">${picked.map((e,i)=>{const r=inst(e.iid)||{name:'(removed instructor)'};const v=eff(e.iid,p,u.key);const ms=e.status==='Confirmed'&&!dirty?mailState(p.id,e.iid):null;
         return `<div class="pick ${e.status}"><span class="nm">${esc(r.name)}</span>
           <select onchange="editPick('${p.id}','${u.key}',${i},'role',this.value)">${['Lead','Co-instructor','Backup'].map(x=>`<option ${e.role===x?'selected':''}>${x}</option>`).join('')}</select>
           <select onchange="editPick('${p.id}','${u.key}',${i},'status',this.value)">${['Tentative','Confirmed'].map(x=>`<option ${e.status===x?'selected':''}>${x}</option>`).join('')}</select>
@@ -887,7 +884,7 @@ function vSelection(){
           ${evalLink(e.iid,'History ↗')}
           <button class="btn link" onclick="editPick('${p.id}','${u.key}',${i},'remove')">Remove</button></div>`;}).join('')}</div>
         <div class="chips">${avail.length?avail.map(r=>`<span class="chipwrap"><button class="chip" onclick="addPick('${p.id}','${u.key}','${r.id}')">+ ${esc(r.name)}<span class="load">${loadCount(r.id)}</span></button>${evalUrl(r.id)?`<a class="chip-x" href="${esc(evalUrl(r.id))}" target="_blank" rel="noopener" title="Teaching history and evaluations for ${esc(r.name)}">↗</a>`:''}</span>`).join(''):`<span class="facts">${picked.length?'No other instructors marked available.':'Nobody has marked this available yet.'}</span>`}
-        <button class="chip na-maybe" onclick="pickAnyone('${p.id}','${u.key}')">+ Someone else</button></div>${u.s?facLine(p,u.s):''}</div></div>`;
+        <button class="chip na-maybe" onclick="pickAnyone('${p.id}','${u.key}')">+ Someone else</button></div></div>${u.s?facLine(p,u.s):''}</div></div>`;
   }
   // Sessions instructors don't answer for (Welcome sessions, all-instructor sessions) still need a facilitator.
   for(const s0 of p.sessions.filter(x=>!units(p).some(u=>u.s&&u.s.id===x.id))) h+=`<div class="slot"><div><div class="meta">${esc(s0.title)}</div><div class="facts">${esc(sTime(p,s0))}</div></div><div>${facLine(p,s0)}</div></div>`;
