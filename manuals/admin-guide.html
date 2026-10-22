@@ -150,6 +150,7 @@ details.proc>div{padding:0 18px 12px}
     <div class="box b"><h4>Daily Worker</h4><p><code>instructor-availability-cron</code> runs every morning at 14:00 UTC and asks the portal to send reminders and check Zoom.</p><span class="ar">→ portal API, through Access with a service token</span></div>
     <div class="box g"><h4>Power Automate flow</h4><p>Sends every email the portal produces, from the clearlearning@clearhq.org shared mailbox.</p><span class="ar">← portal API posts each email to it</span></div>
     <div class="box g"><h4>Zoom app</h4><p>A read-only Server-to-Server OAuth app. The portal reads meetings TalentLMS created and matches their links to sessions.</p><span class="ar">← portal API reads meetings</span></div>
+    <div class="box b"><h4>Facilitator Portal</h4><p>The same page as the Instructor Portal, served at <code>/facilitator</code> for contract facilitators, with its own data addresses under <code>/api/f/</code> and its own Access application.</p><span class="ar">→ portal API at /api/f/</span></div>
     <div class="box g"><h4>CLEAR expense system</h4><p>The <code>clear-lms-proxy</code> Worker, its Power Automate flows and the SharePoint list behind the expense admin. Instructor expense and hours reports are submitted to it through the portal.</p><span class="ar">← portal API reads the instructor's record and status; submits reports</span></div>
     <div class="box b"><h4>SharePoint (Microsoft Graph)</h4><p>The <em>Instructor Program Files</em> folder on the CLEARStaff site. The portal reads it live through an Entra ID app registration, so instructors always download the current file.</p><span class="ar">← portal API lists folders and issues short-lived download links</span></div>
     <div class="box n"><h4>SurveyMonkey proxy Worker</h4><p>A separate Worker, owned outside this project, that the evaluation report tool uses to read survey responses.</p><span class="ar">← evaluation report page, in the browser</span></div>
@@ -162,7 +163,7 @@ details.proc>div{padding:0 18px 12px}
     <li>The page loads and calls the API. The API checks the Access sign-in token again, then works out the person's role from the portal's own lists (administrator, staff or instructor).</li>
     <li>The API reads or writes KV and returns the result. For emails it posts to Power Automate; for Zoom links it calls Zoom; for expense reports it calls the CLEAR expense system; for program files it reads SharePoint through Microsoft Graph.</li>
   </ol>
-  <div class="note"><strong>Why two checks?</strong> Access keeps strangers out entirely. The API's own check decides what a signed-in person may do, so even if an Access setting were wrong, an instructor still couldn't use staff features.</div>
+  <div class="note"><strong>Why two checks?</strong> Access keeps strangers out entirely. The API's own check decides what a signed-in person may do, so even if an Access setting were wrong, an instructor still couldn't use staff features, and the instructor and facilitator portals each refuse the other role.</div>
 </section>
 
 <!-- ================= INVENTORY ================= -->
@@ -177,8 +178,8 @@ details.proc>div{padding:0 18px 12px}
       <tr><td><strong>Custom domain</strong> (planned)</td><td><code>instructors.clearhq.org</code></td><td class="fill">DNS contact at CLEAR's IT provider</td></tr>
       <tr><td><strong>KV namespace</strong></td><td><code>instructor-availability</code>, bound to the Pages project as <code>IA_KV</code></td><td>Cloudflare account members</td></tr>
       <tr><td><strong>Zero Trust team domain</strong></td><td class="fill">something.cloudflareaccess.com (Zero Trust → Settings → Custom pages / team domain)</td><td>Cloudflare account members</td></tr>
-      <tr><td><strong>Access applications</strong></td><td>"Instructor Portal" and "Instructor Portal – Staff"</td><td>Cloudflare account members</td></tr>
-      <tr><td><strong>Access groups</strong></td><td>"CLEAR Instructors" and "CLEAR Learning Staff"</td><td>Cloudflare account members</td></tr>
+      <tr><td><strong>Access applications</strong></td><td>"Instructor Portal", "Instructor Portal – Staff", "Facilitator Portal" and "Portal Images"</td><td>Cloudflare account members</td></tr>
+      <tr><td><strong>Access groups</strong></td><td>"CLEAR Instructors", "CLEAR Facilitators" and "CLEAR Learning Staff"</td><td>Cloudflare account members</td></tr>
       <tr><td><strong>Access service token</strong></td><td><code>instructor-availability-cron</code></td><td class="fill">Expiry date, if any</td></tr>
       <tr><td><strong>Daily Worker</strong></td><td><code>instructor-availability-cron</code> (Workers &amp; Pages)</td><td>Cloudflare account members</td></tr>
       <tr><td><strong>GitHub repository</strong></td><td class="fill">github.com/ORGANIZATION/instructor-availability</td><td class="fill">Organization owners</td></tr>
@@ -187,6 +188,7 @@ details.proc>div{padding:0 18px 12px}
       <tr><td><strong>Zoom app</strong></td><td>"CLEAR Instructor Portal" (Server-to-Server OAuth, marketplace.zoom.us)</td><td class="fill">Zoom admin account</td></tr>
       <tr><td><strong>Zoom user that TalentLMS uses</strong></td><td><code>clearlearning@clearhq.org</code></td><td class="fill"></td></tr>
       <tr><td><strong>Expense system Worker</strong></td><td><code>clear-lms-proxy</code> (<code>https://clear-lms-proxy.avance.workers.dev</code>), with the expense admin page and its Power Automate flows and SharePoint list</td><td class="fill">Cloudflare account and flow owners</td></tr>
+      <tr><td><strong>Expense dashboard</strong></td><td><code>Expense-Dash.html</code>: reviews and approves expense and hours reports, and holds the rates, Staff Roster, Instructor Roster and Facilitator Roster</td><td class="fill">Where it&rsquo;s published</td></tr>
       <tr><td><strong>Entra ID app registration</strong></td><td>"CLEAR Instructor Portal - Program Files" (Microsoft Entra admin center → App registrations), with the Sites.Selected permission and read access to the CLEARStaff site</td><td class="fill">Microsoft 365 administrators</td></tr>
       <tr><td><strong>Program files folder</strong></td><td>"Instructor Program Files" on the CLEARStaff SharePoint site, one subfolder per program</td><td class="fill">Staff who maintain program materials</td></tr>
       <tr><td><strong>Program files client secret</strong></td><td>Expires every 24 months at most; the date is in <code>GRAPH_SECRET_EXPIRES</code></td><td class="fill">Next expiry date</td></tr>
@@ -212,9 +214,12 @@ details.proc>div{padding:0 18px 12px}
       <tr><td><code>welcome-emails.html</code></td><td><code>/welcome-emails</code></td><td>Behind the scenes</td><td>Builds welcome emails for cohort kits. Must stay in the repository.</td></tr>
       <tr><td><code>expenses.html</code></td><td><code>/expenses</code></td><td>Instructors</td><td>The expense and hours report form, opened from My assignments.</td></tr>
       <tr><td><code>SETUP-program-files.md</code></td><td>(reference)</td><td>Administrators</td><td>Detailed setup notes for the Program files connection: the app registration, the site permission and the Cloudflare settings.</td></tr>
-      <tr><td><code>coordinator-guide.html</code></td><td><code>/manuals/coordinator-guide</code></td><td>Staff</td><td>Program Coordinator Guide.</td></tr>
-      <tr><td><code>instructor-guide.html</code></td><td><code>/manuals/instructor-guide</code></td><td>Instructors</td><td>Instructor Portal Guide.</td></tr>
-      <tr><td><code>administrator-guide.html</code></td><td><code>/manuals/administrator-guide</code></td><td>Administrators</td><td>This guide.</td></tr>
+      <tr><td><code>manuals/coordinator-guide.html</code></td><td><code>/manuals/coordinator-guide</code></td><td>Staff</td><td>Program Coordinator Guide.</td></tr>
+      <tr><td><code>manuals/instructor-guide.html</code></td><td><code>/manuals/instructor-guide</code></td><td>Instructors</td><td>Instructor Portal Guide.</td></tr>
+      <tr><td><code>manuals/facilitator-guide.html</code></td><td><code>/manuals/facilitator-guide</code></td><td>Facilitators</td><td>Facilitator Portal Guide.</td></tr>
+      <tr><td><code>manuals/administrator-guide.html</code></td><td><code>/manuals/administrator-guide</code></td><td>Administrators</td><td>This guide.</td></tr>
+      <tr><td><code>functions/facilitator.js</code></td><td><code>/facilitator</code></td><td>Facilitators</td><td>Serves the Instructor Portal page (<code>index.html</code>) at /facilitator, where it shows the Facilitator Portal.</td></tr>
+      <tr><td><code>functions/facilitator/expenses.js</code></td><td><code>/facilitator/expenses</code></td><td>Facilitators</td><td>Serves the hours form (<code>expenses.html</code>) for facilitators.</td></tr>
       <tr><td><code>functions/api/[[path]].js</code></td><td><code>/api/…</code></td><td>Every page</td><td>The API: sign-in checks, permissions, data, emails, Zoom, reminders, reports, expenses, profiles and program files. The comment block at the top lists most settings; the Program files block at the end of the file lists its own settings and the folder-to-course list (<code>FOLDER_COURSES</code>).</td></tr>
       <tr><td><code>images/*.svg</code></td><td><code>/images/…</code></td><td>Every page</td><td>Program logos: NCITB, NCITS, NCITAIT, NCITWS, NCITWDDI, NCITWIRSM, NCITWCSAP, NCITWERI, SRASAB, ACRG, ELPR, BCT, IRG.</td></tr>
     </tbody>
@@ -232,7 +237,7 @@ details.proc>div{padding:0 18px 12px}
     <tbody>
       <tr><td><code>IA_KV</code></td><td>KV binding</td><td>Connects the API to the <code>instructor-availability</code> KV namespace.</td><td>Nothing loads. Every page shows an error about the KV binding.</td></tr>
       <tr><td><code>ACCESS_TEAM_DOMAIN</code></td><td>Text</td><td>The Zero Trust team domain, without https://.</td><td>Nobody can use the API (sign-in errors).</td></tr>
-      <tr><td><code>ACCESS_AUD</code></td><td>Text</td><td>The AUD tags of both Access applications, separated by a comma. Found in each application's settings.</td><td>Sign-in errors on the pages behind the application whose tag is missing.</td></tr>
+      <tr><td><code>ACCESS_AUD</code></td><td>Text</td><td>The AUD tags of the three Access applications in front of the API (Instructor Portal, Instructor Portal – Staff and Facilitator Portal), separated by commas. Found in each application's settings. Portal Images isn't needed.</td><td>Sign-in errors on the pages behind the application whose tag is missing.</td></tr>
       <tr><td><code>ADMIN_EMAILS</code></td><td>Text</td><td>Comma-separated emails of portal administrators. Administrators are always staff and can change the staff list.</td><td>No one can edit the Staff tab.</td></tr>
       <tr><td><code>PORTAL_URL</code></td><td>Text</td><td>The portal's full address, starting with https://. Used for links in emails.</td><td>Links in emails and report links are broken.</td></tr>
       <tr><td><code>NOTIFY_FLOW_URL</code></td><td>Secret</td><td>The Power Automate flow's HTTP address. Anyone with it can send email as CLEAR.</td><td>No emails send; the dashboard says email isn't set up.</td></tr>
@@ -243,7 +248,7 @@ details.proc>div{padding:0 18px 12px}
       <tr><td><code>ZOOM_CLIENT_SECRET</code></td><td>Secret</td><td>From the Zoom app's App Credentials page.</td><td>Zoom links aren't found.</td></tr>
       <tr><td><code>ZOOM_USER</code></td><td>Text (optional)</td><td>The Zoom user TalentLMS creates meetings under. Default <code>clearlearning@clearhq.org</code>.</td><td>Zoom links aren't found if TalentLMS moves to another user.</td></tr>
       <tr><td><code>EXPENSE_WORKER_URL</code></td><td>Text</td><td>The expense system Worker's address, e.g. <code>https://clear-lms-proxy.avance.workers.dev</code>.</td><td>The expense buttons don't appear on My assignments.</td></tr>
-      <tr><td><code>EXPENSE_TOKEN</code></td><td>Secret</td><td>The same auth token used to open the expense admin. Lets the portal read the private instructor list and report status.</td><td>Reports still submit, but status doesn't show, and instructor details come from the public list instead.</td></tr>
+      <tr><td><code>EXPENSE_TOKEN</code></td><td>Secret</td><td>The same auth token used to open the expense admin. Lets the portal read the private instructor list and report status.</td><td>Reports still submit, but status doesn't show, and instructor details come from the public list instead. Facilitators’ pay details can’t be found without it: there’s no public fallback for the Facilitator Roster.</td></tr>
       <tr><td><code>GRAPH_TENANT_ID</code>, <code>GRAPH_CLIENT_ID</code></td><td>Text</td><td>Directory (tenant) ID and Application (client) ID of the Entra app registration.</td><td>Program files shows as unavailable; the rest of the portal is unaffected.</td></tr>
       <tr><td><code>GRAPH_CLIENT_SECRET</code></td><td>Secret</td><td>The app registration's client secret value.</td><td>Program files shows as unavailable.</td></tr>
       <tr><td><code>GRAPH_SECRET_EXPIRES</code></td><td>Text</td><td>The secret's expiry date, as YYYY-MM-DD. Staff see a warning on Program files from 30 days before.</td><td>No early warning before the secret expires.</td></tr>
@@ -284,6 +289,10 @@ details.proc>div{padding:0 18px 12px}
       <tr><td><code>profile:&lt;instructor id&gt;</code></td><td>The instructor's own profile: name parts, preferred name, title, employer, phone, contact email, mailing address, bio.</td></tr>
       <tr><td><code>headshot:&lt;instructor id&gt;</code></td><td>The instructor's headshot (resized JPEG). Only the instructor and staff can open it.</td></tr>
       <tr><td><code>expsub:&lt;instructor id&gt;</code></td><td>A list of the expense and hours reports the instructor submitted through the portal. The reports themselves are in the expense system's SharePoint list.</td></tr>
+      <tr><td><code>facilitators</code></td><td>Every contract facilitator: name, sign-in emails, active status, approvals and module limits.</td></tr>
+      <tr><td><code>fresp:&lt;facilitator id&gt;</code></td><td>One facilitator's answers, kept separate from instructors' answers.</td></tr>
+      <tr><td><code>schedfac:&lt;program id&gt;</code></td><td>The staff facilitator scheduled in the Program Scheduler for each session, sent when the cohort is published. Scheduled sessions are held for staff.</td></tr>
+      <tr><td><code>config:facilitation</code></td><td>The default facilitator.</td></tr>
       <tr><td><code>pflog:…</code></td><td>The program file download log: who downloaded which file, when, and whether it was a staff preview. Kept for two years.</td></tr>
       <tr><td><code>pfseen:&lt;instructor id&gt;:&lt;file id&gt;</code></td><td>When an instructor last downloaded each file, for the <em>Updated</em> badges.</td></tr>
       <tr><td><code>pfcfg:root</code>, <code>pfcfg:token</code></td><td>Cached folder location and Microsoft sign-in token. Safe to delete; they're recreated.</td></tr>
@@ -314,6 +323,7 @@ details.proc>div{padding:0 18px 12px}
     <tbody>
       <tr><td><strong>Administrator</strong></td><td>CLEAR Learning Staff</td><td><code>ADMIN_EMAILS</code> setting</td><td>Everything staff can do, plus edit the Staff tab.</td></tr>
       <tr><td><strong>Staff</strong></td><td>CLEAR Learning Staff</td><td>Staff tab</td><td>Use the staff dashboard, Program Scheduler and evaluation report tool; see all instructors' data; send emails.</td></tr>
+      <tr><td><strong>Contract facilitator</strong></td><td>CLEAR Facilitators</td><td>Facilitators tab</td><td>Use the Facilitator Portal at /facilitator: answer for open online sessions, see their assignments and instructors, download program files, submit hours, and edit their own profile.</td></tr>
       <tr><td><strong>Instructor</strong></td><td>CLEAR Instructors</td><td>Instructors tab (an email listed for an active instructor)</td><td>See their approved programs, answer, see their own assignments and reports, submit expense and hours reports, edit their own profile, and download the program files for the programs they're approved to teach.</td></tr>
     </tbody>
   </table></div>
@@ -327,17 +337,21 @@ details.proc>div{padding:0 18px 12px}
   <ul>
     <li><strong>CLEAR Instructors:</strong> one "Emails" rule listing every active instructor's sign-in address.</li>
     <li><strong>CLEAR Learning Staff:</strong> one "Emails" rule listing every staff member.</li>
+    <li><strong>CLEAR Facilitators:</strong> one "Emails" rule listing every contract facilitator.</li>
   </ul>
   <h3>Applications</h3>
   <div class="tbl"><table>
     <thead><tr><th>Application</th><th>Hostnames and paths</th><th>Policies</th></tr></thead>
     <tbody>
-      <tr><td><strong>Instructor Portal</strong></td><td>The pages.dev address (and the custom domain once live), with <em>no path</em>, which covers the whole site.</td><td>Allow: Include groups CLEAR Instructors and CLEAR Learning Staff.<br>Service Auth: Include service token <code>instructor-availability-cron</code>.</td></tr>
+      <tr><td><strong>Instructor Portal</strong></td><td>The pages.dev address (and the custom domain once live), with <em>no path</em>, which covers the whole site.</td><td>Allow: Include groups CLEAR Instructors and CLEAR Learning Staff (not CLEAR Facilitators).<br>Service Auth: Include service token <code>instructor-availability-cron</code>.</td></tr>
       <tr><td><strong>Instructor Portal – Staff</strong></td><td>The same hostname(s), once for each path: <code>admin-dashboard</code>, <code>api/admin</code>, <code>program-scheduler</code>, <code>agenda-generator</code>, <code>welcome-emails</code>, <code>evaluation-reports</code>, <code>manuals/coordinator-guide</code>, <code>manuals/administrator-guide</code>.</td><td>Allow: Include group CLEAR Learning Staff.</td></tr>
+      <tr><td><strong>Facilitator Portal</strong></td><td>The same hostname(s), once for each path: <code>facilitator</code>, <code>api/f</code>, <code>manuals/facilitator-guide</code>.</td><td>Allow: Include groups CLEAR Facilitators and CLEAR Learning Staff (for previews).</td></tr>
+      <tr><td><strong>Portal Images</strong></td><td>The same hostname(s), path <code>images</code> (the program logos).</td><td>Allow: Include groups CLEAR Instructors, CLEAR Facilitators and CLEAR Learning Staff.</td></tr>
     </tbody>
   </table></div>
   <div class="warn"><strong>Every new staff page must be added to the Staff application.</strong> If a new staff-only page is added to the repository but not listed here, any signed-in instructor could open it. Its data stays protected by the API, but the page itself would be visible.</div>
-  <p>Each application has an <strong>AUD tag</strong> (in its settings, under Overview or Basic information). Both tags must be in the <code>ACCESS_AUD</code> setting, separated by a comma.</p>
+  <p>Each application has an <strong>AUD tag</strong> (in its settings, under Overview or Basic information). The tags of Instructor Portal, Instructor Portal – Staff and Facilitator Portal must all be in the <code>ACCESS_AUD</code> setting, separated by commas.</p>
+  <div class="note"><strong>The most specific path wins.</strong> Cloudflare applies the application with the most specific matching path, so <code>/facilitator</code> and <code>/api/f/…</code> use the Facilitator Portal application, and everything else under the site uses the Instructor Portal application. That's how facilitators are kept out of the instructor side and instructors out of the facilitator side.</div>
 </section>
 
 <!-- ================= ROUTINE ================= -->
@@ -376,6 +390,23 @@ details.proc>div{padding:0 18px 12px}
     <li>An administrator opens the staff dashboard → <span class="ui">Staff</span>, adds or removes the person's name and email, and saves.</li>
     <li>Zero Trust → <span class="ui">Access</span> → <span class="ui">Groups</span> → <span class="ui">CLEAR Learning Staff</span>: add or remove their email. Save.</li>
     <li>When removing someone, also remove them from the Cloudflare account, GitHub organization and Power Automate flow if they had access.</li>
+  </ol></div></details>
+  <details class="proc"><summary>Add or remove a contract facilitator</summary><div><ol class="steps">
+    <li>Staff dashboard → <span class="ui">Facilitators</span> → <span class="ui">Contact details</span>: add them (name as Last, First, and their sign-in email), or choose <span class="ui">Remove</span>. Save. Removing deletes their answers and profile; untick Active instead to keep their history.</li>
+    <li>On <span class="ui">Facilitation approvals</span>, tick the programs they may facilitate. Save approvals.</li>
+    <li>Zero Trust → <span class="ui">Access</span> → <span class="ui">Groups</span> → <span class="ui">CLEAR Facilitators</span>: add or remove their email. Save.</li>
+    <li>For hours reports, add them to the <strong>Facilitator Roster</strong> in the expense dashboard (<code>Expense-Dash.html</code> → Settings), not the Instructor Roster, with their tier and the same email they sign in with. Choose <span class="ui">Save Roster</span>. The portal finds their pay rate there, and their reports arrive marked as facilitator reports.</li>
+  </ol></div></details>
+  <details class="proc"><summary>Facilitators in the expense dashboard</summary><div>
+    <p>The expense dashboard (<code>Expense-Dash.html</code>) keeps contract facilitators separate from instructors, in the <code>clear-lms-proxy</code> Worker&rsquo;s storage:</p>
+    <ul>
+      <li><strong>Facilitator Roster</strong> (Settings, saved as <code>expense_facilitators</code>): name, email, phone, address and tier for each facilitator. The email must match the one they sign in to the Facilitator Portal with.</li>
+      <li><strong>Facilitator Tier 1 and Tier 2 rates</strong> (Settings → Reimbursement Rates, saved with the other rates in <code>expense_cfg</code>): $20 and $25 an hour. Rates are set per tier, not per person. Choose <span class="ui">Save Rates</span> after changing them.</li>
+      <li><strong>Reports</strong> arrive with the type <em>facilitator</em>, and the Type filter, review window, PDF and Excel export all handle them.</li>
+    </ul></div></details>
+  <details class="proc"><summary>Change who facilitates by default</summary><div><ol class="steps">
+    <li>Staff dashboard → <span class="ui">Facilitators</span> → <span class="ui">Default facilitator</span>: choose the staff member and save.</li>
+    <li>Sessions with a staff facilitator scheduled in the Program Scheduler keep that person; scheduling (and publishing again) is how a session is held for staff.</li>
   </ol></div></details>
   <details class="proc" id="p-admin"><summary>Make someone an administrator</summary><div><ol class="steps">
     <li>Add them as staff (procedure above).</li>
@@ -531,6 +562,11 @@ details.proc>div{padding:0 18px 12px}
       <tr><td>An instructor's profile won't save</td><td>A required field or address format is missing (US ZIP code, Canadian postal code A1A 1A1).</td><td>The page says which field; fix it and save again.</td></tr>
       <tr><td>Program files says it's unavailable</td><td>The Microsoft connection failed, most often an expired client secret.</td><td>Open <code>/api/files/check</code>; renew the secret if the error says sign-in failed.</td></tr>
       <tr><td>An instructor can't see a program's files</td><td>Their teaching approvals don't include the folder's course, or the folder isn't mapped in <code>FOLDER_COURSES</code>.</td><td>Check their approvals, then <code>/api/files/check?as=</code> with their ID.</td></tr>
+      <tr><td>A facilitator sees "Failed to fetch"</td><td>Access is redirecting the Facilitator Portal's data requests: the <code>api/f</code> path is missing from the Facilitator Portal application, or their sign-in predates a change.</td><td>Check both paths (<code>facilitator</code> and <code>api/f</code>) are on the application, then have them sign out at <code>/cdn-cgi/access/logout</code> and sign in again at <code>/facilitator</code>.</td></tr>
+      <tr><td>A facilitator&rsquo;s rate or details don&rsquo;t fill in on their hours form</td><td>They aren&rsquo;t on the expense dashboard&rsquo;s Facilitator Roster, their email there doesn&rsquo;t match their sign-in email, or <code>EXPENSE_TOKEN</code> isn&rsquo;t set.</td><td>Check the Facilitator Roster entry and email, then the <code>EXPENSE_TOKEN</code> setting.</td></tr>
+      <tr><td>The expense dashboard&rsquo;s Facilitator Roster doesn&rsquo;t save</td><td>The <code>clear-lms-proxy</code> Worker may only accept certain storage keys.</td><td>In the Worker&rsquo;s code, add <code>expense_facilitators</code> wherever <code>expense_instructors</code> is listed as an allowed key, and deploy.</td></tr>
+      <tr><td>Facilitators see no program logos</td><td>The Portal Images application is missing or doesn't include CLEAR Facilitators.</td><td>Add the <code>images</code> path application with all three groups.</td></tr>
+      <tr><td>A facilitator is refused at the main address</td><td>Expected: facilitators use <code>/facilitator</code>.</td><td>Send them the Facilitator Portal address.</td></tr>
       <tr><td>Links in emails go to the wrong place</td><td><code>PORTAL_URL</code> missing https:// or out of date.</td><td>Fix <code>PORTAL_URL</code>; Retry deployment.</td></tr>
       <tr><td>"Someone else changed the schedule"</td><td>Two people edited the scheduler at once.</td><td>Load their version, or keep yours (which replaces theirs).</td></tr>
     </tbody>
@@ -569,6 +605,7 @@ details.proc>div{padding:0 18px 12px}
       <tr><td>☐</td><td>New administrator added as co-owner of the "Instructor Portal – Email" flow, with Send As on clearlearning@clearhq.org.</td></tr>
       <tr><td>☐</td><td>Zoom admin access confirmed for the "CLEAR Instructor Portal" app.</td></tr>
       <tr><td>☐</td><td>Access to the SurveyMonkey proxy Worker and the Instructor Staffing Dashboard repository confirmed.</td></tr>
+      <tr><td>☐</td><td>The four Access applications and three Access groups reviewed, including who is in CLEAR Facilitators.</td></tr>
       <tr><td>☐</td><td>Owner access confirmed for the "CLEAR Instructor Portal - Program Files" app registration in Entra ID, and the client secret's expiry date noted.</td></tr>
       <tr><td>☐</td><td>Access to the expense system confirmed: the <code>clear-lms-proxy</code> Worker, the expense admin token, and the expense Power Automate flows and SharePoint list.</td></tr>
       <tr><td>☐</td><td>New administrator added to <code>ADMIN_EMAILS</code>, the Staff tab and the CLEAR Learning Staff Access group.</td></tr>
