@@ -973,7 +973,7 @@ function emailShell(title, inner, origin, button) {
 <table width="556" cellpadding="0" cellspacing="0" border="0" align="center" style="width:100%;max-width:556px;"><tr><td style="${EBODY}">
 ${outlookify(inner)}
 ${emailButton(btn)}
-<p style="margin:24px 0 28px 0;${EF}font-size:12px;line-height:18px;color:#4a3040;">Sign in with this email address; you will receive a one-time code by email. If you have any questions or require assistance, please contact us at <a href="mailto:clearlearning@clearhq.org" style="color:#0144db;font-weight:bold;">clearlearning@clearhq.org</a> or <strong style="color:#64092c;">859-269-1289</strong>.</p>
+<p style="margin:24px 0 28px 0;${EF}font-size:12px;line-height:18px;color:#4a3040;">Sign in with this email address; you will receive a one-time code by email. If you have any questions or require assistance, please contact us at <a href="mailto:clearlearning@clearhq.org" style="color:#0144db;font-weight:bold;">clearlearning@clearhq.org</a> or <strong style="color:#64092c;">859-212-6515</strong>.</p>
 </td></tr></table></td></tr>
 <tr><td bgcolor="#64092c" align="center" style="background-color:#64092c;padding:28px 32px;">
 <table width="556" cellpadding="0" cellspacing="0" border="0" align="center">
@@ -981,7 +981,7 @@ ${foot('Best regards,', 'font-size:14px;font-weight:bold;padding-bottom:4px;')}
 ${foot('Council on Licensure, Enforcement and Regulation', 'font-size:13px;font-weight:bold;padding-bottom:2px;')}
 ${foot('Promoting Regulatory Excellence', 'font-style:italic;padding-bottom:14px;')}
 ${foot('<a href="https://www.clearhq.org" style="color:#ffffff;text-decoration:none;">www.clearhq.org</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="mailto:clearlearning@clearhq.org" style="color:#ffffff;text-decoration:none;">clearlearning@clearhq.org</a>', 'padding-bottom:4px;')}
-${foot('+1.859.269.1401&nbsp;&nbsp;|&nbsp;&nbsp;108 Wind Haven Dr., Ste. A, Nicholasville, KY 40356', 'padding-bottom:18px;')}
+${foot('+1.859-212-6515&nbsp;&nbsp;|&nbsp;&nbsp;108 Wind Haven Dr., Ste. A, Nicholasville, KY 40356', 'padding-bottom:18px;')}
 <tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" align="center"><tr>
 <td style="padding:0 5px;"><a href="https://twitter.com/CLEARHQ"><img src="${SOCIAL}email_x.png" alt="X" width="26" height="26" border="0" style="display:block;"></a></td>
 <td style="padding:0 5px;"><a href="https://facebook.com/CLEARHQ/"><img src="${SOCIAL}email_facebook.png" alt="Facebook" width="26" height="26" border="0" style="display:block;"></a></td>
