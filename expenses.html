@@ -642,6 +642,14 @@ if (FAC_MODE) {
   document.title = 'Hours Report | CLEAR Learning Facilitator Portal';
   document.addEventListener('DOMContentLoaded', () => {
     const lg = document.querySelector('.site-header .logo'); if (lg) lg.innerHTML = 'CLEAR &nbsp;·&nbsp; Facilitator Hours Report';
+    // Facilitator wording. Delivery method stays in the form (always Virtual, for the expense dashboard) but is hidden.
+    const ct = document.querySelector('#teaching-card .card-title'); if (ct) ct.innerHTML = '<span class="icon">🎓</span> Facilitation Hours';
+    const pl = document.getElementById('f-instructor-program'); const plab = pl && pl.closest('.field') && pl.closest('.field').querySelector('label');
+    if (plab) plab.innerHTML = 'Program Facilitated <span class="req">*</span>';
+    const dl = document.getElementById('f-delivery'); if (dl && dl.closest('.field')) dl.closest('.field').style.display = 'none';
+    document.querySelectorAll('span').forEach(s => { if (s.textContent === 'Modules Taught') s.textContent = 'Sessions Facilitated'; });
+    const st = document.querySelector('.main-wrap .page-subtitle');
+    if (st) st.innerHTML = 'Submit your facilitation hours. Your information, the program and the days you facilitated are filled in from the Facilitator Portal; check them before submitting. All fields marked <span style="color:var(--burgundy)">*</span> are required.';
   });
 }
 const PID = QS.get('pid') || '';
@@ -917,7 +925,7 @@ function addTeachingDay() {
 
   const programInput = document.createElement('input');
   programInput.type = 'text'; programInput.className = 'td-program';
-  programInput.placeholder = 'Modules taught';
+  programInput.placeholder = FAC_MODE ? 'Sessions facilitated' : 'Modules taught';
   programInput.setAttribute('style','padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;width:100%');
   programInput.addEventListener('input', ensureBlankTeachingDay);
 
@@ -1432,14 +1440,14 @@ function validateForm() {
 
   if (!name)     { markFieldError('f-instructor',         'Required'); errors.push('name'); }
   if (!delivery) { markFieldError('f-delivery',           'Required'); errors.push('delivery method'); }
-  if (!program)  { markFieldError('f-instructor-program', 'Please select the program taught'); errors.push('program'); }
+  if (!program)  { markFieldError('f-instructor-program', FAC_MODE ? 'Please select the program facilitated' : 'Please select the program taught'); errors.push('program'); }
   if (!phone)    { markFieldError('f-phone',              'Required'); errors.push('phone number'); }
   if (!street)   { markFieldError('f-addr-street',        'Required'); errors.push('street address'); }
   if (!city)     { markFieldError('f-addr-city',          'Required'); errors.push('city'); }
   if (!country)  { markFieldError('f-addr-country',       'Required'); errors.push('country'); }
 
   const hasHours = Array.from(document.querySelectorAll('.td-hours')).some(el => parseFloat(el.value) > 0);
-  if (!hasHours) errors.push('at least one teaching day with hours');
+  if (!hasHours) errors.push(FAC_MODE ? 'at least one day with hours' : 'at least one teaching day with hours');
 
   if (delivery === 'in-person') {
     const dest   = document.getElementById('f-instructor-destination')?.value?.trim();
