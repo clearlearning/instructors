@@ -1965,19 +1965,21 @@ async function expenseFetch(env, path, opts = {}) {
   return r;
 }
 async function expenseConfig(env) {
-  const cfg = { perdiem: 75, travelPct: 75, mileage: 0.67, tier1: 0, tier2: 0 };
+  const cfg = { perdiem: 75, travelPct: 75, mileage: 0.67, tier1: 0, tier2: 0, ftier1: 20, ftier2: 25 };
   try { const r = await expenseFetch(env, '/expense/config'); if (r.ok) { const j = await r.json(); for (const k of Object.keys(cfg)) if (j[k] !== undefined && j[k] !== null && j[k] !== '') cfg[k] = Number(j[k]); } } catch (e) {}
   return cfg;
 }
 // The instructor's own entry in the expense system's instructor list, matched by sign-in email, then by name.
 async function expenseInstructor(env, inst) {
   let list = [];
+  // Facilitators are on the expense admin's Facilitator Roster (expense_facilitators); instructors on its Instructor Roster.
+  const rosterKey = inst.isFacilitator ? 'expense_facilitators' : 'expense_instructors';
   try {
     if (env.EXPENSE_TOKEN) {
-      const r = await expenseFetch(env, '/kv?key=expense_instructors');
+      const r = await expenseFetch(env, '/kv?key=' + rosterKey);
       if (r.ok) { const j = await r.json(); const v = j.value; list = typeof v === 'string' ? JSON.parse(v) : (v || []); }
     }
-    if (!list.length) {
+    if (!list.length && !inst.isFacilitator) {
       const r = await expenseFetch(env, '/expense/instructors');
       if (r.ok) { const j = await r.json(); list = j.instructors || []; }
     }
@@ -1988,7 +1990,11 @@ async function expenseInstructor(env, inst) {
     || list.find(x => { const n = normName(inst.name).split(','); return n.length === 2 && normName(x.name) === normName(n[1] + ' ' + n[0]); })
     || null;
 }
-const rateFor = (cfg, tier) => String(tier || '').includes('1') ? cfg.tier1 : String(tier || '').includes('2') ? cfg.tier2 : 0;
+const rateFor = (cfg, tier, isFacilitator) => {
+  const t = String(tier || '');
+  if (isFacilitator) return t.includes('1') ? cfg.ftier1 : t.includes('2') ? cfg.ftier2 : 0;
+  return t.includes('1') ? cfg.tier1 : t.includes('2') ? cfg.tier2 : 0;
+};
 async function expenseContext(env, inst, pid, me) {
   const prog = await getJSON(env, 'program:' + pid, null);
   if (!prog || prog.status === 'draft') throw httpErr(404, 'That program isn\'t available.');
@@ -2022,7 +2028,7 @@ async function expenseContext(env, inst, pid, me) {
       state: (prof && prof.address && prof.address.region) || (rec ? rec.state || '' : ''),
       zip: (prof && prof.address && prof.address.postal) || (rec ? rec.zip || '' : ''),
       country: (prof && prof.address && prof.address.country) || (rec ? rec.country || '' : ''),
-      tier: rec ? String(rec.tier || '') : '', rate: rec ? rateFor(cfg, rec.tier) : 0, found: !!rec },
+      tier: rec ? String(rec.tier || '') : '', rate: rec ? rateFor(cfg, rec.tier, inst.isFacilitator) : 0, found: !!rec },
     program: { id: prog.id, title: prog.title, cohort: prog.cohort || '', option: expenseProgramFor(prog), delivery: ip ? 'in-person' : 'virtual',
       destination: ip ? (prog.location || '') : 'Virtual', first: days.length ? days[0].date : prog.startDate, last },
     days, opensOn: last, open: todayET() >= last, submitted: subs
