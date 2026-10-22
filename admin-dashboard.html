@@ -101,9 +101,10 @@ td.num{text-align:center;font-weight:700}
 .s-date{font-size:12px;color:var(--muted);font-weight:400}
 
 /* selection */
-.slot{display:grid;grid-template-columns:260px 1fr;gap:16px;padding:14px 0;border-top:1px solid #EEECEF}
+.slot{display:grid;grid-template-columns:260px 1fr;gap:16px;padding:20px 0;border-top:2px solid #C9C4CA}
+.slot:first-child{border-top:0}
 .slot:first-of-type{border-top:0}
-.slot .meta{font-weight:700}
+.slot .meta{font-weight:800;font-size:15px;color:var(--ink)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .chip{border:1px solid var(--line);background:#fff;border-radius:16px;padding:3px 10px;font-size:12px;cursor:pointer}
 .chip:hover{border-color:var(--avail);background:var(--avail-lt)}
@@ -519,34 +520,34 @@ const defFac=()=>staffFull(((D.facilitation||{}).defaultName)||'Zephir');
 const facStaffChoices=()=>{ const L=staffNames(), d=defFac(); return L.includes(d)?L:[d,...L]; };
 const normT=t=>String(t||'').toLowerCase().replace(/\s*[-–—:]\s*(instructor[- ]?led|live)(\s+session)?\s*$/,'').replace(/^\s*live\s+session\s*[-–—:]\s*/,'').replace(/\s+(session\s+)?with\s+(the\s+)?instructor\s*$/,'').replace(/[^a-z0-9&]+/g,' ').replace(/\s+/g,' ').trim();
 const keyOfP=p=>{const m=String(p.logo||'').match(/([A-Za-z0-9]+)\.svg$/);return m?m[1]:'';};
-const lockedDefault=s=>/welcome|program review/i.test(s.title||'');
 function fdraftOf(pid){ if(!U.fdraft) U.fdraft={}; if(!U.fdraft[pid]){ const a=D.assignments[pid]||{}; U.fdraft[pid]={fslots:clone(a.fslots||{}),flocks:clone(a.flocks||{})}; } return U.fdraft[pid]; }
 const fState=pid=>(U.fdraft&&U.fdraft[pid])||{fslots:(D.assignments[pid]||{}).fslots||{},flocks:(D.assignments[pid]||{}).flocks||{}};
-function isLockedS(pid,s){ const L=fState(pid).flocks; return Object.prototype.hasOwnProperty.call(L,s.id)?!!L[s.id]:lockedDefault(s); }
+// Scheduled in the Program Scheduler = held for that staff member. Nobody scheduled = open to contract facilitators.
+const schedName=(pid,sid)=>(((D.schedfac||{})[pid])||{})[sid]||'';
+function isLockedS(pid,s){ const p=prog(pid); if(p&&isIP(p)) return true; const L=fState(pid).flocks; return Object.prototype.hasOwnProperty.call(L,s.id)?!!L[s.id]:!!schedName(pid,s.id); }
 function facApprovedC(f,p,s){ const q=f.quals||[],k=keyOfP(p); if(q.length&&k&&!q.includes(k)&&!(k==='NCITWS'&&q.some(x=>/^NCITW/.test(x)))) return false; const m=(f.mods||{})[k]; return !(m&&m.length&&!m.includes(normT(s.title))); }
 function fEff(fid,p,sid){ const r=((D.fresponses||{})[fid]||{})[p.id]; if(!r) return ''; return (r.sessions||{})[sid]||r.program||''; }
 function facLine(p,s){
-  const pid=p.id, st=fState(pid), locked=isLockedS(pid,s), picked=st.fslots[s.id]||[], dirty=U.assignDirty.has(pid);
+  const pid=p.id, st=fState(pid), ip=isIP(p), locked=isLockedS(pid,s), picked=st.fslots[s.id]||[], dirty=U.assignDirty.has(pid), sched=schedName(pid,s.id);
   const avail=locked?[]:factive().filter(f=>facApprovedC(f,p,s)&&fEff(f.id,p,s.id)==='A'&&!picked.some(e=>e.fid===f.id));
   const fn=(D.assignments[pid]||{}).fnotified||{};
   const picks=picked.map((e,i)=>{
-    if(e.staff) return `<div class="pick Confirmed fpick"><span class="nm">${esc(e.staff)}</span><span class="facts">CLEAR staff</span><button class="btn link" onclick="editFPick('${pid}','${s.id}',${i},'remove')">Remove</button></div>`;
+    if(e.staff) return `<div class="pick Confirmed"><span class="nm">${esc(e.staff)}</span><span class="facts">CLEAR staff</span><button class="btn link" onclick="editFPick('${pid}','${s.id}',${i},'remove')">Remove</button></div>`;
     const f=fac(e.fid)||{name:'(removed facilitator)'}, v=fEff(e.fid,p,s.id), sent=e.status==='Confirmed'&&!dirty&&fn[e.fid];
-    return `<div class="pick ${e.status} fpick"><span class="nm">${esc(f.name)}</span>
-      <select onchange="editFPick('${pid}','${s.id}',${i},'role',this.value)">${['Facilitator','Co-facilitator','Backup'].map(x=>`<option ${e.role===x?'selected':''}>${x}</option>`).join('')}</select>
+    return `<div class="pick ${e.status}"><span class="nm">${esc(f.name)}</span>
       <select onchange="editFPick('${pid}','${s.id}',${i},'status',this.value)">${['Tentative','Confirmed'].map(x=>`<option ${e.status===x?'selected':''}>${x}</option>`).join('')}</select>
       ${v!=='A'?`<span class="warn">Marked ${v?LBL[v].toLowerCase():'not answered'}</span>`:''}${sent?`<span class="mailst ok">✉ Emailed ${esc(fmtD(sent.at.slice(0,10)))}</span>`:''}
       <button class="btn link" onclick="editFPick('${pid}','${s.id}',${i},'remove')">Remove</button></div>`; }).join('');
   const conf=picked.some(e=>e.staff||e.status==='Confirmed');
-  return `<div class="fline"><div class="fhead"><span class="ftag">Facilitator</span>${locked?'<span class="pill locked" title="Not offered to contract facilitators">Staff only</span>':''}
-      ${conf?'':`<span class="facts">${esc(defFac())} by default</span>`}<span class="grow"></span>
-      <button class="btn link" onclick="toggleLock('${pid}','${s.id}')">${locked?'Offer to contract facilitators':'Lock to CLEAR staff'}</button></div>
+  const who=conf?'':(sched?`<span class="facts"><strong>${esc(sched)}</strong> (scheduled in the Program Scheduler)</span>`:`<span class="facts">${esc(defFac())} by default</span>`);
+  return `<div class="fline"><div class="fhead"><span class="ftag">Facilitator</span>${locked?`<span class="pill locked" title="Not offered to contract facilitators">${ip?'Staff only: in person':'Staff only'}</span>`:''}${who}<span class="grow"></span>
+      ${ip?'':`<button class="btn link" onclick="toggleLock('${pid}','${s.id}')">${locked?'Offer to contract facilitators':'Lock to CLEAR staff'}</button>`}</div>
     <div class="picked">${picks}</div>
-    <div class="chips">${avail.map(f=>`<button class="chip fchip" onclick="addFPick('${pid}','${s.id}','${f.id}')">+ ${esc(f.name)}<span class="load">${fLoad(f.id)}</span></button>`).join('')||(locked?'':'<span class="facts">No contract facilitators have marked this session available yet.</span>')}
+    <div class="chips">${avail.map(f=>`<button class="chip" onclick="addFPick('${pid}','${s.id}','${f.id}')">+ ${esc(f.name)}<span class="load">${fLoad(f.id)}</span></button>`).join('')||(locked?'':'<span class="facts">No contract facilitators have marked this session available yet.</span>')}
       <button class="chip na-maybe" onclick="pickFStaff('${pid}','${s.id}')">+ Staff member</button>${locked?'':`<button class="chip na-maybe" onclick="pickFAnyone('${pid}','${s.id}')">+ Contract facilitator</button>`}</div></div>`;
 }
 function fLoad(fid){ let n=0; for(const p of D.programs.filter(inQuarter)){ const fs=fState(p.id).fslots||{}; for(const l of Object.values(fs)) if(l.some(e=>e.fid===fid)) n++; } return n; }
-function addFPick(pid,sid,fid){ const d=fdraftOf(pid); (d.fslots[sid]=d.fslots[sid]||[]).push({fid,role:d.fslots[sid].length?'Co-facilitator':'Facilitator',status:'Tentative'}); U.assignDirty.add(pid); render(); }
+function addFPick(pid,sid,fid){ const d=fdraftOf(pid); (d.fslots[sid]=d.fslots[sid]||[]).push({fid,role:'Facilitator',status:'Tentative'}); U.assignDirty.add(pid); render(); }
 function editFPick(pid,sid,i,field,val){ const d=fdraftOf(pid); if(field==='remove') d.fslots[sid].splice(i,1); else d.fslots[sid][i][field]=val; if(!d.fslots[sid].length) delete d.fslots[sid]; U.assignDirty.add(pid); render(); }
 function toggleLock(pid,sid){ const p=prog(pid), s=p.sessions.find(x=>x.id===sid), d=fdraftOf(pid); d.flocks[sid]=!isLockedS(pid,s);
   if(d.flocks[sid]&&d.fslots[sid]) d.fslots[sid]=d.fslots[sid].filter(e=>e.staff); U.assignDirty.add(pid); render(); }
@@ -592,6 +593,7 @@ function vFacilitators(){
   return h;
 }
 // Same grid as Teaching approvals. A ticked program can be limited to particular modules with the link under its box.
+const FCOURSES=()=>COURSES.filter(c=>c[0]!=='NCITAIT'); // facilitators work online programs only
 function vFacQuals(L,seg){
   const f=(U.ffilter||'').toLowerCase();
   const rows=L.map((r,i)=>({r,i})).filter(({r})=>r.active!==false&&(!f||r.name.toLowerCase().includes(f)));
@@ -601,16 +603,16 @@ function vFacQuals(L,seg){
     <div class="bar"><input type="search" placeholder="Filter by name" value="${esc(U.ffilter||'')}" oninput="U.ffilter=this.value;clearTimeout(window._ff);window._ff=setTimeout(render,250)"><span class="grow"></span>
     <button class="btn" ${U.facDirty?'':'disabled'} onclick="saveFacs()">Save approvals</button></div>
     <div class="tbl-wrap"><table class="quals"><thead><tr><th rowspan="2" style="min-width:200px">Facilitator</th>`;
-  const groups=[...new Set(COURSES.map(c=>c[2]))];
-  h+=groups.map(g=>`<th colspan="${COURSES.filter(c=>c[2]===g).length}" style="text-align:center">${esc(g)}</th>`).join('')+`<th rowspan="2"></th></tr><tr>`;
-  h+=COURSES.map(([k,l])=>`<th class="qh" title="${esc(l)}"><img class="plogo sm" src="/images/${k}.svg" alt="" onerror="this.remove()"><div>${esc(l)}</div><button class="btn link" style="font-size:11px" onclick="facQualCol('${k}')">All</button></th>`).join('')+`</tr></thead><tbody>`;
+  const groups=[...new Set(FCOURSES().map(c=>c[2]))];
+  h+=groups.map(g=>`<th colspan="${FCOURSES().filter(c=>c[2]===g).length}" style="text-align:center">${esc(g)}</th>`).join('')+`<th rowspan="2"></th></tr><tr>`;
+  h+=FCOURSES().map(([k,l])=>`<th class="qh" title="${esc(l)}"><img class="plogo sm" src="/images/${k}.svg" alt="" onerror="this.remove()"><div>${esc(l)}</div><button class="btn link" style="font-size:11px" onclick="facQualCol('${k}')">All</button></th>`).join('')+`</tr></thead><tbody>`;
   h+=rows.map(({r,i})=>{const q=r.quals||[];return `<tr><td><strong>${esc(r.name)}</strong>${q.length?`<div class="facts">${q.length} program${q.length>1?'s':''}</div>`:'<div class="facts warn">Not set: sees every open session</div>'}</td>`+
-    COURSES.map(([k,l])=>{const on=q.includes(k), m=((r.mods||{})[k]||[]).length;
+    FCOURSES().map(([k,l])=>{const on=q.includes(k), m=((r.mods||{})[k]||[]).length;
       return `<td style="text-align:center;vertical-align:top"><input type="checkbox" ${on?'checked':''} aria-label="${esc(r.name)}: ${esc(l)}" onchange="facQual(${i},'${k}',this.checked)">${on?`<div><button class="btn link" style="font-size:11px;padding:0" onclick="modDlg(${i},'${k}')" title="Limit to particular sessions or modules">${m?m+' module'+(m>1?'s':''):'All modules'}</button></div>`:''}</td>`;}).join('')+
     `<td style="white-space:nowrap"><button class="btn link" onclick="facQualRow(${i},true)">All</button> <button class="btn link" onclick="facQualRow(${i},false)">Clear</button></td></tr>`;}).join('');
   return h+`</tbody></table></div>`;
 }
-function facQualRow(i,all){ const r=U.facDraft[i]; r.quals=all?COURSES.map(c=>c[0]):[]; if(!all) r.mods={}; U.facDirty=true; render(); }
+function facQualRow(i,all){ const r=U.facDraft[i]; r.quals=all?FCOURSES().map(c=>c[0]):[]; if(!all) r.mods={}; U.facDirty=true; render(); }
 function facQualCol(k){ const rows=U.facDraft.filter(r=>r.active!==false); const allOn=rows.every(r=>(r.quals||[]).includes(k));
   rows.forEach(r=>{ const q=new Set(r.quals||[]); if(allOn){ q.delete(k); if(r.mods) delete r.mods[k]; } else q.add(k); r.quals=COURSES.map(c=>c[0]).filter(x=>q.has(x)); }); U.facDirty=true; render(); }
 // Removing a facilitator deletes them when you save. Anyone with answers or picks is better set inactive, which keeps their history.
@@ -877,7 +879,7 @@ function vSelection(){
     h+=`<div class="slot"><div><div class="meta">${esc(label)}</div><div class="facts">${u.s?esc(sTime(p,u.s)):esc(fmtRange(p.startDate,p.endDate))}</div>${u.s&&!isIP(p)?(u.s.zoomLink?`<div class="facts" style="word-break:break-all" title="${esc(u.s.zoomTopic||'')}">Zoom${u.s.zoomSource==='manual'?' (entered by hand)':''}: ${esc(u.s.zoomLink)}</div>`:'<div class="facts warn">No Zoom link yet</div>'):''}</div>
       <div><div class="ibox"><div class="ihead"><span class="itag">Instructors</span></div><div class="picked">${picked.map((e,i)=>{const r=inst(e.iid)||{name:'(removed instructor)'};const v=eff(e.iid,p,u.key);const ms=e.status==='Confirmed'&&!dirty?mailState(p.id,e.iid):null;
         return `<div class="pick ${e.status}"><span class="nm">${esc(r.name)}</span>
-          <select onchange="editPick('${p.id}','${u.key}',${i},'role',this.value)">${['Lead','Co-instructor','Backup'].map(x=>`<option ${e.role===x?'selected':''}>${x}</option>`).join('')}</select>
+          <select onchange="editPick('${p.id}','${u.key}',${i},'role',this.value)">${['Instructor','Backup'].map(x=>`<option ${roleName(e.role)===x?'selected':''}>${x}</option>`).join('')}</select>
           <select onchange="editPick('${p.id}','${u.key}',${i},'status',this.value)">${['Tentative','Confirmed'].map(x=>`<option ${e.status===x?'selected':''}>${x}</option>`).join('')}</select>
           ${v!=='A'?`<span class="warn">Marked ${v?LBL[v].toLowerCase():'not answered'}</span>`:''}
           ${ms&&ms.text?`<span class="mailst ${ms.code}" title="${esc((ms.ch||[]).join('; '))}">✉ ${esc(ms.text)}</span>`:''}
@@ -912,10 +914,12 @@ async function removeIcs(pid){
   try{ const r=await api('admin/ics/'+pid,{method:'DELETE'}); Object.assign(prog(pid),{hasIcs:false,icsName:'',icsSource:'',icsUpdatedAt:''}); closeDlg(); render(); toast('Calendar file removed'); }catch(e){ toast(e.message); }
 }
 function draftOf(pid){ if(!U.assignDraft[pid]) U.assignDraft[pid]=clone((D.assignments[pid]||{}).slots||{}); return U.assignDraft[pid]; }
-function addPick(pid,key,iid){ const d=draftOf(pid); (d[key]=d[key]||[]).push({iid,role:(d[key].length?'Co-instructor':'Lead'),status:'Tentative'}); U.assignDirty.add(pid); render(); }
+// Instructors co-teach: "Lead" and "Co-instructor" from earlier versions both read as Instructor.
+const roleName=r=>r==='Backup'?'Backup':'Instructor';
+function addPick(pid,key,iid){ const d=draftOf(pid); (d[key]=d[key]||[]).push({iid,role:'Instructor',status:'Tentative'}); U.assignDirty.add(pid); render(); }
 function editPick(pid,key,i,field,val){ const d=draftOf(pid); if(field==='remove') d[key].splice(i,1); else d[key][i][field]=val; U.assignDirty.add(pid); render(); }
 function bulkAdd(pid){ const iid=document.getElementById('bulk-i').value; if(!iid) return; const p=prog(pid), d=draftOf(pid); let n=0;
-  for(const u of units(p)) if(eff(iid,p,u.key)==='A'){ d[u.key]=d[u.key]||[]; if(!d[u.key].some(e=>e.iid===iid)){ d[u.key].push({iid,role:d[u.key].length?'Co-instructor':'Lead',status:'Tentative'}); n++; } }
+  for(const u of units(p)) if(eff(iid,p,u.key)==='A'){ d[u.key]=d[u.key]||[]; if(!d[u.key].some(e=>e.iid===iid)){ d[u.key].push({iid,role:'Instructor',status:'Tentative'}); n++; } }
   U.assignDirty.add(pid); render(); toast(`Added to ${n} session${n===1?'':'s'}`); }
 function confirmAll(pid){ const d=draftOf(pid); Object.values(d).forEach(l=>l.forEach(e=>e.status='Confirmed')); const f=fdraftOf(pid); Object.values(f.fslots).forEach(l=>l.forEach(e=>e.status='Confirmed')); U.assignDirty.add(pid); render(); }
 function pickAnyone(pid,key){
