@@ -508,6 +508,44 @@ async function downloadKit(pid){
 }
 function kitBadge(p){const k=kitPlan(p);if(!k.supported||p.status==='draft')return '';return k.ready?'<span class="pill" style="background:var(--avail-lt);color:var(--avail);text-transform:none">Kit ready</span>':'';}
 
+/* ================= Outlook calendar ================= */
+// Every session from the start date on is kept as an event in the shared clearlearning@clearhq.org calendar, with the
+// invitee(s) added so the time is blocked on their own calendars. The portal sends only changes, in the background.
+const calOn=()=>!!(D.calendar||{}).configured;
+function calChip(p){
+  const c=D.calendar||{}; if(!c.configured||!p.startDate||p.startDate<(c.from||'2027-01-01')) return '';
+  const s=(D.calsync||{})[p.id], waiting=(c.pending||[]).includes(p.id);
+  if(s&&s.error) return `<div class="facts" style="color:#9B1C1C" title="${esc(s.error)}">📅 Outlook: not updated</div>`;
+  if(waiting) return '<div class="facts">📅 Outlook: waiting to sync</div>';
+  return s?`<div class="facts" title="Last synced ${esc(new Date(s.at).toLocaleString())}">📅 ${s.count} in Outlook</div>`:'<div class="facts">📅 Outlook: waiting to sync</div>';
+}
+function calCard(){
+  const c=D.calendar||{}, last=c.last;
+  return `<h3 style="margin-top:24px">Outlook calendar</h3><div class="card">
+    ${c.configured?'':`<div class="notice">Not set up yet. Add the <strong>CALENDAR_FLOW_URL</strong> setting (see the Administrator guide), then redeploy.</div>`}
+    <p class="sub" style="margin-top:0">Every session in cohorts starting on or after the start date is kept as an event in the <strong>${esc(c.mailbox||'clearlearning@clearhq.org')}</strong> calendar, with a 30-minute reminder. The people below are invited to every session, so the time is blocked on their own calendars. Changes to dates, selections, facilitators and Zoom links update the events automatically; removed sessions are cancelled.</p>
+    <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:10px;align-items:end">
+      <div class="f"><label for="cal-att">Also invite (email addresses, separated by commas)</label><input id="cal-att" value="${esc((c.attendees||[]).join(', '))}" style="width:100%"></div>
+      <div class="f"><label for="cal-from">Cohorts starting on or after</label><input id="cal-from" type="date" value="${esc(c.from||'2027-01-01')}"></div>
+      <button class="btn" onclick="saveCal()">Save</button></div>
+    ${c.configured?`<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px"><button class="btn ghost" onclick="calSync(true)">Sync all now</button>
+      <span class="facts">${last?`Last run ${esc(new Date(last.at).toLocaleString())}: ${last.calls} change${last.calls===1?'':'s'} sent${(last.errors||[]).length?`, ${last.errors.length} program${last.errors.length>1?'s':''} not updated`:''}.`:'Not run yet.'}${(c.pending||[]).length?` ${c.pending.length} program${c.pending.length>1?'s':''} waiting.`:''}</span></div>
+      ${(last&&last.errors||[]).map(e=>`<div class="notice" style="margin-top:8px"><strong>${esc((prog(e.pid)||{}).cohort||(prog(e.pid)||{}).title||e.pid)}:</strong> ${esc(e.error)}</div>`).join('')}`:''}
+  </div>`;
+}
+async function saveCal(){
+  try{ const r=await api('admin/calendar',{method:'PUT',body:JSON.stringify({attendees:document.getElementById('cal-att').value,from:document.getElementById('cal-from').value})});
+    D.calendar={...(D.calendar||{}),attendees:r.calendar.attendees,from:r.calendar.from}; toast('Calendar settings saved. Events will be updated to match.'); calSync(true,true); }
+  catch(e){ toast(e.message); }
+}
+async function calSync(all,quiet){
+  if(!quiet) toast('Sending changes to Outlook…');
+  try{ const r=await api('admin/calendar/sync',{method:'POST',body:JSON.stringify(all?{all:true}:{})});
+    D.calendar=r.status; const d=await api('admin/data'); D.calsync=d.calsync; render();
+    if(!quiet) toast(r.busy?'A sync is already running; it will finish shortly.':`${r.calls} change${r.calls===1?'':'s'} sent to Outlook${r.pending?`; ${r.pending} program${r.pending>1?'s':''} still waiting. Choose Sync to Outlook now again to continue.`:'.'}${(r.errors||[]).length?' Some programs couldn\u2019t be updated; see the Staff tab.':''}`); }
+  catch(e){ toast(e.message); }
+}
+
 /* ================= Contract facilitators ================= */
 // Facilitator staffing sits on the Selection tab under each session's instructors. Every session's facilitator is the
 // default staff facilitator until a contract facilitator is confirmed; locked sessions are staffed by CLEAR only.
@@ -1091,7 +1129,7 @@ async function mailGo(kind,mode){
 /* ================= Programs ================= */
 function vPrograms(){
   let h=`<h2>Programs</h2><p class="sub">Each quarter, plan the cohorts in the Program Scheduler and choose Publish to Instructor Portal; every cohort arrives here as a draft with its sessions. Dates are changed in the scheduler, then published again. Add one-off programs by hand. Open drafts here or on the Overview, then announce them.</p>
-    <div class="bar">${quarterSelect()}<span class="grow"></span><a class="btn" href="/program-scheduler" style="text-decoration:none">Open Program Scheduler</a><a class="btn ghost" href="/program-scheduler#agendas" style="text-decoration:none">Generate program agendas</a><button class="btn ghost" onclick="editProgram(null)">New one-off program</button><button class="btn link" onclick="packageDlg()">Import package file</button><button class="btn link" onclick="importDlg()">Import spreadsheet</button></div>`;
+    <div class="bar">${quarterSelect()}<span class="grow"></span><a class="btn" href="/program-scheduler" style="text-decoration:none">Open Program Scheduler</a><a class="btn ghost" href="/program-scheduler#agendas" style="text-decoration:none">Generate program agendas</a>${(D.calendar||{}).configured?`<button class="btn ghost" onclick="calSync()" title="Send any changes to the Outlook calendar now">Sync to Outlook now${((D.calendar||{}).pending||[]).length?` (${D.calendar.pending.length} waiting)`:''}</button>`:''}<button class="btn ghost" onclick="editProgram(null)">New one-off program</button><button class="btn link" onclick="packageDlg()">Import package file</button><button class="btn link" onclick="importDlg()">Import spreadsheet</button></div>`;
   const list=D.programs.filter(inQuarter);
   const byDate=(a,b)=>String(a.startDate).localeCompare(String(b.startDate))||String(a.cohort||'').localeCompare(String(b.cohort||''));
   if(!list.length) return h+`<div class="empty"><h3>No programs yet</h3><p>Plan the quarter in the Program Scheduler, then choose Publish to Instructor Portal.</p><a class="btn" href="/program-scheduler" style="text-decoration:none">Open Program Scheduler</a></div>`;
@@ -1102,7 +1140,7 @@ function vPrograms(){
       <td style="white-space:nowrap">${fmtD(p.deadline)}${p.deadline?`<div class="facts">${p.deadlineMode==='auto'?'automatic':'set by hand'}${p.pastDeadline?', passed':''}</div>`:''}</td>
       <td style="font-size:12px">${p.announcedAt?esc(fmtD(p.announcedAt.slice(0,10))):'<span class="facts">—</span>'}</td>
       <td><select onchange="setStatus('${p.id}',this.value)">${['draft','open','closed','archived'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}</select></td>
-      <td style="white-space:nowrap"><button class="btn link" onclick="editProgram('${p.id}')">Edit</button><button class="btn link" style="color:#9B1C1C" onclick="delProgram('${p.id}')">Delete</button></td></tr>`).join('')+`</tbody></table></div></section>`;}).join('');
+      <td style="white-space:nowrap"><button class="btn link" onclick="editProgram('${p.id}')">Edit</button><button class="btn link" style="color:#9B1C1C" onclick="delProgram('${p.id}')">Delete</button>${calChip(p)}</td></tr>`).join('')+`</tbody></table></div></section>`;}).join('');
   return h;
 }
 function autoDeadline(p){ const ds=(p.sessions||[]).map(s=>s.date).filter(Boolean).sort(); const first=ds[0]||p.startDate; if(!first) return ''; const d=parseD(first); d.setDate(d.getDate()-((D.config||{}).deadlineDays||30)); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
@@ -1332,6 +1370,7 @@ function vStaff(){
     <div class="card"><h3>Admins</h3><p class="facts">${D.admins.map(esc).join(', ')||'None set'}</p></div>
     <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Email</th><th></th></tr></thead><tbody>${U.staffDraft.map((s,i)=>`<tr><td><input type="text" value="${esc(s.name)}" ${can?'':'disabled'} style="width:100%" onchange="U.staffDraft[${i}].name=this.value"></td><td><input type="email" value="${esc(s.email)}" ${can?'':'disabled'} style="width:100%" onchange="U.staffDraft[${i}].email=this.value"></td><td>${can?`<button class="btn link" onclick="U.staffDraft.splice(${i},1);render()">Remove</button>`:''}</td></tr>`).join('')}</tbody></table></div>
     ${can?`<div class="bar" style="margin-top:12px"><button class="btn ghost" onclick="U.staffDraft.push({name:'',email:''});render()">Add staff member</button><button class="btn" onclick="saveStaff()">Save staff</button></div>`:''}`;
+  h+=calCard();
   return h;
 }
 async function saveStaff(){ try{ const r=await api('admin/staff',{method:'PUT',body:JSON.stringify({staff:U.staffDraft})}); D.staff=r.staff; U.staffDraft=null; render(); toast('Staff saved');}catch(e){toast(e.message);} }
