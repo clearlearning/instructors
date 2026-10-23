@@ -107,7 +107,8 @@ function keepsWelcome(p) {
 const isWelcome = s => /^\s*welcome\b/i.test(String(s.title || ''));
 let certCache = { keys: null, at: 0 };
 
-export async function onRequest({ request, env }) {
+export async function onRequest(context) {
+  const { request, env } = context;
   const url = new URL(request.url);
   const parts = url.pathname.replace(/^\/api\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
   const method = request.method.toUpperCase();
@@ -129,7 +130,9 @@ export async function onRequest({ request, env }) {
       let zoom = { configured: zoomConfigured(env) };
       if (zoom.configured) { try { zoom = await zoomSync(env, { dry, by: 'daily check' }); } catch (e) { zoom = { configured: true, error: e.message }; } }
       const reminders = await runReminders(env, url);
-      return json({ ...reminders, zoom });
+      let calendar = { configured: calConfigured(env) };
+      if (calendar.configured && !dry) { try { await calQueueAll(env); calendar = await calRun(env, { budgetMs: 20000 }); } catch (e) { calendar = { configured: true, error: e.message }; } }
+      return json({ ...reminders, zoom, calendar });
     }
     const email = ident;
 
@@ -239,11 +242,11 @@ export async function onRequest({ request, env }) {
 
       if (b === 'data' && method === 'GET') return json(await adminData(env, me));
 
-      if (b === 'program' && c && method === 'PUT') return json(await saveProgram(env, c, body, me.email));
-      if (b === 'program' && c && method === 'DELETE') return json(await deleteProgram(env, c, me.email));
+      if (b === 'program' && c && method === 'PUT') { const r = await saveProgram(env, c, body, me.email); calKick(env, context, [c]); return json(r); }
+      if (b === 'program' && c && method === 'DELETE') { const r = await deleteProgram(env, c, me.email); calKick(env, context, [c]); return json(r); }
 
       if (b === 'import' && method === 'POST') return json(await importPrograms(env, body, me));
-      if (b === 'import-package' && method === 'POST') return json(await importPackage(env, body, me));
+      if (b === 'import-package' && method === 'POST') { const r = await importPackage(env, body, me); if (calConfigured(env)) calKick(env, context, (await listPrograms(env)).filter(p => p.externalKey && (body.programs || []).some(x => x && x.externalKey === p.externalKey)).map(p => p.id)); return json(r); }
 
       if (b === 'ics' && c && method === 'PUT') return json(await putProgramIcs(env, c, body, me.email));
       if (b === 'ics' && c && method === 'DELETE') return json(await deleteProgramIcs(env, c, me.email));
@@ -264,7 +267,13 @@ export async function onRequest({ request, env }) {
       if (b === 'roster' && method === 'PUT') return json(await saveRoster(env, body, me));
       if (b === 'facilitators' && method === 'PUT') return json(await saveFacilitators(env, body, me));
       if (b === 'facilitation' && method === 'PUT') return json(await saveFacilitation(env, body, me));
-      if (b === 'scheduled-facilitators' && method === 'PUT') return json(await saveScheduledFacilitators(env, body, me));
+      if (b === 'scheduled-facilitators' && method === 'PUT') { const r = await saveScheduledFacilitators(env, body, me); calKick(env, context, r.programs.map(x => x.pid)); return json(r); }
+      if (b === 'calendar' && !c && method === 'PUT') return json(await saveCalendarConfig(env, body, me));
+      if (b === 'calendar' && c === 'sync' && method === 'POST') {
+        if (!calConfigured(env)) throw httpErr(501, 'The Outlook calendar isn\'t set up yet. Add CALENDAR_FLOW_URL, then redeploy.');
+        if (body.pid) await calQueue(env, [body.pid]); else if (body.all) await calQueueAll(env);
+        return json({ ok: true, ...(await calRun(env, { budgetMs: 25000 })), status: await calStatus(env) });
+      }
       if (b === 'sync-access' && method === 'POST') return json(await syncAccess(env, await getJSON(env, 'roster', [])));
 
       if (b === 'staff' && method === 'PUT') {
@@ -278,7 +287,7 @@ export async function onRequest({ request, env }) {
         return json(await saveResponse(env, inst, d, body, me.email, true));
       }
 
-      if (b === 'assignment' && c && method === 'PUT') return json(await saveAssignment(env, c, body, me));
+      if (b === 'assignment' && c && method === 'PUT') { const r = await saveAssignment(env, c, body, me); calKick(env, context, [c]); return json(r); }
       if (b === 'note' && c && method === 'POST') return json(await addNote(env, c, body, me.email));
 
       if (b === 'notify' && c === 'announce' && method === 'POST') return json(await notifyAnnounce(env, body, me));
@@ -289,9 +298,11 @@ export async function onRequest({ request, env }) {
 
       if (b === 'zoom' && c === 'sync' && method === 'POST') {
         if (!zoomConfigured(env)) throw httpErr(501, 'Zoom isn\'t connected yet. Add ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID and ZOOM_CLIENT_SECRET in the Pages project settings, then redeploy.');
-        return json(await zoomSync(env, { pid: body.pid || '', by: me.email }));
+        const r = await zoomSync(env, { pid: body.pid || '', by: me.email });
+        if (calConfigured(env)) { if (body.pid) calKick(env, context, [body.pid]); else { await calQueueAll(env); calKick(env, context, []); } }
+        return json(r);
       }
-      if (b === 'zoom' && c === 'assign' && method === 'POST') return json(await zoomAssign(env, body, me.email));
+      if (b === 'zoom' && c === 'assign' && method === 'POST') { const r = await zoomAssign(env, body, me.email); calKick(env, context, [body.pid]); return json(r); }
 
       if (b === 'reports' && method === 'POST') return json(await publishReports(env, body, me));
       if (b === 'reports' && method === 'GET') return json(await listReports(env, me));
@@ -543,6 +554,8 @@ async function adminData(env, me) {
     fresponses[r.id] = out;
   });
   const assigns = await Promise.all(programs.map(p => getJSON(env, 'assign:' + p.id, null)));
+  const calsync = {};
+  (await Promise.all(programs.map(p => getJSON(env, 'calsync:' + p.id, null)))).forEach((x, i) => { if (x) calsync[programs[i].id] = { count: x.count || 0, at: x.at, error: x.error || '' }; });
   const schedfac = {};
   (await Promise.all(programs.map(p => getJSON(env, 'schedfac:' + p.id, null)))).forEach((x, i) => { if (x) schedfac[programs[i].id] = x.sessions || {}; });
   const assignments = {};
@@ -560,6 +573,7 @@ async function adminData(env, me) {
     me: publicMe(me), today,
     zoom: { last: zoomLast, review: (zoomReview.items || []).filter(i => { const p = programs.find(x => x.id === i.pid); const s = p && (p.sessions || []).find(x => x.id === i.sid); return s && !s.zoomLink; }), missing: missingLinks(programs, today) },
     profiles,
+    calendar: await calStatus(env), calsync,
     facilitators: me.facilitators, fresponses, schedfac, facilitation: facDefault(await getJSON(env, 'config:facilitation', null), me.staff),
     programs, roster: me.roster, responses, assignments,
     staff: me.staff, admins: me.admins,
@@ -973,7 +987,7 @@ function emailShell(title, inner, origin, button) {
 <table width="556" cellpadding="0" cellspacing="0" border="0" align="center" style="width:100%;max-width:556px;"><tr><td style="${EBODY}">
 ${outlookify(inner)}
 ${emailButton(btn)}
-<p style="margin:24px 0 28px 0;${EF}font-size:12px;line-height:18px;color:#4a3040;">Sign in with this email address; you will receive a one-time code by email. If you have any questions or require assistance, please contact us at <a href="mailto:clearlearning@clearhq.org" style="color:#0144db;font-weight:bold;">clearlearning@clearhq.org</a> or <strong style="color:#64092c;">859-212-6515</strong>.</p>
+<p style="margin:24px 0 28px 0;${EF}font-size:12px;line-height:18px;color:#4a3040;">Sign in with this email address; you will receive a one-time code by email. If you have any questions or require assistance, please contact us at <a href="mailto:clearlearning@clearhq.org" style="color:#0144db;font-weight:bold;">clearlearning@clearhq.org</a> or <strong style="color:#64092c;">859-269-1289</strong>.</p>
 </td></tr></table></td></tr>
 <tr><td bgcolor="#64092c" align="center" style="background-color:#64092c;padding:28px 32px;">
 <table width="556" cellpadding="0" cellspacing="0" border="0" align="center">
@@ -981,7 +995,7 @@ ${foot('Best regards,', 'font-size:14px;font-weight:bold;padding-bottom:4px;')}
 ${foot('Council on Licensure, Enforcement and Regulation', 'font-size:13px;font-weight:bold;padding-bottom:2px;')}
 ${foot('Promoting Regulatory Excellence', 'font-style:italic;padding-bottom:14px;')}
 ${foot('<a href="https://www.clearhq.org" style="color:#ffffff;text-decoration:none;">www.clearhq.org</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="mailto:clearlearning@clearhq.org" style="color:#ffffff;text-decoration:none;">clearlearning@clearhq.org</a>', 'padding-bottom:4px;')}
-${foot('+1.859-212-6515&nbsp;&nbsp;|&nbsp;&nbsp;108 Wind Haven Dr., Ste. A, Nicholasville, KY 40356', 'padding-bottom:18px;')}
+${foot('+1.859.269.1401&nbsp;&nbsp;|&nbsp;&nbsp;108 Wind Haven Dr., Ste. A, Nicholasville, KY 40356', 'padding-bottom:18px;')}
 <tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" align="center"><tr>
 <td style="padding:0 5px;"><a href="https://twitter.com/CLEARHQ"><img src="${SOCIAL}email_x.png" alt="X" width="26" height="26" border="0" style="display:block;"></a></td>
 <td style="padding:0 5px;"><a href="https://facebook.com/CLEARHQ/"><img src="${SOCIAL}email_facebook.png" alt="Facebook" width="26" height="26" border="0" style="display:block;"></a></td>
@@ -1866,6 +1880,156 @@ async function facMissing(env, facilitators, progs) {
   const recips = facActive(facilitators);
   const recs = await Promise.all(recips.map(x => getJSON(env, 'fresp:' + x.r.id, { programs: {} })));
   return recips.map((x, i) => ({ ...x, list: facListFor(x.r, progs, amap).filter(p => !(recs[i].programs || {})[p.id]) })).filter(x => x.list.length);
+}
+
+/* ======================= Outlook calendar sync ======================= */
+// Every session of every cohort starting on or after the "from" date (2027-01-01) is kept as an Outlook event in the
+// clearlearning@clearhq.org shared mailbox's calendar, with the invitee(s) on the Staff tab added as attendees, so the
+// time is blocked on their calendars too. In-person modules are separate events. The Power Automate flow
+// "Instructor Portal – Calendar" (CALENDAR_FLOW_URL) passes each request to Microsoft Graph; the portal remembers each
+// event's Outlook id and what it last sent (calsync:<pid>), so only real changes are sent. Deleting an event sends
+// attendees a cancellation.
+const CAL_TZ = { ET: 'Eastern Standard Time', CT: 'Central Standard Time', MT: 'Mountain Standard Time', PT: 'Pacific Standard Time', AT: 'Atlantic Standard Time', UTC: 'UTC' };
+const calConfigured = env => !!env.CALENDAR_FLOW_URL;
+const calMailbox = env => String(env.CALENDAR_MAILBOX || env.NOTIFY_MAILBOX || 'clearlearning@clearhq.org').trim();
+async function calConfig(env) { const c = await getJSON(env, 'config:calendar', {}); return { attendees: Array.isArray(c.attendees) ? c.attendees : [], from: c.from || '2027-01-01', updatedAt: c.updatedAt || null, updatedBy: c.updatedBy || '' }; }
+async function saveCalendarConfig(env, body, me) {
+  const attendees = [...new Set((Array.isArray(body.attendees) ? body.attendees : String(body.attendees || '').split(/[,;\s]+/)).map(e => String(e).trim().toLowerCase()).filter(e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))].slice(0, 10);
+  const from = /^\d{4}-\d{2}-\d{2}$/.test(String(body.from || '')) ? body.from : '2027-01-01';
+  const cfg = { attendees, from, updatedAt: new Date().toISOString(), updatedBy: me.email };
+  await putJSON(env, 'config:calendar', cfg);
+  await log(env, me.email, 'Changed the Outlook calendar settings', `${attendees.join(', ') || 'no invitees'}; from ${from}`);
+  await calQueueAll(env);
+  return { ok: true, calendar: cfg };
+}
+const calEligible = (prog, cfg) => !!prog && !!prog.startDate && prog.startDate >= cfg.from;
+async function calQueue(env, pids) {
+  const q = await getJSON(env, 'calqueue', []);
+  const next = [...new Set([...q, ...pids.filter(Boolean)])];
+  if (next.length !== q.length) await putJSON(env, 'calqueue', next);
+}
+async function calQueueAll(env) { const cfg = await calConfig(env); await calQueue(env, (await listPrograms(env)).filter(p => calEligible(p, cfg)).map(p => p.id)); }
+// Queue programs after a change, then work through the queue in the background.
+function calKick(env, ctx, pids) {
+  if (!calConfigured(env)) return;
+  const job = (async () => { try { await calQueue(env, pids); await calRun(env, { budgetMs: 25000 }); } catch (e) { console.log('calendar sync', e && e.message); } })();
+  if (ctx && ctx.waitUntil) ctx.waitUntil(job);
+}
+
+function calTime(prog, date, time, plusDays) {
+  const m = toMin(time);
+  const d = new Date(date + 'T00:00:00Z'); if (plusDays) d.setUTCDate(d.getUTCDate() + plusDays);
+  const ds = d.toISOString().slice(0, 10);
+  return m == null || isNaN(m) ? null : `${ds}T${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:00`;
+}
+// The events a program should have, keyed by session id.
+async function calEvents(env, prog, cfg, ctx) {
+  const assign = await getJSON(env, 'assign:' + prog.id, null) || {};
+  const sched = ((await getJSON(env, 'schedfac:' + prog.id, null)) || {}).sessions || {};
+  const tz = CAL_TZ[String(prog.timezone || 'ET').toUpperCase()] || CAL_TZ.ET;
+  const names = ids => ids.map(i => { const r = ctx.roster.find(y => y.id === i); return r ? displayName(r.name) : null; }).filter(Boolean);
+  const confirmed = slot => ((assign.slots || {})[slot] || []).filter(e => e.status === 'Confirmed').map(e => e.iid);
+  const allConfirmed = [...new Set(Object.values(assign.slots || {}).flat().filter(e => e.status === 'Confirmed').map(e => e.iid))];
+  const attendees = cfg.attendees.map(a => ({ emailAddress: { address: a }, type: 'required' }));
+  const where = isInPerson(prog) ? (prog.location || 'In person') : 'Zoom';
+  const out = {};
+  for (const s of prog.sessions || []) {
+    if (!s.date) continue;
+    const inst = s.allInstructors ? names(allConfirmed) : names([...new Set([...confirmed(s.id), ...confirmed(PROGRAM_SLOT)])]);
+    const facil = facilitatorFor(assign, sched, s.id, ctx.facilitators) || displayName(ctx.defaultFacilitator);
+    const row = (k, v) => `<tr><td style="padding:3px 12px 3px 0;font-weight:bold;vertical-align:top">${H(k)}</td><td style="padding:3px 0">${v}</td></tr>`;
+    const content = `<table style="font-family:Arial,sans-serif;font-size:14px;border-collapse:collapse">
+${row('Cohort', H(prog.cohort || ''))}${row('Program', H(prog.title))}${row('Module', H(s.title))}
+${row(inst.length > 1 ? 'Instructors' : 'Instructor', inst.length ? H(inst.join('; ')) : '<em>To be confirmed</em>')}
+${row('Facilitator', H(facil || 'To be confirmed'))}
+${isInPerson(prog) ? row('Location', H(prog.location || '')) : row('Zoom', s.zoomLink ? `<a href="${H(s.zoomLink)}">${H(s.zoomLink)}</a>` : '<em>To be added</em>')}
+</table>`;
+    const startT = calTime(prog, s.date, s.start), endT = calTime(prog, s.endDate || s.date, s.end);
+    const allDay = !startT || !endT;
+    const dayAfter = d => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10); };
+    out[s.id] = {
+      subject: `${prog.cohort ? prog.cohort + ' – ' : ''}${s.title}`,
+      body: { contentType: 'HTML', content },
+      start: { dateTime: allDay ? `${s.date}T00:00:00` : startT, timeZone: tz },
+      end: { dateTime: allDay ? `${dayAfter(s.endDate || s.date)}T00:00:00` : endT, timeZone: tz },
+      isAllDay: allDay,
+      location: { displayName: where },
+      isReminderOn: true, reminderMinutesBeforeStart: 30, showAs: 'busy',
+      attendees
+    };
+  }
+  return out;
+}
+const calHash = ev => { const s = JSON.stringify(ev); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return String(h); };
+async function calCall(env, method, path, body) {
+  const uri = 'https://graph.microsoft.com/v1.0/users/' + calMailbox(env) + path;
+  const r = await fetch(env.CALENDAR_FLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method, uri, body: body || null }) });
+  const text = await r.text(); let j = null; try { j = text ? JSON.parse(text) : null; } catch { j = null; }
+  if (!r.ok) { const e = new Error(`Outlook request failed (${r.status})${j && j.error && j.error.message ? ': ' + j.error.message : ''}`); e.status = r.status; throw e; }
+  return j || {};
+}
+// Bring one program's events in line. Returns the number of Outlook requests made.
+async function calSyncProgram(env, pid, cfg, ctx, deadline) {
+  const key = 'calsync:' + pid, rec = await getJSON(env, key, { events: {} });
+  rec.events = rec.events || {};
+  const prog = await getJSON(env, 'program:' + pid, null);
+  const want = calEligible(prog, cfg) ? await calEvents(env, prog, cfg, ctx) : {};
+  let calls = 0, error = '';
+  const save = async () => { rec.at = new Date().toISOString(); rec.error = error; rec.count = Object.keys(rec.events).length; await putJSON(env, key, rec); };
+  try {
+    for (const [sid, have] of Object.entries(rec.events)) {
+      if (want[sid]) continue;
+      if (Date.now() > deadline) { await save(); return { calls, done: false }; }
+      try { await calCall(env, 'DELETE', '/events/' + encodeURIComponent(have.id)); } catch (e) { if (e.status !== 404) throw e; }
+      delete rec.events[sid]; calls++;
+    }
+    for (const [sid, ev] of Object.entries(want)) {
+      const h = calHash(ev), have = rec.events[sid];
+      if (have && have.hash === h) continue;
+      if (Date.now() > deadline) { await save(); return { calls, done: false }; }
+      let id = have && have.id;
+      if (id) {
+        try { await calCall(env, 'PATCH', '/events/' + encodeURIComponent(id), ev); }
+        catch (e) { if (e.status === 404) id = null; else throw e; } // deleted in Outlook: create it again
+      }
+      if (!id) { const made = await calCall(env, 'POST', '/calendar/events', ev); id = made.id; if (!id) throw new Error('Outlook didn\u2019t return the new event\u2019s id. Check the calendar flow\u2019s Response action.'); }
+      rec.events[sid] = { id, hash: h }; calls++;
+    }
+  } catch (e) { error = e.message; await save(); return { calls, done: false, error }; }
+  await save();
+  if (!Object.keys(rec.events).length && !calEligible(prog, cfg)) await env.IA_KV.delete(key);
+  return { calls, done: true };
+}
+// Work through the queue until it's empty or the time budget runs out.
+async function calRun(env, { budgetMs = 25000 } = {}) {
+  if (!calConfigured(env)) return { configured: false };
+  const lock = await env.IA_KV.get('callock');
+  if (lock) return { configured: true, busy: true, pending: (await getJSON(env, 'calqueue', [])).length };
+  await env.IA_KV.put('callock', '1', { expirationTtl: 60 });
+  const deadline = Date.now() + budgetMs, cfg = await calConfig(env);
+  const staffList = await getJSON(env, 'config:staff', []);
+  const fcfg = await getJSON(env, 'config:facilitation', null);
+  const ctx = { roster: await getJSON(env, 'roster', []), facilitators: await getJSON(env, 'facilitators', []), defaultFacilitator: facDefault(fcfg, Array.isArray(staffList) ? staffList : (staffList.staff || [])).defaultName };
+  let calls = 0; const errors = [];
+  try {
+    let q = await getJSON(env, 'calqueue', []);
+    while (q.length && Date.now() < deadline) {
+      const pid = q[0], r = await calSyncProgram(env, pid, cfg, ctx, deadline);
+      calls += r.calls;
+      if (r.error) errors.push({ pid, error: r.error });
+      else if (!r.done) break;
+      // Re-read the queue so programs added meanwhile (by another change) aren't lost.
+      q = (await getJSON(env, 'calqueue', [])).filter(x => x !== pid);
+      await putJSON(env, 'calqueue', q);
+    }
+    const left = await getJSON(env, 'calqueue', []);
+    await putJSON(env, 'cal:last', { at: new Date().toISOString(), calls, errors, pending: left.length });
+    return { configured: true, calls, errors, pending: left.length };
+  } finally { await env.IA_KV.delete('callock'); }
+}
+async function calStatus(env) {
+  const cfg = await calConfig(env), last = await getJSON(env, 'cal:last', null), queue = await getJSON(env, 'calqueue', []);
+  return { configured: calConfigured(env), mailbox: calMailbox(env), attendees: cfg.attendees, from: cfg.from, last, pending: queue };
 }
 
 /* ======================= Welcome email details ======================= */
