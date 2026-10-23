@@ -867,6 +867,28 @@ async function setCell(iid,pid,key,v){
   try{ const r=await api(`admin/response/${iid}/${pid}`,{method:'PUT',body:JSON.stringify(body)});
     D.responses[iid]=D.responses[iid]||{}; D.responses[iid][pid]={...r.response}; render(); toast('Answer saved for '+inst(iid).name);}catch(e){toast(e.message);}
 }
+// Record answers for an instructor (for example after a phone call). Saved as a staff entry; nothing is selected or confirmed.
+function recordDlg(pid,iid){
+  const p=prog(pid), list=active().sort((a,b)=>a.name.localeCompare(b.name));
+  if(!list.length){ toast('No active instructors.'); return; }
+  iid=iid||list[0].id;
+  const cur=resp(iid,pid)||{program:'',sessions:{},comment:''};
+  const opts=v=>`<option value="">—</option>`+Object.entries(LBL).map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${l}</option>`).join('');
+  const rows=units(p).map(u=>`<tr><td>${u.s?`<strong>${esc(u.s.title)}</strong><div class="facts">${esc(sTime(p,u.s))}</div>`:'<strong>Entire program</strong>'}</td><td><select class="rec-a" data-key="${u.key}">${opts(u.key===PS?cur.program:(cur.sessions||{})[u.key])}</select></td></tr>`).join('');
+  openDlg('Record answers',`<p class="sub">Enter availability for an instructor, for example after a phone call. This saves their answers only; it doesn't select or confirm them, and no email is sent.</p>
+    <div class="f"><label for="rec-i">Instructor</label><select id="rec-i" style="width:100%" onchange="recordDlg('${pid}',this.value)">${list.map(r=>`<option value="${r.id}" ${r.id===iid?'selected':''}>${esc(r.name)}</option>`).join('')}</select></div>
+    ${units(p).some(u=>u.key!==PS)?`<div class="f"><label for="rec-all">Whole program</label><select id="rec-all" onchange="if(this.value)document.querySelectorAll('.rec-a').forEach(s=>s.value=this.value)">${opts('')}</select><div class="facts">Sets every session at once; change any that differ below.</div></div>`:''}
+    <div class="tbl-wrap"><table><thead><tr><th>Session</th><th style="width:170px">Answer</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="f"><label for="rec-c">Comments for staff</label><textarea id="rec-c" rows="2" style="width:100%">${esc(cur.comment||'')}</textarea></div>`,
+    `<button class="btn ghost" onclick="closeDlg()">Cancel</button><button class="btn" onclick="saveRecord('${pid}')">Save answers</button>`);
+}
+async function saveRecord(pid){
+  const iid=document.getElementById('rec-i').value, body={program:'',sessions:{},comment:document.getElementById('rec-c').value};
+  document.querySelectorAll('.rec-a').forEach(s=>{ if(s.dataset.key===PS) body.program=s.value; else if(s.value) body.sessions[s.dataset.key]=s.value; });
+  try{ const r=await api(`admin/response/${iid}/${pid}`,{method:'PUT',body:JSON.stringify(body)});
+    D.responses[iid]=D.responses[iid]||{}; D.responses[iid][pid]={...r.response}; closeDlg(); render(); toast('Answers saved for '+inst(iid).name); }
+  catch(e){ toast(e.message); }
+}
 function exportMatrix(which){
   const list=which==='one'?[prog(U.pid)]:D.programs.filter(p=>p.status==='open'&&inQuarter(p));
   const insts=active();
@@ -886,9 +908,9 @@ function exportMatrix(which){
 
 /* ================= Selection ================= */
 function vSelection(){
-  let h=`<h2>Selection</h2><p class="sub">Pick instructors from the people who said they're available. Each session also has a teal facilitator line that works the same way for contract facilitators; until one is confirmed, the default facilitator covers the session. New picks start as Tentative, which only staff can see. Mark a pick Confirmed once you've decided, save, then email the instructor their selection notice with the calendar file. The number after each name is how many slots they already hold this cycle; ↗ opens their teaching history and evaluations.</p>`;
+  let h=`<h2>Selection</h2><p class="sub">Pick instructors from the people who said they're available. Each session has a burgundy Instructors box and a gold Facilitator box, which work the same way. A session with a staff facilitator scheduled in the Program Scheduler is held for staff; otherwise the default facilitator covers it until a contract facilitator is confirmed. Use Record answers to enter an instructor's availability for them, for example after a phone call. New picks start as Tentative, which only staff can see. Mark a pick Confirmed once you've decided, save, then email the instructor their selection notice with the calendar file. The number after each name is how many slots they already hold this cycle; ↗ opens their teaching history and evaluations.</p>`;
   if(!D.programs.length) return h+`<div class="empty">No programs yet.</div>`;
-  h+=`<div class="bar">${quarterSelect()}${programSelect()}<span class="grow"></span><button class="btn ghost" onclick="exportMatrix('one')" title="Every instructor's answers for this program, in the original availability spreadsheet layout">Export answers</button><button class="btn ghost" onclick="exportMatrix('all')">Export all open programs</button><button class="btn ghost" onclick="exportSelections()">Export selections</button></div>`;
+  h+=`<div class="bar">${quarterSelect()}${programSelect()}<span class="grow"></span><button class="btn ghost" onclick="recordDlg(U.pid)" title="Enter an instructor's availability for them, for example after a phone call">Record answers</button><button class="btn ghost" onclick="exportMatrix('one')" title="Every instructor's answers for this program, in the original availability spreadsheet layout">Export answers</button><button class="btn ghost" onclick="exportMatrix('all')">Export all open programs</button><button class="btn ghost" onclick="exportSelections()">Export selections</button></div>`;
   const p=prog(U.pid); if(!p) return h;
   const s=slots(p.id), dirty=U.assignDirty.has(p.id), a=D.assignments[p.id]||{};
   const confirmed=[...new Set(Object.values((a.slots||{})).flat().filter(e=>e.status==='Confirmed').map(e=>e.iid))];
